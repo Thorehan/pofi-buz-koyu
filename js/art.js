@@ -9,7 +9,11 @@ const PRELOAD = [
 
 const imgs = {};
 const requested = new Set();
+const listeners = new Set();
 let enabled = true;
+
+// Bir kez çizilen küçük resimler (gardırop) görsel geç yüklenince yeniden çizilebilsin diye.
+export const onArtLoad = fn => listeners.add(fn);
 
 function request(id) {
   if (requested.has(id)) return;
@@ -17,7 +21,7 @@ function request(id) {
   const im = new Image();
   im.decoding = 'async';
   im.src = `assets/art/${id}.webp`;
-  im.onload = () => { imgs[id] = im; };
+  im.onload = () => { imgs[id] = im; listeners.forEach(fn => fn(id)); };
 }
 
 export function loadArt() {

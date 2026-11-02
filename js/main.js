@@ -9,7 +9,7 @@ import {
 } from './meta.js';
 import { drawRoom, drawItemIcon } from './interior.js';
 import { drawPofi, drawFish } from './draw.js';
-import { loadArt, setArtEnabled, accentHue } from './art.js';
+import { loadArt, setArtEnabled, accentHue, onArtLoad } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
@@ -867,6 +867,12 @@ let wardrobeDraft = null; // denenen kıyafet (bu kategoride)
 
 const previewOutfit = () => (wardrobeDraft ? { ...P.outfit, [wardrobeCat]: wardrobeDraft } : P.outfit);
 
+let wardrobeRedraw = 0;
+onArtLoad(id => {
+  if (screen !== 'wardrobe' || !id.startsWith('outfit_') || wardrobeRedraw) return;
+  wardrobeRedraw = requestAnimationFrame(() => { wardrobeRedraw = 0; if (screen === 'wardrobe') renderWardrobe(); });
+});
+
 function renderWardrobe() {
   document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === wardrobeCat));
   const items = WARDROBE[wardrobeCat];
@@ -879,7 +885,7 @@ function renderWardrobe() {
   $('wardrobeList').querySelectorAll('[data-w]').forEach(btn => {
     const id = btn.dataset.w;
     const ctx = fitCanvas(btn.querySelector('canvas'), 64, 64);
-    drawPofi(ctx, 32, 62, 50, { outfit: { ...P.outfit, [wardrobeCat]: id } });
+    drawPofi(ctx, 32, 63, 44, { outfit: { ...P.outfit, [wardrobeCat]: id } });
     btn.onclick = () => { wardrobeDraft = id === P.outfit[wardrobeCat] ? null : id; renderWardrobe(); };
   });
 

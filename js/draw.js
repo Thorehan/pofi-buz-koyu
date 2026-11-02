@@ -118,6 +118,11 @@ export function drawPofi(ctx, x, y, size, o = {}) {
   ctx.restore();
 }
 
+// Kıyafet görselleri (pofi-r8): 512×512, tek önden görünüş. Şapkada kenarın alt ortası [256,340],
+// atkıda boyun bandının ortası [256,256]; ikisinde de bant 300 px (kulaklıkta iki yastığın merkezleri arası).
+const OUTFIT_W = 300;
+const SIDE_POSES = new Map([['stand_side', 0.12], ['slide_side', 0.3]]); // kulaklığın arkaya kayması (kafa genişliği oranı)
+
 // Görsel Pofi. (x, y) ayak/karın hizası. Görsel yoksa false döner.
 function drawPofiArt(ctx, x, y, size, pose, o = {}) {
   const im = art('pofi_' + pose);
@@ -135,6 +140,12 @@ function drawPofiArt(ctx, x, y, size, pose, o = {}) {
     ctx.save();
     ctx.translate(nx, ny);
     ctx.rotate(nr);
+    const im = art('outfit_scarf_' + outfit.scarf);
+    if (im) {
+      const k = nw / OUTFIT_W;
+      ctx.drawImage(im, -256 * k, -256 * k, 512 * k, 512 * k);
+      ctx.restore();
+    } else {
     ctx.fillStyle = scarfFill(ctx, outfit.scarf, u);
     roundRect(ctx, -nw / 2, -u * 0.045, nw, u * 0.09, u * 0.04);
     ctx.fill();
@@ -144,14 +155,29 @@ function drawPofiArt(ctx, x, y, size, pose, o = {}) {
     if (outfit.scarf === 'striped') for (let j = -2; j <= 2; j++) ctx.fillRect(j * u * 0.11 - u * 0.02, -u * 0.045, u * 0.04, u * 0.09);
     if (outfit.scarf === 'flakes') for (let j = -2; j <= 2; j++) { circle(ctx, j * u * 0.11, 0, u * 0.018); ctx.fill(); }
     ctx.restore();
+    }
   }
   if (outfit.hat && outfit.hat !== 'none') {
-    // Şapka kodu kafa tepesi -0.8s, kafa genişliği ≈ 0.66s varsayar.
-    const [hx, hy, hw] = f.head, u = hw / 0.66;
+    const [hx, hy, hw] = f.head;
     ctx.translate(hx, hy);
     ctx.rotate(f.rot);
-    ctx.translate(0, u * 0.8);
-    drawHat(ctx, outfit.hat, u);
+    const im = art('outfit_hat_' + outfit.hat);
+    if (im) {
+      // Kenar, kafa tepesinden kafa genişliğinin %28'i aşağıda (gözlerin hemen üstü) ve kafadan biraz dar;
+      // kulaklık yastıkları kafanın iki yanına, daha aşağıya oturur.
+      const muff = outfit.hat === 'earmuffs', [drop, fit] = muff ? [0.474, 1.11] : [0.278, 0.98], k = (hw * fit) / OUTFIT_W;
+      // Yandan pozlarda kulaklık daraltılıp kafanın arkasına kaydırılır; yoksa öndeki yastık gözü kapatır.
+      if (muff && SIDE_POSES.has(pose)) {
+        ctx.translate(-hw * SIDE_POSES.get(pose), 0);
+        ctx.scale(0.45, 1);
+      }
+      ctx.drawImage(im, -256 * k, hw * drop - 340 * k, 512 * k, 512 * k);
+    } else {
+      // Şapka kodu kafa tepesi -0.8s, kafa genişliği ≈ 0.66s varsayar.
+      const u = hw / 0.66;
+      ctx.translate(0, u * 0.8);
+      drawHat(ctx, outfit.hat, u);
+    }
   }
   ctx.restore();
   return true;
