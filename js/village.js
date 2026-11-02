@@ -1947,7 +1947,15 @@ function slotMarker(ctx, x, y, u, t, sel) {
 }
 
 // Süsler (kodla çizilir; taban ortası (x, y)).
+// Süs görselleri (pofi-r7): 256×256, taban 248. satırda, hepsi aynı ölçekte; fenerin boyu (240 px) u×0.1 olur.
 export function drawDecor(ctx, x, y, u, id, t, night = 0) {
+  const im = art(`decor_${id}`);
+  if (im) {
+    const k = (u * 0.1) / 240;
+    ctx.drawImage(im, x - 128 * k, y - 248 * k, 256 * k, 256 * k);
+    if (night > 0 && (id === 'lantern' || id === 'aurora')) glow(ctx, x, y - u * 0.085, u * 0.05, id === 'lantern' ? '#ffe7a8' : '#7fe0d0', night * 0.45);
+    return;
+  }
   ctx.save();
   ctx.translate(x, y);
   ctx.fillStyle = 'rgba(29,53,87,.12)';

@@ -1,21 +1,48 @@
 // İç mekân: iglonun içi. Oda ve 6 yuvanın eşyaları (her biri 3 kademe) kodla çizilir;
 // görseller gelene kadar geçerli. items: { yuvaId: kademe (0 = boş) }.
 import { roundRect, circle, ellipse, drawPofi } from './draw.js';
+import { art } from './art.js';
 
 // Yuvaların odadaki yeri (genişlik/yükseklik oranı). Lamba 3. kademede tavana asılır.
 const BOX = {
   window: [0.2, 0.16, 0.4, 0.5],
   wall: [0.52, 0.14, 0.72, 0.46],
-  shelf: [0.7, 0.4, 0.86, 0.66],
-  bed: [0.06, 0.6, 0.36, 0.92],
+  shelf: [0.68, 0.34, 0.88, 0.68],
+  bed: [0.03, 0.4, 0.37, 0.93],
   rug: [0.36, 0.8, 0.7, 0.97],
   lamp: [0.36, 0.6, 0.46, 0.84],
   lampTop: [0.4, 0.02, 0.62, 0.26],
 };
 const slotBox = (slot, tier) => BOX[slot === 'lamp' && tier === 3 ? 'lampTop' : slot];
 
+// Eşya görselleri (pofi-r6): 512×512, bir yuvanın 3 kademesi aynı ölçekte. Ölçek, en büyük kademenin (t3)
+// görünen boyutu [genişlik, yükseklik] kendi kutusuna sığacak şekilde seçilir.
+// Çapa: yerdekiler taban ortası (496. satır), avize üst orta (16. satır), duvardakiler hücre ortası.
+const ITEM_T3 = { bed: [388, 480], rug: [473, 273], lamp: [302, 480], shelf: [373, 480], window: [478, 466], wall: [306, 480] };
+const ON_WALL = new Set(['shelf', 'window', 'wall']);
+function itemArt(ctx, W, H, slot, tier) {
+  const im = art(`int_igloo_${slot}_t${tier}`);
+  if (!im) return false;
+  const [bw, bh] = ITEM_T3[slot], top = slotBox(slot, 3), [x0, y0, x1, y1] = slotBox(slot, tier);
+  const k = Math.min(((top[2] - top[0]) * W) / bw, ((top[3] - top[1]) * H) / bh);
+  const cx = ((x0 + x1) / 2) * W;
+  if (ON_WALL.has(slot)) ctx.drawImage(im, cx - 256 * k, ((y0 + y1) / 2) * H - 256 * k, 512 * k, 512 * k);
+  else if (slot === 'lamp' && tier === 3) ctx.drawImage(im, cx - 256 * k, y0 * H - 16 * k, 512 * k, 512 * k);
+  else ctx.drawImage(im, cx - 256 * k, y1 * H - 496 * k, 512 * k, 512 * k);
+  return true;
+}
+
 export function drawRoom(ctx, W, H, t, { items = {}, highlight = null, highlightTier = 0, outfit = {} } = {}) {
   ctx.clearRect(0, 0, W, H);
+  const bg = art('room_igloo_bg');
+  if (bg) ctx.drawImage(bg, 0, 0, W, H);
+  else drawShell(ctx, W, H);
+  drawItems(ctx, W, H, t, items);
+  finishRoom(ctx, W, H, t, items, highlight, highlightTier, outfit);
+}
+
+// Kodla çizilen boş oda (görsel yoksa): buz kubbe, zemin, kapı tüneli.
+function drawShell(ctx, W, H) {
   // duvar: iglo kubbesi, buz blokları
   const wall = ctx.createLinearGradient(0, 0, 0, H);
   wall.addColorStop(0, '#cfe7fb');
@@ -55,19 +82,25 @@ export function drawRoom(ctx, W, H, t, { items = {}, highlight = null, highlight
   ctx.lineTo(W, H * 0.78);
   ctx.fill();
 
+}
+
+// Eşyalar arkadan öne: arka duvar → raf → yer → lamba. Görseli olan eşya görselle çizilir.
+function drawItems(ctx, W, H, t, items) {
+  const u = Math.min(W, H);
+  const code = { window: win, wall: wallDeco, shelf, rug, bed, lamp };
+  for (const slot of ['window', 'wall', 'shelf', 'rug', 'bed', 'lamp']) {
+    const tier = items[slot] || 0;
+    if (tier && !itemArt(ctx, W, H, slot, tier)) code[slot](ctx, W, H, u, tier, t);
+  }
+}
+
+function finishRoom(ctx, W, H, t, items, highlight, highlightTier, outfit) {
   const tier = s => items[s] || 0;
   const u = Math.min(W, H);
-  // arka duvar → raf → yer → lamba → Pofi
-  win(ctx, W, H, u, tier('window'), t);
-  wallDeco(ctx, W, H, u, tier('wall'), t);
-  shelf(ctx, W, H, u, tier('shelf'), t);
-  rug(ctx, W, H, u, tier('rug'));
-  bed(ctx, W, H, u, tier('bed'));
-  lamp(ctx, W, H, u, tier('lamp'), t);
 
   const px = W * (0.56 + 0.08 * Math.sin(t * 0.5)), face = Math.cos(t * 0.5) > 0 ? 1 : -1;
   const moving = Math.abs(Math.cos(t * 0.5)) > 0.2;
-  drawPofi(ctx, px, H * 0.92 - (moving ? Math.abs(Math.sin(t * 7)) * u * 0.01 : 0), u * 0.3, { face: moving ? face : 0, outfit, blink: (t % 3.4) < 0.12 });
+  drawPofi(ctx, px, H * 0.92 - (moving ? Math.abs(Math.sin(t * 7)) * u * 0.01 : 0), u * 0.25, { face: moving ? face : 0, outfit, blink: (t % 3.4) < 0.12 });
 
   // lamba yanınca oda ısınır
   const lt = tier('lamp');
@@ -103,6 +136,12 @@ export function drawRoom(ctx, W, H, t, { items = {}, highlight = null, highlight
 
 // Yuva listesindeki küçük resim: eşyayı kendi kutusuna sığdırıp ortalar.
 export function drawItemIcon(ctx, size, slot, tier, t = 0) {
+  const im = art(`int_igloo_${slot}_t${tier}`);
+  if (im) {
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(im, 0, 0, size, size);
+    return;
+  }
   const W = 300, H = 200, [x0, y0, x1, y1] = slotBox(slot, tier);
   const bw = (x1 - x0) * W, bh = (y1 - y0) * H, k = (size * 0.86) / Math.max(bw, bh);
   ctx.clearRect(0, 0, size, size);
