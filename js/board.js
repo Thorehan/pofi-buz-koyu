@@ -31,15 +31,21 @@ export function drawCrate(ctx, x, y, s, alpha = 1) {
   ctx.restore();
 }
 
-// Görseli olan karolar; rampa kodla çizilir (yönü görselde okunmuyor).
+// Görseli olan karolar (rampa ayrıca, döndürülerek çizilir).
 const TILE_ART = { [T.ICE]: 'tile_ice', [T.SNOW]: 'tile_snow', [T.ROCK]: 'tile_rock', [T.WATER]: 'tile_water', [T.CRACK]: 'tile_crack', [T.HOLE]: 'tile_hole', [T.MELT]: 'tile_melt' };
 
 function tileArt(ctx, t, x, y, s, g) {
-  const im = art(TILE_ART[t]);
+  const im = art(isRamp(t) ? 'tile_ramp' : TILE_ART[t]);
   if (!im) return false;
   ctx.save();
   roundRect(ctx, x + g, y + g, s - 2 * g, s - 2 * g, s * 0.14);
   ctx.clip();
+  // Rampa görseli sağa doğru yükselir; diğer yönler döndürülerek elde edilir.
+  if (isRamp(t)) {
+    ctx.translate(x + s / 2, y + s / 2);
+    ctx.rotate(((t - T.RAMP_RIGHT) * Math.PI) / 2);
+    ctx.translate(-(x + s / 2), -(y + s / 2));
+  }
   ctx.drawImage(im, x + g, y + g, s - 2 * g, s - 2 * g);
   ctx.restore();
   return true;
@@ -93,7 +99,7 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
     ctx.restore();
     return;
   }
-  if (t !== T.ICE && TILE_ART[t] && tileArt(ctx, t, x, y, s, g)) return;
+  if (t !== T.ICE && (TILE_ART[t] || isRamp(t)) && tileArt(ctx, t, x, y, s, g)) return;
   base();
   if (t === T.ROCK) {
     ctx.fillStyle = '#7d8aa0';
@@ -386,7 +392,7 @@ export class BoardView {
     for (const p of this.parts) { p.vy += 600 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
     this.hintT = Math.max(0, this.hintT - dt);
     this.squash = Math.max(0, this.squash - dt * 5);
-    this.brace = Math.max(0, this.brace - dt * 4);
+    this.brace = Math.max(0, this.brace - dt * 2.2);
     this.cheer = Math.max(0, this.cheer - dt);
     const a = this.anim;
     if (!a) return;
@@ -560,7 +566,7 @@ export class BoardView {
       ctx.translate(cx, cy);
       ctx.rotate(spin);
       drawPofi(ctx, 0, 0, size, {
-        face: a ? this.face : 0, lean: lean + wobble, squash: Math.max(this.squash, breathe), blink: blink && !this.cheer, happy: this.cheer > 0, outfit: this.outfit, wave: this.cheer > 0 ? 1 : lift * 0.8,
+        face: a ? this.face : 0, recover: this.brace > 0.15, lean: lean + wobble, squash: Math.max(this.squash, breathe), blink: blink && !this.cheer, happy: this.cheer > 0, outfit: this.outfit, wave: this.cheer > 0 ? 1 : lift * 0.8,
       });
       ctx.restore();
     }

@@ -26,7 +26,7 @@ const SCARF = { red: '#e5484d', blue: '#3d7bd9', green: '#3fae5a', yellow: '#f5b
 // Pofi: (x, y) ayakların ortası, size ≈ boy. o: { face: -1|0|1, lean, squash, blink, outfit, wave }
 export function drawPofi(ctx, x, y, size, o = {}) {
   const face = o.face || 0, squash = o.squash || 0, outfit = o.outfit || {};
-  const pose = o.happy ? 'happy' : face ? 'stand_side' : 'stand_front';
+  const pose = o.happy ? 'happy' : o.recover ? 'recover' : face ? 'stand_side' : 'stand_front';
   if (drawPofiArt(ctx, x, y, size, pose, { flip: face < 0, rot: o.lean, squash, outfit })) return;
   const s = size;
   ctx.save();
@@ -172,9 +172,8 @@ function scarfFill(ctx, scarf, s) {
 // (x, y) zemindeki orta nokta. t: sallanma için zaman.
 export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
   const s = size, outfit = o.outfit || {}, t = o.t || 0;
-  // Görselde yukarı kayış pozu yok: yukarı giderken son baktığı yöne doğru yan kayış kullanılır.
-  const flip = dir === 3 || (dir === 0 && o.face < 0);
-  if (drawPofiArt(ctx, x, y, size, dir === 2 ? 'slide_front' : 'slide_side', { flip, outfit })) return;
+  const pose = ['slide_back', 'slide_side', 'slide_front', 'slide_side'][dir];
+  if (drawPofiArt(ctx, x, y, size, pose, { flip: dir === 3, outfit })) return;
   ctx.save();
   ctx.translate(x, y);
   if (dir === 1 || dir === 3) {

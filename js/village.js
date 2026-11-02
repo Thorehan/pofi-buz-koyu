@@ -1,16 +1,15 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
 import { roundRect, circle, ellipse, drawPofi } from './draw.js';
-import { art, tinted } from './art.js';
+import { art, tinted, BLD } from './art.js';
 
-// Görseli gelen yapılar: [görselin piksel genişliği, köydeki genişlik (u cinsinden)] seviye başına.
-const IGLOO_ART = [[291, 0.25], [365, 0.28], [454, 0.3]];
-
-function igloArt(ctx, u, o) {
-  if (o.style !== 0) return false;
-  const id = 'bld_igloo_s0_lv' + o.lv;
-  const im = typeof o.col === 'string' && o.col.startsWith('#') ? tinted(id, o.col) : art(id);
+// Yapı görseli (varsa). Çağıran tuvali SCALE[lv] ile büyütmüş olur; görselde Lv1-3 büyümesi
+// zaten çizili olduğundan burada geri alınır, yalnızca Bölge 2'nin (Lv4-5) ek büyümesi kalır.
+function bldArt(ctx, u, id, o) {
+  if (!BLD[id]) return false;
+  const key = `bld_${id}_s${o.style}_lv${o.lv}`;
+  const im = typeof o.col === 'string' && o.col.startsWith('#') ? tinted(key, o.col) : art(key);
   if (!im) return false;
-  const [px, w] = IGLOO_ART[o.lv - 1], k = (u * w) / px;
+  const k = (u * BLD[id]) / 512 / SCALE[o.lv];
   // Taban görselin 496. satırında.
   ctx.drawImage(im, -256 * k, -496 * k, 512 * k, 512 * k);
   return true;
@@ -731,6 +730,23 @@ export class VillageView {
     ctx.scale(this.cam.z, this.cam.z);
     ctx.translate(-this.cam.x, -this.cam.y);
 
+    const skyArt = art('bg_sky'), ground = art('bg_ground'), aurora = art('bg_aurora');
+    if (skyArt && ground) {
+      // Katmanlı görsel: gökyüzü, (Lv5'ten itibaren) kuzey ışıkları, yol ve temelleri çizili zemin.
+      // Zemin, AT konumlarına göre çizildiği için tuvale birebir oturtulur.
+      ctx.drawImage(skyArt, 0, 0, W, H);
+      if (vl >= 5 && aurora) {
+        ctx.globalAlpha = Math.min(1, (vl >= 9 ? 0.75 : 0.5) + night * 0.4) * (0.85 + 0.15 * Math.sin(time * 0.8));
+        ctx.drawImage(aurora, 0, 0, W, H);
+        ctx.globalAlpha = 1;
+      }
+      if (vl >= 11) this.fireworks(ctx, W, H, u, time);
+      ctx.drawImage(ground, 0, 0, W, H);
+      if (night > 0) {
+        ctx.fillStyle = `rgba(20,26,70,${night * 0.35})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    } else {
     if (vl >= 5) this.aurora(time, W, H, u, vl >= 9 ? Math.max(night, 0.7) : night);
     if (vl >= 11) this.fireworks(ctx, W, H, u, time);
     ctx.fillStyle = night > 0.5 ? '#f3f0d0' : '#fff6d6';
@@ -760,6 +776,7 @@ export class VillageView {
     ctx.fill();
 
     this.paths(ctx, W, H, u, night, vl);
+    }
 
     if (vl >= 7) {
       // fok gölün kenarındaki buz kütlesinde dinlenir
@@ -803,7 +820,7 @@ export class VillageView {
           if (st.lv >= 4) auroraHalo(ctx, u, time + x);
           // Bölge 2 seviyeleri yapının kendi çizimini Lv3 ayrıntısıyla kullanır, üstüne süs ekler.
           const dopt = { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time };
-          if (!(id === 'igloo' && igloArt(ctx, u, dopt))) DRAW[id](ctx, u, dopt);
+          if (!bldArt(ctx, u, id, dopt)) DRAW[id](ctx, u, dopt);
           if (st.lv >= 4) sparkles(ctx, u, time + x, st.lv);
           ctx.restore();
         }]);
@@ -945,6 +962,15 @@ export class VillageView {
   }
 
   lights(ctx, x, y, u, W, o) {
+    const key = `bld_lights_s${o.style}_lv${o.lv}`;
+    const im = o.col ? tinted(key, o.col) : art(key);
+    if (im) {
+      // görselde ip 8. pikselden 1528. piksele uzanır, kancalar ≈ 50. satırda; fenerler arka sıradaki
+      // yapıların önüne sarkmasın diye ip kod çizimine göre biraz yukarı asılır
+      const k = (W * 0.72) / 1520;
+      ctx.drawImage(im, W * 0.14 - 8 * k, y - u * 0.07 - 50 * k, 1536 * k, 384 * k);
+      return;
+    }
     const strings = o.lv >= 2 ? 2 : 1;
     const pal = o.col ? [o.col] : [['#ffd166'], ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff', '#a46bff'], ['#9fe1ff', '#cfefff']][o.style];
     for (let s = 0; s < strings; s++) {
