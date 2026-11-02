@@ -10,11 +10,13 @@ function defaults() {
     flakes: 0, // kar tanesi: köy yapıları için
     hints: ECON.startHints,
     stars: {},
-    village: {}, // { binaId: seçili stil indeksi } — kurulu yapılar
+    village: {}, // { binaId: { lv, style, color } } — kurulu yapılar
     styles: {}, // { binaId: [açılmış stil indeksleri] }
+    colors: [], // açılmış renk kimlikleri (tüm yapılarda geçerli)
+    vlClaimed: 1, // ödülü alınmış en yüksek köy seviyesi
+    daily: { day: '', hints: 0, cont: 0 }, // günlük ücretsiz ipucu / +5 hamle sayaçları
     outfit: { hat: 'none', scarf: 'none' },
     owned: { hat: ['none'], scarf: ['none'] },
-    zoneRewardClaimed: false,
     cocoaTs: Date.now(),
     cocoaBank: 0,
     levelsSinceInter: 0,
@@ -33,9 +35,18 @@ function defaults() {
 export function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
-    if (s) return { ...defaults(), ...s };
+    if (s) return migrate({ ...defaults(), ...s });
   } catch { /* kayıt yok veya erişilemiyor */ }
   return defaults();
+}
+
+// v0.1 köy kaydı { id: stil } → v0.2 { id: { lv, style, color } }
+function migrate(s) {
+  for (const [id, v] of Object.entries(s.village)) {
+    if (typeof v === 'number') s.village[id] = { lv: 1, style: v, color: null };
+  }
+  delete s.zoneRewardClaimed;
+  return s;
 }
 
 export function save(s) {

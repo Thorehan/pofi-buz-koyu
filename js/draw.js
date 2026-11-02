@@ -102,8 +102,31 @@ export function drawPofi(ctx, x, y, size, o = {}) {
   // şapka
   const hat = outfit.hat;
   const top = -s * 0.8;
-  if (hat === 'beanieRed' || hat === 'beanieBlue') {
-    const c = hat === 'beanieRed' ? '#e5484d' : '#3d7bd9';
+  if (hat === 'sealhood') {
+    ctx.fillStyle = '#8f9bb0';
+    ctx.beginPath();
+    ctx.ellipse(0, -s * 0.62, s * 0.36, s * 0.3, 0, Math.PI * 1.02, Math.PI * 1.98);
+    ctx.fill();
+    ctx.fillStyle = '#1b1b24';
+    for (const ex of [-1, 1]) { circle(ctx, ex * s * 0.1, top - s * 0.06, s * 0.03); ctx.fill(); }
+    ctx.fillStyle = '#5b6578';
+    ellipse(ctx, 0, top, s * 0.05, s * 0.03);
+    ctx.fill();
+    ctx.strokeStyle = '#5b6578';
+    ctx.lineWidth = s * 0.012;
+    for (const ex of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(ex * s * 0.05, top + s * 0.01);
+      ctx.lineTo(ex * s * 0.16, top - s * 0.01);
+      ctx.stroke();
+    }
+  } else if (hat === 'beanieRed' || hat === 'beanieBlue' || hat === 'north') {
+    let c = hat === 'beanieRed' ? '#e5484d' : '#3d7bd9';
+    if (hat === 'north') {
+      c = ctx.createLinearGradient(-s * 0.27, 0, s * 0.27, 0);
+      c.addColorStop(0, '#3cdc9a');
+      c.addColorStop(1, '#8f5bd6');
+    }
     ctx.fillStyle = c;
     ctx.beginPath();
     ctx.ellipse(0, top + s * 0.04, s * 0.27, s * 0.2, 0, Math.PI, 0);

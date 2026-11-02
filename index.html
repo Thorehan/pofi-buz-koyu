@@ -115,17 +115,14 @@
 
   <!-- Köy -->
   <section id="screenVillage" class="screen page hidden">
-    <div class="garden-head">
-      <h2 id="zoneName" class="page-title">Buzul Koyu</h2>
-      <div class="progress"><div id="zoneBar"></div></div>
-    </div>
-    <div class="garden-wrap"><canvas id="village"></canvas></div>
+    <div class="garden-wrap"><canvas id="village"></canvas><span id="zoneName" class="zone-tag"></span></div>
+    <div id="vlCard" class="vl-card"></div>
     <div class="honey">
       <span class="honey-label">Kakao standı <b id="cocoaAmt">0</b><small id="cocoaRate"></small></span>
       <button id="btnCocoa" class="btn green">Topla</button>
       <button id="btnCocoa2" class="btn primary ad">x2</button>
     </div>
-    <ul id="buildList" class="tasks"></ul>
+    <div id="buildList" class="build-grid"></div>
   </section>
 
   <!-- Gardırop -->
@@ -137,6 +134,7 @@
       <button class="seg-btn" data-cat="scarf">Atkı</button>
     </div>
     <div id="wardrobeList" class="wardrobe-grid"></div>
+    <div id="wardrobeAction" class="w-action"></div>
   </section>
 
   <!-- Mağaza -->
@@ -188,6 +186,9 @@
       <span>Ayarlar</span>
     </button>
   </nav>
+
+  <!-- Köy yapı paneli: köy sahnesi üstte görünür kalır, seçimler sahnede önizlenir -->
+  <div id="sheet" class="sheet hidden"></div>
 
   <div id="overlay" class="overlay hidden"><div id="overlayCard" class="card"></div></div>
   <div id="adLayer" class="adlayer hidden"></div>

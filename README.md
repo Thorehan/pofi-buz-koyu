@@ -8,7 +8,8 @@ Pofi'yi kaydır, bir şeye çarpana kadar kaysın. Tüm balıkları topla, kazan
 - **Kaydır** (masaüstünde ok tuşları / WASD): Pofi o yönde bir şeye çarpana kadar kayar.
 - **Neden-sonuç:** Kasaya çarpınca kasa da kayar. Suya düşen kasa köprü olur. Çatlak buz arkanda kırılır. Kol kapıları açıp kapatır. Oklar yön değiştirir.
 - **Geri al** sınırsız ve ücretsiz (Z / Backspace). **İpucu** bulunduğun yerden en kısa çözümün sıradaki hamlesini gösterir.
-- **Köy:** Her level 1 kar tanesi verir. 8 yapı var, her birinin 3 stili var.
+- **Köy:** Her level 1 kar tanesi verir, 3 yıldız +1 daha. 12 yapı Lv1'den Lv3'e yükselir; her seviye görünümü güzelleştirir ve yapının buff'ını büyütür. Toplam yapı seviyesi köy seviyesini belirler. Her köy seviyesi yeni bir görsel, coin bonusu ve ödül sandığı verir.
+- **Önizlemeli satın alma:** Stil, renk ve kıyafetler önce sahnede denenir, beğenilirse alınır.
 - **Gardırop:** Şapka ve atkı; seçilen kıyafet oyunda da görünür.
 
 ## Yerelde çalıştırma
@@ -30,7 +31,8 @@ node tools/gen-levels.mjs 200
 | `js/engine.js` | Kayma kuralları, BFS çözücü, level üreticisi (tarayıcı + Node) |
 | `js/board.js` | Tahta çizimi, kayma animasyonu, kaydırma/klavye girdisi |
 | `js/draw.js` | Pofi karakteri (kıyafetleriyle) ve balık çizimi |
-| `js/village.js` | Pofi'nin köyü: 8 yapı × 3 stil |
+| `js/village.js` | Pofi'nin köyü: 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesi efektleri, kamera |
+| `js/meta.js` | Köy hesapları: yapı seviyeleri, buff'lar, köy seviyesi, indirimler |
 | `js/main.js` | Ekranlar ve oyun akışı |
 | `js/sound.js` | Web Audio ile üretilen sesler |
 | `js/ads.js` | Reklam simülasyonu + analitik (gerçek SDK burada bağlanacak) |

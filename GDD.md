@@ -123,7 +123,7 @@ Köy seviyesi, bütün yapıların seviyelerinin toplamından hesaplanır. Her s
 2. **Kalıcı buff**
 3. **Tek seferlik ödül sandığı**
 
-**Köy bonusu:** Her köy seviyesi bütün coin kazançlarına kalıcı **+%3** ekler. Bu bonus sonuç ekranında "Köy bonusu +%12" gibi görünür. Ayrıca her köy seviyesi hamle limitli levellerde +1 hamle hakkı verir.
+**Köy bonusu:** Her köy seviyesi bütün level coin'lerine kalıcı **+%3** ekler. Bu bonus sonuç ekranında "Köy bonusu +%12" gibi görünür. Ek hamle buff'ı yalnızca kardan adamdadır; köy seviyesi hamle vermez, aksi halde zor levellerdeki hamle limiti anlamını yitirir.
 
 | Köy Lv | Gereken toplam yapı seviyesi | Görsel | Ödül |
 |---|---|---|---|
@@ -194,7 +194,7 @@ Damla Bahçesi'nde doğrulanan model aynen geçerli:
 
 | Faz | İçerik | Neden bu sırada |
 |---|---|---|
-| **Faz 1 · Köy derinliği** | Yapı seviyeleri (Lv1–3, her seviyede yeni görünüm), yapı buff'ları, köy seviyesi + kutlama + ödül sandığı, 4 yeni yapı, 3 yıldıza +1 ❄, **önizlemeli satın alma** (köy stilleri, renk paleti, gardırop) | Meta şu an ~20. levelde bitiyor. Retention'ı en çok bu etkiler. |
+| **Faz 1 · Köy derinliği** ✅ | Yapı seviyeleri (Lv1–3, her seviyede yeni görünüm), yapı buff'ları, köy seviyesi + kutlama + ödül sandığı, 4 yeni yapı, 3 yıldıza +1 ❄, **önizlemeli satın alma** (köy stilleri, renk paleti, gardırop) | Meta şu an ~20. levelde bitiyor. Retention'ı en çok bu etkiler. |
 | **Faz 2 · Rampa** | Rampa mekaniği, levelleri 300'e çıkarma, yeni "YENİ" kartı ve sesler | 61. levelden sonra yeni mekanik yok; oyuncu 60'ı geçince bu eksik hissedilir. |
 | **Faz 3 · Derinlik** | Buz delikleri, eriyen kar, fok, sıralı balık; Bölge 2 "Kuzey Işıkları" (Lv5'e kadar yapılar) | Uzun vadeli içerik |
 | **Faz 4 · Canlı operasyon** | Haftalık etkinlik, köy ziyareti (arkadaşın köyünü görme), sezon kıyafetleri | Sosyal ve sezonluk geri dönüş |
