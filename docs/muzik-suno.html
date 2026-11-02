@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pofi Müzik Listesi</title>
+<meta name="description" content="Pofi: Buz Köyü için 16 müzik parçası: Suno AI başlık ve stil promptları, kopyalama tuşlarıyla.">
+<!-- WhatsApp ve diğer uygulamalarda bağlantı önizlemesi -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Pofi: Buz Köyü · Müzik Listesi">
+<meta property="og:description" content="16 parça için Suno AI başlık ve stil promptları. Her metin tek tuşla kopyalanır.">
+<meta property="og:url" content="https://thorehan.github.io/pofi-buz-koyu/docs/muzik-suno.html">
+<meta property="og:image" content="https://thorehan.github.io/pofi-buz-koyu/docs/og-muzik.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -82,6 +92,19 @@
   th { color: var(--soft); font-weight: 600; }
   code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
   .warn { border-left: 4px solid var(--p1); }
+  /* JavaScript çalışmayan önizlemelerde (WhatsApp/iOS dosya önizlemesi) işlemeyen tuşları gizle */
+  .copy, .js-only, .chip { display: none; }
+  .js .copy { display: inline-block; }
+  .js .js-only { display: inline-flex; }
+  .js .chip { display: inline-block; }
+  .js .nojs-tip { display: none; }
+  .nojs-tip { background: var(--field); border: 1px dashed var(--line); border-radius: 12px; padding: 8px 12px; color: var(--soft); font-size: 14px; }
+  .track[hidden] { display: none; }
+  @media print {
+    .copy, .toolbar, .done-toggle { display: none !important; }
+    body { background: #fff; color: #000; }
+    .track, .box { break-inside: avoid; }
+  }
   @media (max-width: 520px) {
     .wrap { padding: 16px 12px 48px; }
     h1 { font-size: 25px; }
@@ -93,6 +116,7 @@
 <div class="wrap">
   <h1>Pofi: Buz Köyü · Müzik Listesi</h1>
   <p class="lead">Suno AI için başlık ve stil promptları. Her metnin yanındaki tuş, metni olduğu gibi panoya kopyalar. Ses efektleri oyunda kodla üretiliyor; bu liste yalnızca müzik içindir.</p>
+  <p class="nojs-tip">Bu önizlemede kopyalama tuşları görünmüyor. Metne basılı tutup kopyalayabilir ya da dosyayı tarayıcıda açabilirsin. Güncel sürüm: thorehan.github.io/pofi-buz-koyu/docs/muzik-suno.html</p>
 
   <div class="box">
     <b>Suno'da nasıl girilir</b>
@@ -123,9 +147,202 @@
     <button class="chip" data-filter="1" aria-pressed="false">Öncelik 1</button>
     <button class="chip" data-filter="2" aria-pressed="false">Öncelik 2</button>
     <button class="chip" data-filter="3" aria-pressed="false">Öncelik 3</button>
-    <span class="count" id="count"></span>
+    <span class="count" id="count">16 parça</span>
   </div>
-  <div id="list"></div>
+  <div id="list">
+      <article class="track" data-p="1" data-id="menu_main">
+        <div class="head">
+          <h3>Pofi&#39;nin Sabahı</h3>
+          <span class="tag p1">Öncelik 1</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="menu_main"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Ana ekran, tanıtım, gardırop, mağaza, ayarlar. Oyunun ana teması. · <b>Süre:</b> 1:30–2:30 · <b>Dosya:</b> <code>menu_main.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Pofi&#39;nin Sabahı">Kopyala</button></div><div class="text">Pofi&#39;nin Sabahı</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, cozy wintery casual mobile game main theme, 96 BPM, C major, bright and warm, marimba and glockenspiel lead a simple hummable 5-note pentatonic melody, celesta sparkles, pizzicato strings, soft felt piano chords, round warm bass, light brushed drums, gentle sleigh bells, playful and optimistic, clean modern mix, loop-friendly, no fade-out ending">Kopyala</button></div><div class="text">Instrumental, cozy wintery casual mobile game main theme, 96 BPM, C major, bright and warm, marimba and glockenspiel lead a simple hummable 5-note pentatonic melody, celesta sparkles, pizzicato strings, soft felt piano chords, round warm bass, light brushed drums, gentle sleigh bells, playful and optimistic, clean modern mix, loop-friendly, no fade-out ending</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, sad, minor key">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, sad, minor key</div></div>
+      </article>
+      <article class="track" data-p="1" data-id="game_glacier">
+        <div class="head">
+          <h3>Buzda Düşünceler</h3>
+          <span class="tag p1">Öncelik 1</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="game_glacier"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Oyun ekranı, Level 1–60 (buz, kar, kasa, su, çatlak, kol, ok). · <b>Süre:</b> 2:00–3:00 · <b>Dosya:</b> <code>game_glacier.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Buzda Düşünceler">Kopyala</button></div><div class="text">Buzda Düşünceler</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, calm focus puzzle game background loop, 86 BPM, F major, soft marimba arpeggios, music box and celesta melody using a gentle pentatonic motif, warm airy pad, light pizzicato, soft shaker and soft kick, minimal and unobtrusive so the player can think, steady groove, icy and cozy, no big changes, seamless loop">Kopyala</button></div><div class="text">Instrumental, calm focus puzzle game background loop, 86 BPM, F major, soft marimba arpeggios, music box and celesta melody using a gentle pentatonic motif, warm airy pad, light pizzicato, soft shaker and soft kick, minimal and unobtrusive so the player can think, steady groove, icy and cozy, no big changes, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, build-ups, sudden tempo changes, loud percussion">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, build-ups, sudden tempo changes, loud percussion</div></div>
+      </article>
+      <article class="track" data-p="1" data-id="village_day">
+        <div class="head">
+          <h3>Buzul Koyu</h3>
+          <span class="tag p1">Öncelik 1</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="village_day"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Köy ekranı, Bölge 1 (gündüz). Yapı kurma ve süsleme anı. · <b>Süre:</b> 1:30–2:30 · <b>Dosya:</b> <code>village_day.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Buzul Koyu">Kopyala</button></div><div class="text">Buzul Koyu</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, cozy village building theme for a winter mobile game, 100 BPM, C major, fingerpicked acoustic guitar, soft accordion-like reed, marimba, pizzicato strings, sleigh bells, warm bass, gentle hand percussion, homely and happy, feeling of building a little snowy village with friends, seamless loop">Kopyala</button></div><div class="text">Instrumental, cozy village building theme for a winter mobile game, 100 BPM, C major, fingerpicked acoustic guitar, soft accordion-like reed, marimba, pizzicato strings, sleigh bells, warm bass, gentle hand percussion, homely and happy, feeling of building a little snowy village with friends, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, sad, epic orchestra">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, sad, epic orchestra</div></div>
+      </article>
+      <article class="track" data-p="2" data-id="game_ramp">
+        <div class="head">
+          <h3>Kaygan Yollar</h3>
+          <span class="tag p2">Öncelik 2</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="game_ramp"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Oyun ekranı, Level 61–135 (rampa, buz delikleri, eriyen kar, fok, sıralı balık). · <b>Süre:</b> 2:00–3:00 · <b>Dosya:</b> <code>game_ramp.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Kaygan Yollar">Kopyala</button></div><div class="text">Kaygan Yollar</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, bouncy playful puzzle game loop, 104 BPM, G major, staccato marimba and xylophone, plucked ukulele, pizzicato strings, glockenspiel accents, bubbly synth bass, crisp light percussion with soft claps, feeling of sliding and jumping on ice, cheerful but not hectic, keeps focus, seamless loop">Kopyala</button></div><div class="text">Instrumental, bouncy playful puzzle game loop, 104 BPM, G major, staccato marimba and xylophone, plucked ukulele, pizzicato strings, glockenspiel accents, bubbly synth bass, crisp light percussion with soft claps, feeling of sliding and jumping on ice, cheerful but not hectic, keeps focus, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, frantic tempo">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, frantic tempo</div></div>
+      </article>
+      <article class="track" data-p="2" data-id="game_aurora">
+        <div class="head">
+          <h3>Kuzey Işıkları Altında</h3>
+          <span class="tag p2">Öncelik 2</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="game_aurora"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Oyun ekranı, Level 136+ (bütün mekanikler karışık). · <b>Süre:</b> 2:00–3:00 · <b>Dosya:</b> <code>game_aurora.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Kuzey Işıkları Altında">Kopyala</button></div><div class="text">Kuzey Işıkları Altında</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, dreamy winter night puzzle loop, 80 BPM, D major with a lydian color, shimmering celesta and vibraphone, soft electric piano, airy synth pads like northern lights, glassy bells, subtle sub bass, soft brushed beat, magical and calm, spacious reverb, seamless loop">Kopyala</button></div><div class="text">Instrumental, dreamy winter night puzzle loop, 80 BPM, D major with a lydian color, shimmering celesta and vibraphone, soft electric piano, airy synth pads like northern lights, glassy bells, subtle sub bass, soft brushed beat, magical and calm, spacious reverb, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, harsh synths">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, harsh synths</div></div>
+      </article>
+      <article class="track" data-p="2" data-id="village_aurora">
+        <div class="head">
+          <h3>Kuzey Işıkları Köyü</h3>
+          <span class="tag p2">Öncelik 2</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="village_aurora"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Köy ekranı, Bölge 2 (gece, kuzey ışıkları, fenerler). · <b>Süre:</b> 1:30–2:30 · <b>Dosya:</b> <code>village_aurora.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Kuzey Işıkları Köyü">Kopyala</button></div><div class="text">Kuzey Işıkları Köyü</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, nighttime festive winter village theme, 88 BPM, F major, music box melody, celesta, warm strings, soft wordless synth pad, distant sleigh bells, gentle harp glissandos, magical aurora night, cozy and full of wonder, seamless loop">Kopyala</button></div><div class="text">Instrumental, nighttime festive winter village theme, 88 BPM, F major, music box melody, celesta, warm strings, soft wordless synth pad, distant sleigh bells, gentle harp glissandos, magical aurora night, cozy and full of wonder, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, christmas carol, sad">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, christmas carol, sad</div></div>
+      </article>
+      <article class="track" data-p="2" data-id="game_hard">
+        <div class="head">
+          <h3>Son Hamle</h3>
+          <span class="tag p2">Öncelik 2</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="game_hard"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Zor ve çok zor leveller (hamle limitli). Hafif gerilim, yine sevimli. · <b>Süre:</b> 1:30–2:30 · <b>Dosya:</b> <code>game_hard.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Son Hamle">Kopyala</button></div><div class="text">Son Hamle</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, light tension puzzle loop for hard levels, 112 BPM, A minor lifting to C major, ticking woodblock and pizzicato ostinato, marimba riff, staccato strings, soft low tom pulse, curious and focused, still cute and family friendly, not scary, seamless loop">Kopyala</button></div><div class="text">Instrumental, light tension puzzle loop for hard levels, 112 BPM, A minor lifting to C major, ticking woodblock and pizzicato ostinato, marimba riff, staccato strings, soft low tom pulse, curious and focused, still cute and family friendly, not scary, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, epic trailer hits, scary">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, epic trailer hits, scary</div></div>
+      </article>
+      <article class="track" data-p="2" data-id="daily_puzzle">
+        <div class="head">
+          <h3>Günün Bulmacası</h3>
+          <span class="tag p2">Öncelik 2</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="daily_puzzle"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Günlük bulmaca levelinde. · <b>Süre:</b> 1:30–2:30 · <b>Dosya:</b> <code>daily_puzzle.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Günün Bulmacası">Kopyala</button></div><div class="text">Günün Bulmacası</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, relaxed morning coffee puzzle music, 92 BPM, B-flat major, jazzy felt piano, brushed snare, light walking upright bass, vibraphone melody, soft glockenspiel, cozy little cafe in the snow, seamless loop">Kopyala</button></div><div class="text">Instrumental, relaxed morning coffee puzzle music, 92 BPM, B-flat major, jazzy felt piano, brushed snare, light walking upright bass, vibraphone melody, soft glockenspiel, cozy little cafe in the snow, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, saxophone solo">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, saxophone solo</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="event_fish">
+        <div class="head">
+          <h3>Balık Festivali</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="event_fish"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Haftalık etkinlik: Balık Festivali haftasında ana ekran ve etkinlik ekranı. · <b>Süre:</b> 1:00–2:00 · <b>Dosya:</b> <code>event_fish.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Balık Festivali">Kopyala</button></div><div class="text">Balık Festivali</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, cheerful festival loop, 116 BPM, G major, steel drum and marimba, ukulele strums, playful brass stabs, bouncy bass, handclaps, sunny fishing festival on the ice, fun and lively, seamless loop">Kopyala</button></div><div class="text">Instrumental, cheerful festival loop, 116 BPM, G major, steel drum and marimba, ukulele strums, playful brass stabs, bouncy bass, handclaps, sunny fishing festival on the ice, fun and lively, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="event_flake">
+        <div class="head">
+          <h3>Kar Tanesi Avı</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="event_flake"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Haftalık etkinlik: Kar Tanesi Avı haftası. · <b>Süre:</b> 1:00–2:00 · <b>Dosya:</b> <code>event_flake.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Kar Tanesi Avı">Kopyala</button></div><div class="text">Kar Tanesi Avı</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, sparkling treasure hunt loop, 108 BPM, E major, glockenspiel and celesta runs, pizzicato strings, twinkling wind chimes, light synth arpeggio, crisp percussion, curious and magical, seamless loop">Kopyala</button></div><div class="text">Instrumental, sparkling treasure hunt loop, 108 BPM, E major, glockenspiel and celesta runs, pizzicato strings, twinkling wind chimes, light synth arpeggio, crisp percussion, curious and magical, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="event_sled">
+        <div class="head">
+          <h3>Kızak Yarışı</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="event_sled"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Haftalık etkinlik: Kızak Yarışı haftası. · <b>Süre:</b> 1:00–2:00 · <b>Dosya:</b> <code>event_sled.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Kızak Yarışı">Kopyala</button></div><div class="text">Kızak Yarışı</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, energetic cartoon winter race loop, 128 BPM, D major, driving sleigh bells, galloping rhythm, bright brass stabs, fast pizzicato strings, upbeat drums, exciting but friendly, racing down a snowy hill, seamless loop">Kopyala</button></div><div class="text">Instrumental, energetic cartoon winter race loop, 128 BPM, D major, driving sleigh bells, galloping rhythm, bright brass stabs, fast pizzicato strings, upbeat drums, exciting but friendly, racing down a snowy hill, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="event_aurora">
+        <div class="head">
+          <h3>Kuzey Işığı Haftası</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Döngü</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="event_aurora"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Haftalık etkinlik: Kuzey Işığı Haftası. · <b>Süre:</b> 1:00–2:00 · <b>Dosya:</b> <code>event_aurora.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Kuzey Işığı Haftası">Kopyala</button></div><div class="text">Kuzey Işığı Haftası</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, wondrous celebration loop, 96 BPM, A major, shimmering synth pads, celesta, harp arpeggios, soft four-on-the-floor beat, glassy bells, uplifting and magical, seamless loop">Kopyala</button></div><div class="text">Instrumental, wondrous celebration loop, 96 BPM, A major, shimmering synth pads, celesta, harp arpeggios, soft four-on-the-floor beat, glassy bells, uplifting and magical, seamless loop</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="jingle_win">
+        <div class="head">
+          <h3>Kusursuz!</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Kısa jingle</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="jingle_win"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Level bitince, sonuç ekranı açılırken. · <b>Süre:</b> ilk 3–5 sn kullanılır · <b>Dosya:</b> <code>jingle_win.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Kusursuz!">Kopyala</button></div><div class="text">Kusursuz!</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, short bright victory jingle at the very start, rising marimba and glockenspiel arpeggio, sparkling chimes, happy final chord in C major, cartoon puzzle game level complete fanfare">Kopyala</button></div><div class="text">Instrumental, short bright victory jingle at the very start, rising marimba and glockenspiel arpeggio, sparkling chimes, happy final chord in C major, cartoon puzzle game level complete fanfare</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, long intro">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, long intro</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="jingle_levelup">
+        <div class="head">
+          <h3>Köy Büyüdü!</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Kısa jingle</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="jingle_levelup"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Köy seviyesi atlayınca, kutlama ekranında. · <b>Süre:</b> ilk 5–7 sn kullanılır · <b>Dosya:</b> <code>jingle_levelup.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Köy Büyüdü!">Kopyala</button></div><div class="text">Köy Büyüdü!</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, short celebratory fanfare at the very start, warm brass and strings with glockenspiel, timpani roll, triumphant and cozy, village level up, big happy final chord">Kopyala</button></div><div class="text">Instrumental, short celebratory fanfare at the very start, warm brass and strings with glockenspiel, timpani roll, triumphant and cozy, village level up, big happy final chord</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, long intro">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, long intro</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="jingle_fail">
+        <div class="head">
+          <h3>Bir Daha Dene</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Kısa jingle</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="jingle_fail"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> &quot;Hamlen bitti&quot; ekranında. · <b>Süre:</b> ilk 2–4 sn kullanılır · <b>Dosya:</b> <code>jingle_fail.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Bir Daha Dene">Kopyala</button></div><div class="text">Bir Daha Dene</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, short gentle try-again jingle at the very start, descending marimba notes, soft muted trombone wah, playful and encouraging, not sad, cartoon">Kopyala</button></div><div class="text">Instrumental, short gentle try-again jingle at the very start, descending marimba notes, soft muted trombone wah, playful and encouraging, not sad, cartoon</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, sad, long intro">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, sad, long intro</div></div>
+      </article>
+      <article class="track" data-p="3" data-id="splash_funday">
+        <div class="head">
+          <h3>Funday Morning</h3>
+          <span class="tag p3">Öncelik 3</span>
+          <span class="tag kind">Kısa jingle</span>
+          <label class="done-toggle js-only"><input type="checkbox" data-done="splash_funday"> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> Açılıştaki Funday Morning logo ekranı ve &quot;sunar&quot; anı. · <b>Süre:</b> ilk 4–6 sn kullanılır · <b>Dosya:</b> <code>splash_funday.mp3</code></div>
+        <div class="field"><div class="label"><span>Başlık (Title)</span><button class="copy" type="button" data-copy="Funday Morning">Kopyala</button></div><div class="text">Funday Morning</div></div>
+        <div class="field"><div class="label"><span>Stil promptu (Style of Music)</span><button class="copy" type="button" data-copy="Instrumental, short sunrise logo sting at the very start, warm rising pad, bright bell chime, soft whoosh, joyful morning sunrise feeling, ends on a sparkling major chord">Kopyala</button></div><div class="text">Instrumental, short sunrise logo sting at the very start, warm rising pad, bright bell chime, soft whoosh, joyful morning sunrise feeling, ends on a sparkling major chord</div></div>
+        <div class="field"><div class="label"><span>Hariç tut (Exclude Styles)</span><button class="copy" type="button" data-copy="vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, long intro">Kopyala</button></div><div class="text">vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive, long intro</div></div>
+      </article>
+    </div>
 
   <h2>Teslim ve oyuna ekleme</h2>
   <div class="box">
@@ -141,159 +358,29 @@
 </div>
 
 <script>
-  // Her parça: id (dosya adı), başlık, stil, hariç tut, nerede çalar, süre, tür, öncelik.
-  const EXCLUDE_BASE = 'vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive';
-  const TRACKS = [
-    {
-      id: 'menu_main', p: 1, kind: 'Döngü', len: '1:30–2:30',
-      title: "Pofi'nin Sabahı",
-      use: 'Ana ekran, tanıtım, gardırop, mağaza, ayarlar. Oyunun ana teması.',
-      style: 'Instrumental, cozy wintery casual mobile game main theme, 96 BPM, C major, bright and warm, marimba and glockenspiel lead a simple hummable 5-note pentatonic melody, celesta sparkles, pizzicato strings, soft felt piano chords, round warm bass, light brushed drums, gentle sleigh bells, playful and optimistic, clean modern mix, loop-friendly, no fade-out ending',
-      exclude: EXCLUDE_BASE + ', sad, minor key',
-    },
-    {
-      id: 'game_glacier', p: 1, kind: 'Döngü', len: '2:00–3:00',
-      title: 'Buzda Düşünceler',
-      use: 'Oyun ekranı, Level 1–60 (buz, kar, kasa, su, çatlak, kol, ok).',
-      style: 'Instrumental, calm focus puzzle game background loop, 86 BPM, F major, soft marimba arpeggios, music box and celesta melody using a gentle pentatonic motif, warm airy pad, light pizzicato, soft shaker and soft kick, minimal and unobtrusive so the player can think, steady groove, icy and cozy, no big changes, seamless loop',
-      exclude: EXCLUDE_BASE + ', build-ups, sudden tempo changes, loud percussion',
-    },
-    {
-      id: 'village_day', p: 1, kind: 'Döngü', len: '1:30–2:30',
-      title: 'Buzul Koyu',
-      use: 'Köy ekranı, Bölge 1 (gündüz). Yapı kurma ve süsleme anı.',
-      style: 'Instrumental, cozy village building theme for a winter mobile game, 100 BPM, C major, fingerpicked acoustic guitar, soft accordion-like reed, marimba, pizzicato strings, sleigh bells, warm bass, gentle hand percussion, homely and happy, feeling of building a little snowy village with friends, seamless loop',
-      exclude: EXCLUDE_BASE + ', sad, epic orchestra',
-    },
-    {
-      id: 'game_ramp', p: 2, kind: 'Döngü', len: '2:00–3:00',
-      title: 'Kaygan Yollar',
-      use: 'Oyun ekranı, Level 61–135 (rampa, buz delikleri, eriyen kar, fok, sıralı balık).',
-      style: 'Instrumental, bouncy playful puzzle game loop, 104 BPM, G major, staccato marimba and xylophone, plucked ukulele, pizzicato strings, glockenspiel accents, bubbly synth bass, crisp light percussion with soft claps, feeling of sliding and jumping on ice, cheerful but not hectic, keeps focus, seamless loop',
-      exclude: EXCLUDE_BASE + ', frantic tempo',
-    },
-    {
-      id: 'game_aurora', p: 2, kind: 'Döngü', len: '2:00–3:00',
-      title: 'Kuzey Işıkları Altında',
-      use: 'Oyun ekranı, Level 136+ (bütün mekanikler karışık).',
-      style: 'Instrumental, dreamy winter night puzzle loop, 80 BPM, D major with a lydian color, shimmering celesta and vibraphone, soft electric piano, airy synth pads like northern lights, glassy bells, subtle sub bass, soft brushed beat, magical and calm, spacious reverb, seamless loop',
-      exclude: EXCLUDE_BASE + ', harsh synths',
-    },
-    {
-      id: 'village_aurora', p: 2, kind: 'Döngü', len: '1:30–2:30',
-      title: 'Kuzey Işıkları Köyü',
-      use: 'Köy ekranı, Bölge 2 (gece, kuzey ışıkları, fenerler).',
-      style: 'Instrumental, nighttime festive winter village theme, 88 BPM, F major, music box melody, celesta, warm strings, soft wordless synth pad, distant sleigh bells, gentle harp glissandos, magical aurora night, cozy and full of wonder, seamless loop',
-      exclude: EXCLUDE_BASE + ', christmas carol, sad',
-    },
-    {
-      id: 'game_hard', p: 2, kind: 'Döngü', len: '1:30–2:30',
-      title: 'Son Hamle',
-      use: 'Zor ve çok zor leveller (hamle limitli). Hafif gerilim, yine sevimli.',
-      style: 'Instrumental, light tension puzzle loop for hard levels, 112 BPM, A minor lifting to C major, ticking woodblock and pizzicato ostinato, marimba riff, staccato strings, soft low tom pulse, curious and focused, still cute and family friendly, not scary, seamless loop',
-      exclude: EXCLUDE_BASE + ', epic trailer hits, scary',
-    },
-    {
-      id: 'daily_puzzle', p: 2, kind: 'Döngü', len: '1:30–2:30',
-      title: 'Günün Bulmacası',
-      use: 'Günlük bulmaca levelinde.',
-      style: 'Instrumental, relaxed morning coffee puzzle music, 92 BPM, B-flat major, jazzy felt piano, brushed snare, light walking upright bass, vibraphone melody, soft glockenspiel, cozy little cafe in the snow, seamless loop',
-      exclude: EXCLUDE_BASE + ', saxophone solo',
-    },
-    {
-      id: 'event_fish', p: 3, kind: 'Döngü', len: '1:00–2:00',
-      title: 'Balık Festivali',
-      use: 'Haftalık etkinlik: Balık Festivali haftasında ana ekran ve etkinlik ekranı.',
-      style: 'Instrumental, cheerful festival loop, 116 BPM, G major, steel drum and marimba, ukulele strums, playful brass stabs, bouncy bass, handclaps, sunny fishing festival on the ice, fun and lively, seamless loop',
-      exclude: EXCLUDE_BASE,
-    },
-    {
-      id: 'event_flake', p: 3, kind: 'Döngü', len: '1:00–2:00',
-      title: 'Kar Tanesi Avı',
-      use: 'Haftalık etkinlik: Kar Tanesi Avı haftası.',
-      style: 'Instrumental, sparkling treasure hunt loop, 108 BPM, E major, glockenspiel and celesta runs, pizzicato strings, twinkling wind chimes, light synth arpeggio, crisp percussion, curious and magical, seamless loop',
-      exclude: EXCLUDE_BASE,
-    },
-    {
-      id: 'event_sled', p: 3, kind: 'Döngü', len: '1:00–2:00',
-      title: 'Kızak Yarışı',
-      use: 'Haftalık etkinlik: Kızak Yarışı haftası.',
-      style: 'Instrumental, energetic cartoon winter race loop, 128 BPM, D major, driving sleigh bells, galloping rhythm, bright brass stabs, fast pizzicato strings, upbeat drums, exciting but friendly, racing down a snowy hill, seamless loop',
-      exclude: EXCLUDE_BASE,
-    },
-    {
-      id: 'event_aurora', p: 3, kind: 'Döngü', len: '1:00–2:00',
-      title: 'Kuzey Işığı Haftası',
-      use: 'Haftalık etkinlik: Kuzey Işığı Haftası.',
-      style: 'Instrumental, wondrous celebration loop, 96 BPM, A major, shimmering synth pads, celesta, harp arpeggios, soft four-on-the-floor beat, glassy bells, uplifting and magical, seamless loop',
-      exclude: EXCLUDE_BASE,
-    },
-    {
-      id: 'jingle_win', p: 3, kind: 'Kısa jingle', len: 'ilk 3–5 sn kullanılır',
-      title: 'Kusursuz!',
-      use: 'Level bitince, sonuç ekranı açılırken.',
-      style: 'Instrumental, short bright victory jingle at the very start, rising marimba and glockenspiel arpeggio, sparkling chimes, happy final chord in C major, cartoon puzzle game level complete fanfare',
-      exclude: EXCLUDE_BASE + ', long intro',
-    },
-    {
-      id: 'jingle_levelup', p: 3, kind: 'Kısa jingle', len: 'ilk 5–7 sn kullanılır',
-      title: 'Köy Büyüdü!',
-      use: 'Köy seviyesi atlayınca, kutlama ekranında.',
-      style: 'Instrumental, short celebratory fanfare at the very start, warm brass and strings with glockenspiel, timpani roll, triumphant and cozy, village level up, big happy final chord',
-      exclude: EXCLUDE_BASE + ', long intro',
-    },
-    {
-      id: 'jingle_fail', p: 3, kind: 'Kısa jingle', len: 'ilk 2–4 sn kullanılır',
-      title: 'Bir Daha Dene',
-      use: '"Hamlen bitti" ekranında.',
-      style: 'Instrumental, short gentle try-again jingle at the very start, descending marimba notes, soft muted trombone wah, playful and encouraging, not sad, cartoon',
-      exclude: EXCLUDE_BASE + ', sad, long intro',
-    },
-    {
-      id: 'splash_funday', p: 3, kind: 'Kısa jingle', len: 'ilk 4–6 sn kullanılır',
-      title: 'Funday Morning',
-      use: 'Açılıştaki Funday Morning logo ekranı ve "sunar" anı.',
-      style: 'Instrumental, short sunrise logo sting at the very start, warm rising pad, bright bell chime, soft whoosh, joyful morning sunrise feeling, ends on a sparkling major chord',
-      exclude: EXCLUDE_BASE + ', long intro',
-    },
-  ];
-
+  // Liste HTML'de hazır; bu betik yalnızca kopyalama, süzme ve "yapıldı" işaretini ekler.
+  // JavaScript çalışmayan önizlemelerde metinler yine okunur ve elle kopyalanabilir.
+  document.documentElement.classList.add('js');
   const DONE_KEY = 'pofi-music-done';
   const loadDone = () => { try { return JSON.parse(localStorage.getItem(DONE_KEY)) || []; } catch { return []; } };
   const saveDone = ids => { try { localStorage.setItem(DONE_KEY, JSON.stringify(ids)); } catch { /* yoksay */ } };
   let done = loadDone();
-  let filter = 'all';
+  const cards = [...document.querySelectorAll('.track')];
 
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-  function field(label, text) {
-    return `<div class="field"><div class="label"><span>${label}</span><button class="copy" data-copy="${esc(text)}">Kopyala</button></div><div class="text">${esc(text)}</div></div>`;
-  }
-
-  function render() {
-    const shown = TRACKS.filter(t => filter === 'all' || String(t.p) === filter);
-    document.getElementById('list').innerHTML = shown.map(t => `
-      <article class="track${done.includes(t.id) ? ' done' : ''}">
-        <div class="head">
-          <h3>${esc(t.title)}</h3>
-          <span class="tag p${t.p}">Öncelik ${t.p}</span>
-          <span class="tag kind">${t.kind}</span>
-          <label class="done-toggle"><input type="checkbox" data-done="${t.id}" ${done.includes(t.id) ? 'checked' : ''}> Yapıldı</label>
-        </div>
-        <div class="meta"><b>Nerede:</b> ${esc(t.use)} · <b>Süre:</b> ${t.len} · <b>Dosya:</b> <code>${t.id}.mp3</code></div>
-        ${field('Başlık (Title)', t.title)}
-        ${field('Stil promptu (Style of Music)', t.style)}
-        ${field('Hariç tut (Exclude Styles)', t.exclude)}
-      </article>`).join('');
-    const total = TRACKS.length, finished = TRACKS.filter(t => done.includes(t.id)).length;
-    document.getElementById('count').textContent = `${finished}/${total} parça yapıldı`;
+  function refresh() {
+    for (const c of cards) {
+      const isDone = done.includes(c.dataset.id);
+      c.classList.toggle('done', isDone);
+      c.querySelector('[data-done]').checked = isDone;
+    }
+    document.getElementById('count').textContent = `${cards.filter(c => done.includes(c.dataset.id)).length}/${cards.length} parça yapıldı`;
   }
 
   async function copyText(text) {
     try {
       await navigator.clipboard.writeText(text);
     } catch {
-      // file:// veya izin yoksa eski yöntem
+      // file:// açılışı veya pano izni yoksa eski yöntem
       const ta = document.createElement('textarea');
       ta.value = text;
       ta.style.position = 'fixed';
@@ -316,9 +403,9 @@
     }
     const chip = e.target.closest('.chip');
     if (chip) {
-      filter = chip.dataset.filter;
+      const f = chip.dataset.filter;
       document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
-      render();
+      for (const c of cards) c.hidden = f !== 'all' && c.dataset.p !== f;
     }
   });
 
@@ -327,10 +414,10 @@
     if (!id) return;
     done = e.target.checked ? [...new Set([...done, id])] : done.filter(x => x !== id);
     saveDone(done);
-    render();
+    refresh();
   });
 
-  render();
+  refresh();
 </script>
 </body>
 </html>
