@@ -1,6 +1,7 @@
 // Oyun tahtası: çizim, kayma animasyonu, kaydırma/klavye girdisi.
 import { T, tileOf, isRamp } from './engine.js';
 import { roundRect, circle, ellipse, drawPofi, drawPofiBelly, drawDizzy, drawFish, drawSeal } from './draw.js';
+import { art } from './art.js';
 
 export const STEP = 0.075; // saniye / hücre
 
@@ -30,11 +31,26 @@ export function drawCrate(ctx, x, y, s, alpha = 1) {
   ctx.restore();
 }
 
+// Görseli olan karolar; rampa kodla çizilir (yönü görselde okunmuyor).
+const TILE_ART = { [T.ICE]: 'tile_ice', [T.SNOW]: 'tile_snow', [T.ROCK]: 'tile_rock', [T.WATER]: 'tile_water', [T.CRACK]: 'tile_crack', [T.HOLE]: 'tile_hole', [T.MELT]: 'tile_melt' };
+
+function tileArt(ctx, t, x, y, s, g) {
+  const im = art(TILE_ART[t]);
+  if (!im) return false;
+  ctx.save();
+  roundRect(ctx, x + g, y + g, s - 2 * g, s - 2 * g, s * 0.14);
+  ctx.clip();
+  ctx.drawImage(im, x + g, y + g, s - 2 * g, s - 2 * g);
+  ctx.restore();
+  return true;
+}
+
 // Tek karo (tahtada ve "YENİ" kartlarındaki küçük resimlerde kullanılır).
 export function paintTile(ctx, t, x, y, s, time, opt = {}) {
   const g = Math.max(1, s * 0.03);
   const cx = x + s / 2, cy = y + s / 2;
   const base = () => {
+    if (tileArt(ctx, T.ICE, x, y, s, g)) return;
     roundRect(ctx, x + g, y + g, s - 2 * g, s - 2 * g, s * 0.14);
     ctx.fillStyle = ICE;
     ctx.fill();
@@ -49,6 +65,7 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
     ctx.stroke();
   };
   const water = () => {
+    if (tileArt(ctx, T.WATER, x, y, s, g)) return;
     roundRect(ctx, x + g, y + g, s - 2 * g, s - 2 * g, s * 0.14);
     ctx.fillStyle = WATER;
     ctx.fill();
@@ -76,6 +93,7 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
     ctx.restore();
     return;
   }
+  if (t !== T.ICE && TILE_ART[t] && tileArt(ctx, t, x, y, s, g)) return;
   base();
   if (t === T.ROCK) {
     ctx.fillStyle = '#7d8aa0';
@@ -528,7 +546,7 @@ export class BoardView {
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(spin + (belly === 1 ? -lift * 0.25 : belly === 3 ? lift * 0.25 : 0));
-      drawPofiBelly(ctx, 0, 0, size, belly, { outfit: this.outfit, t: time });
+      drawPofiBelly(ctx, 0, 0, size, belly, { outfit: this.outfit, t: time, face: this.face });
       ctx.restore();
     } else if (warpScale > 0.02) {
       // Sevinç zıplaması, çarpınca sallanma, boşta nefes alma.
@@ -540,10 +558,10 @@ export class BoardView {
       ctx.translate(cx, cy);
       ctx.rotate(spin);
       drawPofi(ctx, 0, 0, size, {
-        face: this.face, lean: lean + wobble, squash: Math.max(this.squash, breathe), blink: blink && !this.cheer, happy: this.cheer > 0, outfit: this.outfit, wave: this.cheer > 0 ? 1 : lift * 0.8,
+        face: a ? this.face : 0, dizzy: this.dizzy > 0.25, lean: lean + wobble, squash: Math.max(this.squash, breathe), blink: blink && !this.cheer, happy: this.cheer > 0, outfit: this.outfit, wave: this.cheer > 0 ? 1 : lift * 0.8,
       });
       ctx.restore();
-      if (this.dizzy > 0) drawDizzy(ctx, cx, cy - size * 0.95, size * 0.32, time, this.dizzy);
+      if (this.dizzy > 0) drawDizzy(ctx, cx, cy - size * (art('pofi_dizzy') ? 0.62 : 0.95), size * 0.32, time, this.dizzy);
     }
 
     for (const p of this.parts) {

@@ -1,4 +1,5 @@
 // Ortak çizim yardımcıları ve Pofi karakteri (kıyafetleriyle).
+import { art, POFI } from './art.js';
 
 export function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -25,6 +26,8 @@ const SCARF = { red: '#e5484d', blue: '#3d7bd9', green: '#3fae5a', yellow: '#f5b
 // Pofi: (x, y) ayakların ortası, size ≈ boy. o: { face: -1|0|1, lean, squash, blink, outfit, wave }
 export function drawPofi(ctx, x, y, size, o = {}) {
   const face = o.face || 0, squash = o.squash || 0, outfit = o.outfit || {};
+  const pose = o.dizzy ? 'dizzy' : o.happy ? 'happy' : face ? 'stand_side' : 'stand_front';
+  if (drawPofiArt(ctx, x, y, size, pose, { flip: face < 0, rot: o.lean, squash, outfit })) return;
   const s = size;
   ctx.save();
   ctx.translate(x, y);
@@ -115,6 +118,45 @@ export function drawPofi(ctx, x, y, size, o = {}) {
   ctx.restore();
 }
 
+// Görsel Pofi. (x, y) ayak/karın hizası. Görsel yoksa false döner.
+function drawPofiArt(ctx, x, y, size, pose, o = {}) {
+  const im = art('pofi_' + pose);
+  if (!im) return false;
+  const f = POFI[pose], k = (size * 0.92) / POFI.stand_front.h, sq = o.squash || 0;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(o.rot || 0);
+  ctx.scale((1 + sq * 0.18) * k * (o.flip ? -1 : 1), (1 - sq * 0.18) * k);
+  ctx.translate(-256, -f.foot);
+  ctx.drawImage(im, 0, 0, 512, 512);
+  const outfit = o.outfit || {};
+  if (f.neck && outfit.scarf && outfit.scarf !== 'none') {
+    const [nx, ny, nw, nr = 0] = f.neck, u = nw / 0.6;
+    ctx.save();
+    ctx.translate(nx, ny);
+    ctx.rotate(nr);
+    ctx.fillStyle = scarfFill(ctx, outfit.scarf, u);
+    roundRect(ctx, -nw / 2, -u * 0.045, nw, u * 0.09, u * 0.04);
+    ctx.fill();
+    roundRect(ctx, u * 0.04, 0, u * 0.1, u * 0.2, u * 0.03);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    if (outfit.scarf === 'striped') for (let j = -2; j <= 2; j++) ctx.fillRect(j * u * 0.11 - u * 0.02, -u * 0.045, u * 0.04, u * 0.09);
+    if (outfit.scarf === 'flakes') for (let j = -2; j <= 2; j++) { circle(ctx, j * u * 0.11, 0, u * 0.018); ctx.fill(); }
+    ctx.restore();
+  }
+  if (outfit.hat && outfit.hat !== 'none') {
+    // Şapka kodu kafa tepesi -0.8s, kafa genişliği ≈ 0.66s varsayar.
+    const [hx, hy, hw] = f.head, u = hw / 0.66;
+    ctx.translate(hx, hy);
+    ctx.rotate(f.rot);
+    ctx.translate(0, u * 0.8);
+    drawHat(ctx, outfit.hat, u);
+  }
+  ctx.restore();
+  return true;
+}
+
 function scarfFill(ctx, scarf, s) {
   if (scarf === 'aurora') {
     const g = ctx.createLinearGradient(-s * 0.3, 0, s * 0.3, 0);
@@ -130,6 +172,9 @@ function scarfFill(ctx, scarf, s) {
 // (x, y) zemindeki orta nokta. t: sallanma için zaman.
 export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
   const s = size, outfit = o.outfit || {}, t = o.t || 0;
+  // Görselde yukarı kayış pozu yok: yukarı giderken son baktığı yöne doğru yan kayış kullanılır.
+  const flip = dir === 3 || (dir === 0 && o.face < 0);
+  if (drawPofiArt(ctx, x, y, size, dir === 2 ? 'slide_front' : 'slide_side', { flip, outfit })) return;
   ctx.save();
   ctx.translate(x, y);
   if (dir === 1 || dir === 3) {

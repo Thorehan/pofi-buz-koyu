@@ -1,5 +1,20 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
 import { roundRect, circle, ellipse, drawPofi } from './draw.js';
+import { art, tinted } from './art.js';
+
+// Görseli gelen yapılar: [görselin piksel genişliği, köydeki genişlik (u cinsinden)] seviye başına.
+const IGLOO_ART = [[291, 0.25], [365, 0.28], [454, 0.3]];
+
+function igloArt(ctx, u, o) {
+  if (o.style !== 0) return false;
+  const id = 'bld_igloo_s0_lv' + o.lv;
+  const im = typeof o.col === 'string' && o.col.startsWith('#') ? tinted(id, o.col) : art(id);
+  if (!im) return false;
+  const [px, w] = IGLOO_ART[o.lv - 1], k = (u * w) / px;
+  // Taban görselin 496. satırında.
+  ctx.drawImage(im, -256 * k, -496 * k, 512 * k, 512 * k);
+  return true;
+}
 
 // Sahnedeki konumlar (genişlik/yükseklik oranı, yapının taban ortası)
 const AT = {
@@ -702,6 +717,17 @@ export class VillageView {
     ctx.scale(this.cam.z, this.cam.z);
     ctx.translate(-this.cam.x, -this.cam.y);
 
+    const bg = art('village_bg');
+    if (bg) {
+      // Panorama: kenarları eklenebilir, yana doğru tekrarlanır. Kar zemini ≈ H * 0.49'dan başlar.
+      const ih = H * 1.15, iw = (ih * bg.width) / bg.height, x0 = W / 2 - iw / 2;
+      for (let i = -1; i <= 1; i++) ctx.drawImage(bg, x0 + i * iw, -H * 0.15, iw, ih);
+      if (night > 0) {
+        ctx.fillStyle = `rgba(14,20,52,${night * 0.45})`;
+        ctx.fillRect(-W, -H, W * 3, H * 3);
+      }
+      if (vl >= 11) this.fireworks(ctx, W, H, u, time);
+    } else {
     if (vl >= 5) this.aurora(time, W, H, u, vl >= 9 ? Math.max(night, 0.7) : night);
     if (vl >= 11) this.fireworks(ctx, W, H, u, time);
     ctx.fillStyle = night > 0.5 ? '#f3f0d0' : '#fff6d6';
@@ -729,6 +755,7 @@ export class VillageView {
     ctx.quadraticCurveTo(W * 0.2, H * 0.7, W * 0.3, H * 1.05);
     ctx.lineTo(-W, H * 1.6);
     ctx.fill();
+    }
 
     if (vl >= 4) {
       ctx.fillStyle = mix('#e4dccb', '#9d9aa8', night);
@@ -771,7 +798,8 @@ export class VillageView {
         ctx.scale(SCALE[st.lv], SCALE[st.lv]);
         if (st.lv >= 4) auroraHalo(ctx, u, time + x);
         // Bölge 2 seviyeleri yapının kendi çizimini Lv3 ayrıntısıyla kullanır, üstüne süs ekler.
-        DRAW[id](ctx, u, { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time });
+        const dopt = { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time };
+        if (!(id === 'igloo' && igloArt(ctx, u, dopt))) DRAW[id](ctx, u, dopt);
         if (st.lv >= 4) sparkles(ctx, u, time + x, st.lv);
         ctx.restore();
         if (upgradable.includes(id)) upgradeMarker(ctx, x, y - u * 0.17 * SCALE[st.lv], u, time);

@@ -7,6 +7,7 @@ import {
   buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone,
 } from './meta.js';
 import { drawPofi, drawFish } from './draw.js';
+import { loadArt, setArtEnabled } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
@@ -27,6 +28,8 @@ board.outfit = P.outfit;
 
 const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false });
 applySoundSettings();
+loadArt();
+setArtEnabled(P.settings.art !== false);
 document.addEventListener('pointerdown', unlock, true);
 document.addEventListener('keydown', unlock, true);
 $('app').addEventListener('click', e => {
@@ -917,6 +920,7 @@ function renderSettings() {
   $('setHaptics').checked = !!P.settings.haptics;
   $('setSfx').checked = P.settings.sfx !== false;
   $('setAmbient').checked = P.settings.ambient !== false;
+  $('setArt').checked = P.settings.art !== false;
   $('setAccount').textContent = { guest: 'Misafir', google: 'Google', apple: 'Apple' }[P.profile?.method] || 'Misafir';
 }
 $('setName').onchange = () => {
@@ -932,6 +936,7 @@ $('setHaptics').onchange = () => {
   if (P.settings.haptics) navigator.vibrate?.(20);
 };
 $('setSfx').onchange = () => { P.settings.sfx = $('setSfx').checked; persist(); applySoundSettings(); sfx.ui(); };
+$('setArt').onchange = () => { P.settings.art = $('setArt').checked; persist(); setArtEnabled(P.settings.art); };
 $('setAmbient').onchange = () => { P.settings.ambient = $('setAmbient').checked; persist(); applySoundSettings(); };
 $('btnReplayIntro').onclick = runIntro;
 $('btnReset').onclick = () => {
