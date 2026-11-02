@@ -1,6 +1,6 @@
 import { parseLevel, simulate, solve, won, generateLevel, starsFor, T } from './engine.js';
 import { BoardView, paintTile } from './board.js';
-import { VillageView, phaseOf } from './village.js';
+import { VillageView, phaseOf, drawDecor } from './village.js';
 import { ensureEvent, eventPoints, timeLeft, claimable, nextMilestone, prizeOf, encodeVillage, decodeVillage, extractCode } from './live.js';
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
@@ -15,7 +15,7 @@ import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
-  VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD,
+  VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -29,6 +29,7 @@ const visitView = new VillageView($('visitCanvas'));
 village.onSelect = id => (sheet?.id === id && INTERIOR[id] && P.village[id] ? enterInterior(id) : openSheet(id));
 village.onDistrict = i => showDistrict(i);
 village.onVillager = id => talkTo(id);
+village.onDecorSlot = id => { village.decorSel = id; village.decorPreview = null; renderDecor(); };
 board.outfit = P.outfit;
 
 const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false });
@@ -76,6 +77,7 @@ function showScreen(name) {
   $('tabbar').classList.toggle('hidden', !TAB_SCREENS.includes(name));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   if (name !== 'village' && sheet) closeSheet();
+  if (name !== 'village' && village.decorMode) exitDecor();
   if (name !== 'wardrobe') wardrobeDraft = null;
   if (name === 'village') {
     village.resize();
@@ -648,7 +650,9 @@ function renderVillage() {
   const dCard = nd ? `<button class="b-card district${districtReady() ? ' ready' : ''}" data-d="${P.land || 1}"><b>Yeni arazi: ${nd.name}</b><small>${nd.soon ? 'Yeni yapılar ve bonuslar' : `Köy Lv${nd.vl} · köy yana genişler`}</small><span class="act">${nd.soon ? 'Yakında' : `Aç ${coinIco}${nd.price}`}</span>${districtReady() ? '<i class="dot"></i>' : ''}</button>` : '';
   const vNext = VILLAGERS.find(v => v.price && !P.villagers.includes(v.id));
   const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
-  $('buildList').innerHTML = dCard + vCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
+  const slotsOpen = DECOR_SLOTS.filter(s => Math.floor(s.at[0]) < (P.land || 1));
+  const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.map(d => discounted(P, d.price)))}+</span></button>`;
+  $('buildList').innerHTML = dCard + vCard + dcCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
       return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
@@ -661,6 +665,7 @@ function renderVillage() {
   $('buildList').querySelectorAll('[data-b]').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.b); });
   $('buildList').querySelectorAll('[data-d]').forEach(btn => { btn.onclick = () => { village.goPanel(+btn.dataset.d); showDistrict(+btn.dataset.d); }; });
   $('buildList').querySelector('[data-vill]')?.addEventListener('click', showVillagers);
+  $('buildList').querySelector('[data-decor]')?.addEventListener('click', enterDecor);
   renderCocoa();
 }
 
@@ -679,6 +684,7 @@ function renderVlCard() {
 let sheet = null; // { id, draft: { style, color } }
 
 function openSheet(id) {
+  if (village.decorMode) return;
   const b = building(id);
   if (!isUnlocked(P, b)) { toast(`${b.name} Köy Lv${b.unlock}'te açılır`); return; }
   const st = P.village[id];
@@ -1001,6 +1007,77 @@ function showVillagers() {
       renderVillage();
     };
   });
+}
+
+// ---------- süsler (GDD 12.3) ----------
+// Süsleme modu: köyde boş süs yerleri "+" ile görünür. Yere dokun → süsü seç (sahnede önizlenir)
+// → "Satın al ve yerleştir". Her yerleştirme ayrı ücretlidir; değiştirilen süs geri verilmez.
+function enterDecor() {
+  closeSheet();
+  village.decorMode = true;
+  village.decorSel = null;
+  village.decorPreview = null;
+  $('screenVillage').scrollTop = 0;
+  renderDecor();
+}
+
+function exitDecor() {
+  village.decorMode = false;
+  village.decorSel = null;
+  village.decorPreview = null;
+  $('sheet').classList.add('hidden');
+  if (screen === 'village') renderVillage();
+}
+
+function renderDecor() {
+  const slot = village.decorSel, cur = slot ? P.decor[slot] : null, pv = village.decorPreview?.item || null;
+  let body = '<p class="sheet-note">Köyde "+" olan bir süs yerine dokun. Yanlara kaydırarak diğer arazilerdeki yerleri de görebilirsin.</p>';
+  let action = '<div class="sheet-actions"><button id="dcDone" class="btn green">Bitti</button></div>';
+  if (slot) {
+    body = `<div class="sheet-sec"><b>Süs seç</b><small>Dokun, yerinde gör</small></div>
+      <div class="wardrobe-grid">${DECOR_ITEMS.map(d => `<button class="w-item${cur === d.id ? ' on' : ''}${pv === d.id ? ' sel' : ''}" data-dec="${d.id}"><canvas></canvas><span>${d.name}</span><span class="price">${cur === d.id ? 'Yerleşik' : `${coinIco}${discounted(P, d.price)}`}</span></button>`).join('')}</div>`;
+    const it = pv && DECOR_ITEMS.find(d => d.id === pv), price = it ? discounted(P, it.price) : 0;
+    action = `<div class="sheet-actions">
+      ${cur ? '<button id="dcRemove" class="btn link">Kaldır</button>' : '<button id="dcBack" class="btn link">Başka yer</button>'}
+      ${it ? `<button id="dcBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz coin · ' : 'Satın al ve yerleştir · '}${coinIco}${price}</button>` : '<button id="dcDone" class="btn green">Bitti</button>'}
+    </div>`;
+  }
+  $('sheet').innerHTML = `
+    <div class="sheet-head"><div><b>Köyü süsle</b><span class="lv-pill">${Object.keys(P.decor).length} süs</span></div><button id="dcX" class="sheet-x" aria-label="Kapat">×</button></div>
+    ${body}
+    ${action}`;
+  $('sheet').classList.remove('hidden');
+  $('dcX').onclick = exitDecor;
+  if ($('dcDone')) $('dcDone').onclick = exitDecor;
+  if ($('dcBack')) $('dcBack').onclick = () => { village.decorSel = null; village.decorPreview = null; renderDecor(); };
+  $('sheet').querySelectorAll('[data-dec]').forEach(btn => {
+    const ctx = fitCanvas(btn.querySelector('canvas'), 64, 64);
+    drawDecor(ctx, 32, 58, 520, btn.dataset.dec, 0, 0);
+    btn.onclick = () => {
+      const id = btn.dataset.dec;
+      village.decorPreview = id === cur || id === pv ? null : { slot, item: id };
+      renderDecor();
+    };
+  });
+  if ($('dcRemove')) $('dcRemove').onclick = () => {
+    delete P.decor[slot];
+    village.decorPreview = null;
+    persist();
+    sfx.ui();
+    renderDecor();
+  };
+  if ($('dcBuy')) $('dcBuy').onclick = () => {
+    const it = DECOR_ITEMS.find(d => d.id === pv), price = discounted(P, it.price);
+    if (P.coins < price) return;
+    P.coins -= price;
+    P.decor[slot] = it.id;
+    village.decorPreview = null;
+    persist();
+    sfx.coin();
+    track('decor_buy', { slot, item: it.id, price });
+    toast(`${it.name} yerleştirildi`);
+    renderDecor();
+  };
 }
 
 // ---------- iç mekân (GDD 12.3) ----------
@@ -1395,7 +1472,7 @@ function frame(now) {
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
       cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1, homeReady: homesReady(),
-      villagers: villagersHere(), hour: hourNow(), task: taskMarker(),
+      villagers: villagersHere(), hour: hourNow(), task: taskMarker(), decor: P.decor,
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
     if (village.panel !== shownPanel) renderZoneTag();

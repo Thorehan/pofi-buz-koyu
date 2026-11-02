@@ -1,7 +1,7 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
 import { roundRect, circle, ellipse, drawPofi } from './draw.js';
 import { art, tinted, BLD, BLD_Z2 } from './art.js';
-import { DISTRICTS } from './config.js';
+import { DISTRICTS, DECOR_SLOTS } from './config.js';
 
 // Yapı görseli (varsa). Çağıran tuvali SCALE[lvFull] ile büyütmüş olur; görselde seviye büyümesi
 // zaten çizili olduğundan burada geri alınır. Lv4-5 görseli yoksa Lv3 görseli kodun büyütmesiyle çizilir.
@@ -864,6 +864,10 @@ export class VillageView {
     this.walkers = [{ x: 0.5, tx: 0.6, face: 1, wait: 0, lane: 0, size: 0.12, speed: 0.06 }];
     this.vs = new Map(); // köylü durumları
     this.onVillager = null; // köylüye dokunulunca (id)
+    this.onDecorSlot = null; // süsleme modunda süs yerine dokunulunca (yer id)
+    this.decorMode = false;
+    this.decorSel = null; // seçili süs yeri
+    this.decorPreview = null; // { slot, item } satın almadan önce sahnede
     this.cam = { x: 0, y: 0, z: 1 };
     this.focus = null;
     this.preview = null; // { id, style, color } — satın almadan önce sahnede gösterilir
@@ -889,6 +893,11 @@ export class VillageView {
         const cur = Math.round(this.sx / this.W);
         if (x > this.W - 40 && cur < this.panels - 1) { this.goPanel(cur + 1); return; }
         if (x < 40 && cur > 0) { this.goPanel(cur - 1); return; }
+      }
+      if (this.decorMode) {
+        const slot = this.decorHit(x, y);
+        if (slot) this.onDecorSlot?.(slot);
+        return;
       }
       const vid = this.villagerHit(x, y);
       if (vid) { this.onVillager?.(vid); return; }
@@ -1025,6 +1034,17 @@ export class VillageView {
     });
   }
 
+  decorHit(sx, sy) {
+    const { cam, W, H } = this;
+    const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
+    let best = null, bd = Infinity;
+    for (const [id, x, y, r] of this.slotPos || []) {
+      const d = Math.hypot(wx - x, wy - y);
+      if (d < r + 14 && d < bd) { bd = d; best = id; }
+    }
+    return best;
+  }
+
   villagerHit(sx, sy) {
     const { cam, W, H } = this;
     const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
@@ -1120,7 +1140,7 @@ export class VillageView {
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {} }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     const { ctx, W, H } = this;
@@ -1133,7 +1153,14 @@ export class VillageView {
     const n = this.panels;
 
     // kamera
-    const tgt = this.focus ? { x: AT[this.focus][0] * W, y: AT[this.focus][1] * H - u * 0.08, z: 1.8 } : { x: W / 2 + this.sx, y: H / 2, z: 1 };
+    // seçili yapıya ya da süs yerine yaklaşır (alttaki panel sahnenin altını kapatır)
+    const fp = this.focus ? AT[this.focus] : this.decorSel ? DECOR_SLOTS.find(sl => sl.id === this.decorSel)?.at : null;
+    const tgt = fp ? { x: fp[0] * W, y: fp[1] * H - u * 0.08, z: 1.8 } : { x: W / 2 + this.sx, y: H / 2, z: 1 };
+    if (fp) {
+      // yakınlaşınca görüntü sahnenin dışına taşmasın
+      tgt.x = Math.max(W / (2 * tgt.z), Math.min(this.panels * W - W / (2 * tgt.z), tgt.x));
+      tgt.y = Math.max(H / (2 * tgt.z), Math.min(H - H / (2 * tgt.z), tgt.y));
+    }
     const k = Math.min(1, dt * 6);
     this.cam.x += (tgt.x - this.cam.x) * k;
     this.cam.y += (tgt.y - this.cam.y) * k;
@@ -1313,6 +1340,16 @@ export class VillageView {
       this.cocoaInfo = cocoa;
     }
     if (vl >= 10) for (const [fx, fy] of [[0.58, 0.71], [0.9, 0.86]]) items.push([fy * H, () => iceSculpture(ctx, fx * W, fy * H, u, time)]);
+    this.slotPos = [];
+    for (const sl of DECOR_SLOTS) {
+      if (Math.floor(sl.at[0]) >= land) continue;
+      const x = sl.at[0] * W, y = sl.at[1] * H;
+      const pv = this.decorPreview?.slot === sl.id ? this.decorPreview.item : null;
+      const item = pv || decor[sl.id];
+      this.slotPos.push([sl.id, x, y - u * 0.03, u * 0.05]);
+      if (item) items.push([y, () => { if (pv) ctx.globalAlpha = 0.85; drawDecor(ctx, x, y, u, item, time, night); ctx.globalAlpha = 1; }]);
+      if (this.decorMode && (!item || this.decorSel === sl.id)) markers.push([x, y, this.decorSel === sl.id ? 'slotSel' : 'slot']);
+    }
     if (villagers.length) {
       items.push([FIRE[1] * H, () => campfire(ctx, FIRE[0] * W, FIRE[1] * H, u, time, phase)]);
       this.stepVillagers(dt, villagers, phase, village, land);
@@ -1345,6 +1382,7 @@ export class VillageView {
     for (const [x, y, kind] of markers) {
       if (kind === 'cups') cupBubble(ctx, x, y, u, time, this.cocoaInfo);
       else if (kind === 'home') homeMarker(ctx, x, y, u, time);
+      else if (kind === 'slot' || kind === 'slotSel') slotMarker(ctx, x, y, u, time, kind === 'slotSel');
       else upgradeMarker(ctx, x, y, u, time);
     }
     this.drawCoinFx(ctx, W, H, u, dt);
@@ -1886,4 +1924,112 @@ function zzz(ctx, x, y, u, t) {
     ctx.fillText('z', x + Math.sin(f * 6 + k) * u * 0.02 + f * u * 0.04, y - f * u * 0.12);
   }
   ctx.globalAlpha = 1;
+}
+
+// Süsleme modunda süs yeri: boşsa kesik çizgili daire ve "+", seçiliyse turuncu.
+function slotMarker(ctx, x, y, u, t, sel) {
+  ctx.save();
+  ctx.setLineDash([4, 3]);
+  ctx.lineDashOffset = -t * 10;
+  ctx.strokeStyle = sel ? '#ff8a3d' : 'rgba(29,53,87,.6)';
+  ctx.lineWidth = 2;
+  ctx.fillStyle = sel ? 'rgba(255,138,61,.18)' : 'rgba(255,255,255,.55)';
+  ellipse(ctx, x, y, u * 0.04, u * 0.016);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+  if (sel) return;
+  ctx.fillStyle = 'rgba(29,53,87,.7)';
+  ctx.font = `700 ${Math.round(u * 0.04)}px Fredoka, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('+', x, y - u * 0.03 + Math.sin(t * 3) * u * 0.004);
+}
+
+// Süsler (kodla çizilir; taban ortası (x, y)).
+export function drawDecor(ctx, x, y, u, id, t, night = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(29,53,87,.12)';
+  ellipse(ctx, 0, 0, u * 0.03, u * 0.008);
+  ctx.fill();
+  if (id === 'fence') {
+    ctx.fillStyle = '#9a6a42';
+    for (const px of [-0.03, 0, 0.03]) ctx.fillRect(px * u - u * 0.004, -u * 0.035, u * 0.008, u * 0.035);
+    ctx.fillRect(-u * 0.035, -u * 0.028, u * 0.07, u * 0.006);
+    ctx.fillRect(-u * 0.035, -u * 0.014, u * 0.07, u * 0.006);
+    ctx.fillStyle = '#ffffff';
+    for (const px of [-0.03, 0, 0.03]) { ellipse(ctx, px * u, -u * 0.036, u * 0.006, u * 0.003); ctx.fill(); }
+  } else if (id === 'snowballs') {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#c9dbee';
+    ctx.lineWidth = 1;
+    for (const [bx, by, r] of [[-0.012, -0.008, 0.01], [0.01, -0.008, 0.01], [0, -0.022, 0.009]]) { circle(ctx, bx * u, by * u, r * u); ctx.fill(); ctx.stroke(); }
+  } else if (id === 'lantern') {
+    ctx.fillStyle = '#1d3557';
+    ctx.fillRect(-u * 0.003, -u * 0.07, u * 0.006, u * 0.07);
+    ctx.fillRect(-u * 0.01, -u * 0.072, u * 0.02, u * 0.004);
+    ctx.fillStyle = '#ffd98a';
+    roundRect(ctx, -u * 0.008, -u * 0.088, u * 0.016, u * 0.016, u * 0.003);
+    ctx.fill();
+    glow(ctx, 0, -u * 0.08, u * 0.04, '#ffe7a8', 0.25 + night * 0.4);
+  } else if (id === 'bench') {
+    ctx.fillStyle = '#7a4a2e';
+    ctx.fillRect(-u * 0.03, -u * 0.018, u * 0.06, u * 0.006);
+    ctx.fillRect(-u * 0.03, -u * 0.032, u * 0.06, u * 0.006);
+    ctx.fillRect(-u * 0.026, -u * 0.018, u * 0.005, u * 0.018);
+    ctx.fillRect(u * 0.021, -u * 0.018, u * 0.005, u * 0.018);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-u * 0.03, -u * 0.035, u * 0.06, u * 0.004);
+  } else if (id === 'pine') {
+    ctx.fillStyle = '#7a4a2e';
+    ctx.fillRect(-u * 0.004, -u * 0.012, u * 0.008, u * 0.012);
+    for (let k = 0; k < 3; k++) {
+      ctx.fillStyle = '#2f7d4a';
+      ctx.beginPath();
+      ctx.moveTo(-u * (0.026 - k * 0.005), -u * (0.012 + k * 0.016));
+      ctx.lineTo(0, -u * (0.04 + k * 0.016));
+      ctx.lineTo(u * (0.026 - k * 0.005), -u * (0.012 + k * 0.016));
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-u * (0.012 - k * 0.003), -u * (0.03 + k * 0.016), u * (0.024 - k * 0.006), u * 0.003);
+    }
+  } else if (id === 'flag') {
+    ctx.fillStyle = '#c9d2dc';
+    ctx.fillRect(-u * 0.003, -u * 0.09, u * 0.006, u * 0.09);
+    ctx.fillStyle = '#e5484d';
+    const w = Math.sin(t * 4) * u * 0.004;
+    ctx.beginPath();
+    ctx.moveTo(u * 0.003, -u * 0.088);
+    ctx.quadraticCurveTo(u * 0.02, -u * 0.084 + w, u * 0.038, -u * 0.08);
+    ctx.lineTo(u * 0.038, -u * 0.06);
+    ctx.quadraticCurveTo(u * 0.02, -u * 0.064 - w, u * 0.003, -u * 0.068);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    circle(ctx, u * 0.018, -u * 0.074, u * 0.004);
+    ctx.fill();
+  } else if (id === 'statue') {
+    ctx.fillStyle = '#cfe9ff';
+    ctx.fillRect(-u * 0.016, -u * 0.012, u * 0.032, u * 0.012);
+    ctx.fillStyle = 'rgba(160,215,255,.95)';
+    ctx.beginPath();
+    ctx.ellipse(0, -u * 0.035, u * 0.014, u * 0.024, 0, 0, Math.PI * 2);
+    ctx.fill();
+    circle(ctx, 0, -u * 0.064, u * 0.011);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.6 + Math.sin(t * 3) * 0.3;
+    circle(ctx, -u * 0.005, -u * 0.068, u * 0.003);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  } else if (id === 'aurora') {
+    ctx.fillStyle = '#1d3557';
+    ctx.fillRect(-u * 0.003, -u * 0.075, u * 0.006, u * 0.075);
+    const cols = ['#3cdc9a', '#4fb3ff', '#8f5bd6'], c = cols[Math.floor(t * 1.5) % 3];
+    ctx.fillStyle = c;
+    circle(ctx, 0, -u * 0.084, u * 0.011);
+    ctx.fill();
+    glow(ctx, 0, -u * 0.084, u * 0.05, c, 0.3 + night * 0.4);
+  }
+  ctx.restore();
 }

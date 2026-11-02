@@ -25,6 +25,7 @@ function defaults() {
     recipes: [], // alınan kakao tarifleri
     interior: {}, // { binaId: { yuvaId: sahip olunan en yüksek kademe (1-3) } }
     villagers: [], // davet edilen köylüler (Bobo hariç)
+    decor: {}, // { süsYeriId: süsId }
     task: null, // { day, type, need, have, giver, claimed } — köylünün günlük işi
     settings: { haptics: true, sfx: true, ambient: true },
     freeCoinDay: '',

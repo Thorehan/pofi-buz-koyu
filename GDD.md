@@ -247,7 +247,7 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 |---|---|---|---|
 | **İç mekân** ✅ (iglo) | Yapıya (önce iglo) dokununca kart açılır, tekrar dokununca **içine girilir**. Odada 6 yuva: yatak, halı, lamba, raf, pencere, duvar süsü. Her yuvanın 3 kademesi var. Önce önizleme, sonra "Satın al ve yerleştir". | 150–1.500 | 6 yapı × 6 yuva × 3 kademe |
 | **Arazi / bölge** | Köy yana doğru genişler. Yeni bölge coin'le açılır, içindeki yapılar ❄ ile kurulur. | 2.000 → 5.000 → 10.000 → 20.000 | Her yeni bölge yeni yapı getirir |
-| **Süsler** | Fener, çit, kardan adam, çam, buz heykeli. Bölgedeki süs yuvalarına yerleştirilir. | 50–400 | Yuvalar bölgeyle artar |
+| **Süsler** ✅ | Çit, kartopu yığını, sokak feneri, bank, küçük çam, bayrak direği, buz heykelciği, aurora lambası. Sabit süs yerlerine yerleştirilir; her yerleştirme ayrı ücretli. | 50–400 | Buzul Koyu 8 yer, Buz Limanı +6; yeni arazilerle artar |
 | **Köylüler** ✅ | Yeni penguen köylü davet edilir; saat rutinine katılır, günlük iş verir. | 500–2.500 | 5 davetli köylü (sonra yeni arazilerle artar) |
 | **Kakao tarifleri** ✅ | Fincan başına +1 / +1 / +2 / +2 coin | 300–4.500 | Yatırım, geri döner |
 
@@ -291,6 +291,13 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 - **Çizim:** Oda ve eşyalar şimdilik kodla çiziliyor (js/interior.js). Görsel istendi.
 - **Sonraki:** Diğer yapıların içi (kakao standı, kulübe…) aynı INTERIOR yapısıyla eklenir.
 
+### 12.4.2 Süsler (uygulandı)
+- **Süsleme modu:** Yapı listesindeki "Süsler" kartı açar. Boş süs yerleri köyde kesik çizgili "+" ile görünür; yapılara dokunmak bu modda kapalıdır.
+- **Yerleştirme:** Yere dokununca kamera o yere yaklaşır ve alttan süs listesi açılır. Süse dokununca yerinde önizlenir, "Satın al ve yerleştir" ile kaydedilir. Dolu bir yerde "Kaldır" vardır.
+- **Fiyat:** Her yerleştirme ayrı ücretlidir; değiştirilen ya da kaldırılan süsün parası geri verilmez. Böylece süsler sürekli bir coin harcama yeri olur. Kale indirimi uygulanır.
+- **Süs yerleri:** Lv3 yapı görsellerinin, yolların ve köylülerin toplanma yerlerinin dışında seçildi (config.js, DECOR_SLOTS). Buz Limanı açılınca 6 yer daha gelir.
+- **Çizim:** Süsler şimdilik kodla çiziliyor. Fenerler ve aurora lambası gece daha parlak yanar.
+
 ### 12.5 Köy yaşamı (cihaz saatine göre) — uygulandı (v0.3 B4)
 
 **Rutin**
@@ -325,7 +332,7 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 | **B2 · Genişleyen köy** | Yatay kaydırma, arazi paneli, arazi açma, Buz Limanı (4 yapı) | ✅ v0.3 (görseli bekliyor) |
 | **B3 · İç mekân** | İglo içi (6 yuva, 3 kademe, önizleme), sonra diğer yapılar | ✅ v0.3 iglo (görseli bekliyor) |
 | **B4 · Köy yaşamı** | Köylüler, saat rutini, köylü daveti, günlük iş | ✅ v0.3 |
-| **B5 · Süsler** | Yerleştirilebilir süsler | |
+| **B5 · Süsler** | Yerleştirilebilir süsler | ✅ v0.3 |
 | **C · Görsel** | GPT görsel modeliyle (Batch) Pofi, yapılar, zemin ve köy panoraması | Test isteği gönderildi |
 
 ### 12.7 Görsel bütçesi
