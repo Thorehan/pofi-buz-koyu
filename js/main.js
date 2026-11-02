@@ -9,7 +9,7 @@ import {
 } from './meta.js';
 import { drawRoom, drawItemIcon } from './interior.js';
 import { drawPofi, drawFish } from './draw.js';
-import { loadArt, setArtEnabled } from './art.js';
+import { loadArt, setArtEnabled, accentHue } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
@@ -701,6 +701,13 @@ function closeSheet() {
   $('sheet').classList.add('hidden');
 }
 
+// Renk paleti yalnızca görselin vurgu bölgesini boyar (tente, çatı, bayrak…). Vurgusu olmayan yapı/stilde
+// renk seçeneği gösterilmez. Görsel yoksa ya da kapalıysa kod çizimi rengi kullandığı için gösterilir.
+function colorable(id, style, lv) {
+  if (id === 'lights') return true;
+  return accentHue(`bld_${id}_s${style}_lv${Math.min(Math.max(lv, 1), 3)}`) !== null;
+}
+
 function renderSheet() {
   const b = building(sheet.id), st = P.village[b.id];
   const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
@@ -716,8 +723,10 @@ function renderSheet() {
   if (st) {
     const ownedStyles = P.styles[b.id] || [0];
     const d = sheet.draft;
+    const canColor = colorable(b.id, d.style, lv);
+    if (!canColor) d.color = st.color; // bu stilde boyanacak yer yok: renk değişmez
     const styleCost = ownedStyles.includes(d.style) ? 0 : discounted(P, b.stylePrice);
-    const colorCost = d.color && !P.colors.includes(d.color) ? discounted(P, COLOR_PRICE) : 0;
+    const colorCost = canColor && d.color && !P.colors.includes(d.color) ? discounted(P, COLOR_PRICE) : 0;
     const total = styleCost + colorCost;
     const changed = d.style !== st.style || d.color !== st.color;
     looks = `
@@ -726,11 +735,11 @@ function renderSheet() {
         const lock = ownedStyles.includes(i) ? '' : ` ${coinIco}${discounted(P, b.stylePrice)}`;
         return `<button class="chip-btn${d.style === i ? ' sel' : ''}${st.style === i ? ' cur' : ''}" data-style="${i}">${name}${lock}</button>`;
       }).join('')}</div>
-      <div class="sheet-sec"><b>Renk</b><small>Açılan renk tüm yapılarda kullanılır</small></div>
+      ${canColor ? `<div class="sheet-sec"><b>Renk</b><small>Yalnızca tente, çatı, bayrak gibi renkli kısmı boyar · açılan renk tüm yapılarda kullanılır</small></div>
       <div class="swatches">
         <button class="sw def${d.color === null ? ' sel' : ''}" data-color="" title="Stilin kendi rengi"></button>
         ${COLORS.map(c => `<button class="sw${d.color === c.id ? ' sel' : ''}" data-color="${c.id}" title="${c.name}" style="background:${c.hex}">${P.colors.includes(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}
-      </div>`;
+      </div>` : '<p class="sheet-note">Bu stilde boyanacak renkli bir kısım yok; görünümü stil belirler.</p>'}`;
     const label = !changed ? 'Şu anki görünüm' : total ? `Satın al · ${coinIco}${total}` : 'Uygula';
     action = `<div class="sheet-actions">
       <button id="shCancel" class="btn link">Vazgeç</button>

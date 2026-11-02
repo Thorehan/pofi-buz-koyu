@@ -32,23 +32,99 @@ export function art(id) {
   return imgs[id] || null;
 }
 
-// Renk paleti seçilmiş yapılar için görseli renkle çarpıp önbelleğe alır.
+// Renk paleti görselin tamamını değil yalnızca vurgu bölgesini boyar (tente, çatı, bayrak, çan metali…).
+// Vurgu, görseldeki baskın canlı renk tonudur; kar ve buzun mavi tonları, kontur ve soluk renkler hariç.
+// all: fener dizisi gibi çok renkli görsellerde bütün canlı renkler boyanır.
+const rgb2hsl = (r, g, b) => {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  if (!d) return [0, 0, l];
+  const s = d / (1 - Math.abs(2 * l - 1));
+  const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [h * 60, s, l];
+};
+const hsl2rgb = (h, s, l) => {
+  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+};
+const hueDist = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+const isIce = h => h >= 180 && h <= 250;
+const vivid = (sat, l) => sat > 0.5 && l > 0.25 && l < 0.8;
+// Malzeme renkleri vurgu sayılmaz: ahşap kahverengisi ve pencere/lamba ışığının açık sarısı.
+const isMaterial = (h, sat, l) => (h >= 10 && h <= 50 && l < 0.66 && sat < 0.8) || (h >= 38 && h <= 62 && l > 0.6);
+// Yapıya özel: buz iglo ve ahşap iskelenin vurgusu yok (renk seçeneği gizlenir); çamda yaprak yeşili atlanır.
+const ACCENT_RULES = { igloo: null, pier: null, tree: { skip: [70, 170] } };
+const ruleOf = id => { const m = id.match(/^bld_([a-z]+)_/); return m && m[1] in ACCENT_RULES ? ACCENT_RULES[m[1]] : {}; };
+const skipped = (rule, h) => rule.skip && h >= rule.skip[0] && h <= rule.skip[1];
+const accentHit = (h, sat, l, base) => sat > 0.35 && l > 0.15 && l < 0.88 && !isIce(h) && !isMaterial(h, sat, l) && hueDist(h, base) <= 22;
+
+function pixels(im) {
+  const c = document.createElement('canvas');
+  c.width = im.width;
+  c.height = im.height;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(im, 0, 0);
+  return [c, x, x.getImageData(0, 0, c.width, c.height)];
+}
+
+// Görselin vurgu tonu (derece) ya da vurgusu yoksa null. Görsel henüz yüklenmediyse undefined.
+const accentCache = new Map(), accentCov = new Map();
+const ACCENT_MIN = 0.05; // boyanacak alan görselin en az %5'i olmalı (küçük ampul ve flamalar renk seçeneği için yetmez)
+export const accentCoverage = id => accentCov.get(id);
+export function accentHue(id) {
+  if (accentCache.has(id)) return accentCache.get(id);
+  const im = art(id);
+  if (!im) return undefined;
+  let hue = null;
+  const rule = ruleOf(id);
+  if (rule === null) { accentCache.set(id, null); return null; }
+  try {
+    const [, , data] = pixels(im), d = data.data, bins = new Array(36).fill(0);
+    let opaque = 0;
+    for (let i = 0; i < d.length; i += 16) { // her 4. piksel yeterli
+      if (d[i + 3] < 200) continue;
+      opaque++;
+      const [h, sat, l] = rgb2hsl(d[i], d[i + 1], d[i + 2]);
+      if (vivid(sat, l) && !isIce(h) && !isMaterial(h, sat, l) && !skipped(rule, h)) bins[Math.floor(h / 10) % 36]++;
+    }
+    const k = bins.indexOf(Math.max(...bins)), base = k * 10 + 5;
+    // boyanacak alan (tinted ile aynı ölçütle) ölçülür; ACCENT_MIN'in altındaysa renk seçeneği anlamsız
+    let hits = 0;
+    for (let i = 0; i < d.length; i += 16) {
+      if (d[i + 3] < 200) continue;
+      const [h, sat, l] = rgb2hsl(d[i], d[i + 1], d[i + 2]);
+      if (accentHit(h, sat, l, base)) hits++;
+    }
+    accentCov.set(id, opaque ? hits / opaque : 0);
+    if (opaque && hits / opaque > ACCENT_MIN) hue = base;
+  } catch { /* okunamazsa boyanmaz */ }
+  accentCache.set(id, hue);
+  return hue;
+}
+
 const tintCache = new Map();
-export function tinted(id, hex) {
+export function tinted(id, hex, { all = false } = {}) {
   const im = art(id);
   if (!im || !hex) return im;
-  const key = id + hex;
+  const key = id + hex + all;
   if (!tintCache.has(key)) {
-    const c = document.createElement('canvas');
-    c.width = im.width;
-    c.height = im.height;
-    const x = c.getContext('2d');
-    x.drawImage(im, 0, 0);
-    x.globalCompositeOperation = 'multiply';
-    x.fillStyle = hex;
-    x.fillRect(0, 0, c.width, c.height);
-    x.globalCompositeOperation = 'destination-in';
-    x.drawImage(im, 0, 0);
+    const base = all ? null : accentHue(id);
+    if (!all && base == null) return im;
+    const [c, x, data] = pixels(im), d = data.data;
+    const n = parseInt(hex.slice(1), 16);
+    const [th, ts, tl] = rgb2hsl((n >> 16) & 255, (n >> 8) & 255, n & 255);
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 8) continue;
+      const [h, sat, l] = rgb2hsl(d[i], d[i + 1], d[i + 2]);
+      const hit = all ? sat > 0.45 && l > 0.2 && l < 0.85 : accentHit(h, sat, l, base);
+      if (!hit) continue;
+      // tonu hedefe çevir; gölge ve ışık (açıklık) korunur, açık hedef renklerde biraz aydınlatılır
+      const nl = Math.min(0.92, l + (tl - 0.5) * 0.35);
+      const [r, g, b] = hsl2rgb(th, Math.max(ts, sat * 0.85), nl);
+      d[i] = r; d[i + 1] = g; d[i + 2] = b;
+    }
+    x.putImageData(data, 0, 0);
     tintCache.set(key, c);
   }
   return tintCache.get(key);

@@ -1615,7 +1615,7 @@ export class VillageView {
   lights(ctx, x, y, u, W, o) {
     const full = `bld_lights_s${o.style}_lv${o.lvFull}`;
     const key = o.lvFull >= 4 && art(full) ? full : `bld_lights_s${o.style}_lv${o.lv}`;
-    const im = o.col ? tinted(key, o.col) : art(key);
+    const im = o.col ? tinted(key, o.col, { all: true }) : art(key);
     if (im) {
       // görselde ip 8. pikselden 1528. piksele uzanır, kancalar ≈ 50. satırda; fenerler arka sıradaki
       // yapıların önüne sarkmasın diye ip kod çizimine göre biraz yukarı asılır
