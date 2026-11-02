@@ -1,6 +1,7 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
 import { roundRect, circle, ellipse, drawPofi } from './draw.js';
 import { art, tinted, BLD } from './art.js';
+import { DISTRICTS } from './config.js';
 
 // Yapı görseli (varsa). Çağıran tuvali SCALE[lv] ile büyütmüş olur; görselde Lv1-3 büyümesi
 // zaten çizili olduğundan burada geri alınır, yalnızca Bölge 2'nin (Lv4-5) ek büyümesi kalır.
@@ -20,12 +21,18 @@ const AT = {
   lights: [0.5, 0.3], observatory: [0.2, 0.46], sled: [0.85, 0.46], tree: [0.08, 0.6],
   igloo: [0.48, 0.59], fort: [0.74, 0.61], snowman: [0.93, 0.7], cocoa: [0.29, 0.69],
   lighthouse: [0.06, 0.8], hut: [0.38, 0.87], pier: [0.17, 0.92], rink: [0.7, 0.88],
+  // Buz Limanı: ikinci panel (x 1-2). Tekne denizde, temeli yok.
+  cafe: [1.22, 0.63], market: [1.47, 0.6], bell: [1.76, 0.53], ferry: [1.64, 0.94],
 };
+// Temeli olmayan (suyun üstündeki ya da asılı) yapılar ve ana yola patikası olmayanlar.
+const NO_PAD = new Set(['lights', 'lighthouse', 'pier', 'ferry']);
+const NO_SPUR = new Set(['lights', 'lighthouse', 'ferry']);
 const SCALE = [0, 0.85, 1, 1.15, 1.2, 1.26]; // seviyeye göre boyut
 
 // Ana yol (penguenlerin yürüdüğü meydan yolu); her yapı yerine buradan bir patika ayrılır.
-const PROMENADE = [[0.1, 0.8], [0.3, 0.775], [0.5, 0.765], [0.7, 0.775], [0.92, 0.8]];
-const WALK = [0.16, 0.88]; // yürüyüş aralığı (x)
+// Ana yol bölgeler boyunca uzar; Buz Limanı'nda kıyı boyunca devam eder.
+const PROMENADE = [[0.1, 0.8], [0.3, 0.775], [0.5, 0.765], [0.7, 0.775], [0.92, 0.8], [1.08, 0.8], [1.3, 0.78], [1.5, 0.775], [1.72, 0.79], [1.92, 0.8]];
+const walkRange = land => [0.16, land >= 2 ? 1.86 : 0.88]; // yürüyüş aralığı (x)
 function promenadeY(x) {
   for (let i = 1; i < PROMENADE.length; i++) {
     const [x0, y0] = PROMENADE[i - 1], [x1, y1] = PROMENADE[i];
@@ -470,6 +477,182 @@ const DRAW = {
     }
   },
 
+  cafe(ctx, u, o) {
+    const wall = ['#b07a4a', '#c98b5a', '#d6ecff'][o.style], awn = o.col || ['#e5484d', '#e5484d', '#4fb3ff'][o.style];
+    const w = u * (0.14 + o.lv * 0.02), h = u * (0.08 + o.lv * 0.01);
+    ctx.fillStyle = wall;
+    ctx.fillRect(-w / 2, -h, w, h);
+    ctx.fillStyle = '#7a4a2e';
+    ctx.beginPath();
+    ctx.moveTo(-w / 2 - u * 0.015, -h);
+    ctx.lineTo(0, -h - u * 0.06);
+    ctx.lineTo(w / 2 + u * 0.015, -h);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-w / 2 - u * 0.015, -h - u * 0.004, w + u * 0.03, u * 0.008);
+    for (let k = 0; k < 6; k++) {
+      ctx.fillStyle = k % 2 ? '#ffffff' : awn;
+      ctx.fillRect(-w / 2 + (k * w) / 6, -h * 0.66, w / 6, h * 0.18);
+    }
+    ctx.fillStyle = '#ffd98a';
+    ctx.fillRect(-w * 0.38, -h * 0.42, w * 0.3, h * 0.26);
+    ctx.fillStyle = '#4a3324';
+    ctx.fillRect(w * 0.1, -h * 0.44, w * 0.2, h * 0.44);
+    if (o.night > 0.3) glow(ctx, -w * 0.23, -h * 0.3, u * 0.05, '#ffe7a8', o.night * 0.5);
+    mug(ctx, 0, -h - u * 0.075, u * 0.012, o.t);
+    if (o.lv >= 2) {
+      ctx.fillStyle = '#9a6a42';
+      ctx.fillRect(w / 2 + u * 0.02, -u * 0.03, u * 0.04, u * 0.006);
+      ctx.fillRect(w / 2 + u * 0.037, -u * 0.03, u * 0.006, u * 0.03);
+      ctx.fillStyle = awn;
+      ctx.beginPath();
+      ctx.moveTo(w / 2 + u * 0.005, -u * 0.06);
+      ctx.lineTo(w / 2 + u * 0.04, -u * 0.08);
+      ctx.lineTo(w / 2 + u * 0.075, -u * 0.06);
+      ctx.fill();
+      ctx.fillRect(w / 2 + u * 0.039, -u * 0.06, u * 0.003, u * 0.03);
+    }
+    if (o.lv >= 3) {
+      for (let k = 0; k <= 6; k++) {
+        ctx.fillStyle = ['#ffd166', '#ff5a6a', '#3cc977'][k % 3];
+        circle(ctx, -w / 2 + (k * w) / 6, -h * 0.7 + Math.sin(k) * u * 0.003, u * 0.005);
+        ctx.fill();
+      }
+    }
+  },
+
+  market(ctx, u, o) {
+    const top = o.col || ['#3d7bd9', '#9a6a42', '#8fd0ff'][o.style];
+    const w = u * (0.13 + o.lv * 0.025);
+    ctx.fillStyle = o.style === 2 ? '#cfe9ff' : '#9a6a42';
+    ctx.fillRect(-w / 2, -u * 0.05, w, u * 0.05);
+    ctx.fillStyle = '#e8f6ff';
+    ctx.fillRect(-w / 2, -u * 0.058, w, u * 0.012);
+    const nf = 2 + o.lv;
+    for (let k = 0; k < nf; k++) {
+      ctx.fillStyle = k % 2 ? '#ff9f43' : '#ffb870';
+      ellipse(ctx, -w / 2 + ((k + 0.5) * w) / nf, -u * 0.064, u * 0.014, u * 0.007, 0.2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#5b4636';
+    ctx.fillRect(-w / 2, -u * 0.13, u * 0.008, u * 0.08);
+    ctx.fillRect(w / 2 - u * 0.008, -u * 0.13, u * 0.008, u * 0.08);
+    for (let k = 0; k < 5; k++) {
+      ctx.fillStyle = k % 2 ? '#ffffff' : top;
+      ctx.beginPath();
+      const x = -w / 2 - u * 0.01 + (k * (w + u * 0.02)) / 5, ww = (w + u * 0.02) / 5;
+      ctx.moveTo(x, -u * 0.15);
+      ctx.lineTo(x + ww, -u * 0.15);
+      ctx.lineTo(x + ww, -u * 0.125);
+      ctx.quadraticCurveTo(x + ww / 2, -u * 0.11, x, -u * 0.125);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-w / 2 - u * 0.01, -u * 0.155, w + u * 0.02, u * 0.007);
+    if (o.lv >= 3) {
+      ctx.fillStyle = '#7a5434';
+      roundRect(ctx, -u * 0.04, -u * 0.2, u * 0.08, u * 0.035, u * 0.008);
+      ctx.fill();
+      ctx.fillStyle = '#ff9f43';
+      ellipse(ctx, 0, -u * 0.183, u * 0.022, u * 0.009);
+      ctx.fill();
+    }
+  },
+
+  bell(ctx, u, o) {
+    const metal = o.col || ['#c98b3f', '#c9d2dc', '#ffd166'][o.style];
+    const h = u * (0.12 + o.lv * 0.025), w = u * 0.1;
+    ctx.fillStyle = '#7a5434';
+    ctx.fillRect(-w / 2, -h, u * 0.012, h);
+    ctx.fillRect(w / 2 - u * 0.012, -h, u * 0.012, h);
+    ctx.fillRect(-w / 2 - u * 0.01, -h, w + u * 0.02, u * 0.014);
+    if (o.lv >= 2) {
+      ctx.fillStyle = '#8e3b2e';
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 - u * 0.025, -h);
+      ctx.lineTo(0, -h - u * 0.05);
+      ctx.lineTo(w / 2 + u * 0.025, -h);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-w / 2 - u * 0.025, -h - u * 0.004, w + u * 0.05, u * 0.007);
+    }
+    ctx.save();
+    ctx.translate(0, -h + u * 0.014);
+    ctx.rotate(Math.sin(o.t * 2) * 0.12);
+    ctx.fillStyle = metal;
+    ctx.beginPath();
+    ctx.moveTo(-u * 0.012, 0);
+    ctx.quadraticCurveTo(-u * 0.016, u * 0.03, -u * 0.03, u * 0.045);
+    ctx.lineTo(u * 0.03, u * 0.045);
+    ctx.quadraticCurveTo(u * 0.016, u * 0.03, u * 0.012, 0);
+    ctx.fill();
+    ctx.fillStyle = shade(metal.startsWith('#') ? metal : '#c98b3f', -0.3);
+    circle(ctx, 0, u * 0.05, u * 0.007);
+    ctx.fill();
+    ctx.restore();
+    if (o.lv >= 3) {
+      const cols = ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff'];
+      for (let k = 0; k < 4; k++) {
+        ctx.fillStyle = cols[k];
+        ctx.beginPath();
+        const x = -w / 2 - u * 0.02 + k * u * 0.035;
+        ctx.moveTo(x, -h - u * 0.01);
+        ctx.lineTo(x + u * 0.025, -h - u * 0.01);
+        ctx.lineTo(x + u * 0.0125, -h + u * 0.012);
+        ctx.fill();
+      }
+    }
+  },
+
+  ferry(ctx, u, o) {
+    const hull = o.col || ['#e5484d', '#3d7bd9', '#f5b81c'][o.style];
+    const w = u * (0.16 + o.lv * 0.03), bob = Math.sin(o.t * 1.5) * u * 0.004;
+    ctx.save();
+    ctx.translate(0, bob);
+    ctx.fillStyle = hull;
+    ctx.beginPath();
+    ctx.moveTo(-w / 2, -u * 0.045);
+    ctx.lineTo(w / 2, -u * 0.045);
+    ctx.lineTo(w * 0.4, 0);
+    ctx.lineTo(-w * 0.42, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-w / 2 + u * 0.01, -u * 0.03, w - u * 0.02, u * 0.007);
+    ctx.fillRect(-w * 0.28, -u * 0.095, w * 0.48, u * 0.05);
+    ctx.fillStyle = '#4fb3ff';
+    for (let k = 0; k < 3 + o.lv; k++) {
+      circle(ctx, -w * 0.22 + k * u * 0.028, -u * 0.07, u * 0.008);
+      ctx.fill();
+    }
+    if (o.lv >= 2) {
+      ctx.fillStyle = '#1d3557';
+      ctx.fillRect(w * 0.08, -u * 0.13, u * 0.02, u * 0.035);
+      smoke(ctx, w * 0.09, -u * 0.13, u, o.t);
+    }
+    if (o.lv >= 3) {
+      ctx.strokeStyle = '#5b4636';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.35, -u * 0.045);
+      ctx.lineTo(-w * 0.35, -u * 0.15);
+      ctx.stroke();
+      ctx.fillStyle = '#ffd166';
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.35, -u * 0.15);
+      ctx.lineTo(-w * 0.35 + u * 0.035, -u * 0.138);
+      ctx.lineTo(-w * 0.35, -u * 0.125);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,.7)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-w * 0.5, u * 0.004);
+    ctx.quadraticCurveTo(0, u * 0.012 + bob, w * 0.5, u * 0.004);
+    ctx.stroke();
+  },
+
   hut(ctx, u, o) {
     const wall = ['#9a6a42', '#9aa3b2', '#cfe9ff'][o.style], roof = o.col || '#7a3b2e';
     ctx.fillStyle = wall;
@@ -667,14 +850,34 @@ export class VillageView {
     this.focus = null;
     this.preview = null; // { id, style, color } — satın almadan önce sahnede gösterilir
     this.onSelect = null;
+    this.onDistrict = null; // kilitli bölge tabelasına dokunulunca (bölge indeksi)
+    this.sx = this.sxT = 0; // yatay kaydırma (piksel); sxT hedef
+    this.panels = 1;
     let down = null;
-    canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+    canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, sx: this.sx, drag: false }; });
+    canvas.addEventListener('pointermove', e => {
+      if (!down || this.focus) return;
+      const dx = e.clientX - down.x;
+      if (!down.drag && Math.abs(dx) > 8) down.drag = true;
+      if (down.drag) this.sx = this.sxT = this.clampSx(down.sx - dx);
+    });
     canvas.addEventListener('pointerup', e => {
-      if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
-      const r = canvas.getBoundingClientRect();
-      const id = this.hit(e.clientX - r.left, e.clientY - r.top);
+      const d = down;
+      down = null;
+      if (!d || d.drag || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10) return;
+      const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+      // panel okları (ekran koordinatı)
+      if (!this.focus && y > this.H * 0.3 && y < this.H * 0.7) {
+        const cur = Math.round(this.sx / this.W);
+        if (x > this.W - 40 && cur < this.panels - 1) { this.goPanel(cur + 1); return; }
+        if (x < 40 && cur > 0) { this.goPanel(cur - 1); return; }
+      }
+      const lock = this.lockHit(x, y);
+      if (lock !== null) { this.onDistrict?.(lock); return; }
+      const id = this.hit(x, y);
       if (id) this.onSelect?.(id);
     });
+    canvas.addEventListener('pointercancel', () => { down = null; });
     window.addEventListener('resize', () => this.resize());
   }
 
@@ -750,7 +953,7 @@ export class VillageView {
 
   drawCoinFx(ctx, W, H, u, dt) {
     if (!this.coinFx?.length) return;
-    const tx = 0.94, ty = 0.04;
+    const tx = this.sx / W + 0.94, ty = 0.04;
     this.coinFx = this.coinFx.filter(c => (c.t += dt) < 0.9);
     for (const c of this.coinFx) {
       if (c.t < 0) continue;
@@ -764,6 +967,18 @@ export class VillageView {
       ctx.lineWidth = 1.2;
       ctx.stroke();
     }
+  }
+
+  clampSx(v) { return Math.max(0, Math.min((this.panels - 1) * this.W, v)); }
+  get panel() { return this.W ? Math.round(this.sx / this.W) : 0; }
+  goPanel(i) { this.sxT = this.clampSx(i * this.W); }
+
+  // Kilitli bölge tabelası (dünya koordinatında kaydedilir)
+  lockHit(sx, sy) {
+    const { cam, W, H } = this;
+    const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
+    for (const [i, x0, y0, x1, y1] of this.lockRects || []) if (wx > x0 && wx < x1 && wy > y0 && wy < y1) return i;
+    return null;
   }
 
   hit(sx, sy) {
@@ -790,14 +1005,20 @@ export class VillageView {
 
   // village: P.village, vl: köy seviyesi, plots: kurulabilir yapılar, ready: parası yetenler
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null }) {
+  // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true }) {
     if (!this.W) this.resize();
     const { ctx, W, H } = this;
     const u = Math.min(W, H);
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.land = land;
+    this.panels = Math.min(DISTRICTS.length, land + (teaser ? 1 : 0));
+    this.sxT = this.clampSx(this.sxT);
+    this.sx += (this.sxT - this.sx) * Math.min(1, dt * 8);
+    const n = this.panels;
 
     // kamera
-    const tgt = this.focus ? { x: AT[this.focus][0] * W, y: AT[this.focus][1] * H - u * 0.08, z: 1.8 } : { x: W / 2, y: H / 2, z: 1 };
+    const tgt = this.focus ? { x: AT[this.focus][0] * W, y: AT[this.focus][1] * H - u * 0.08, z: 1.8 } : { x: W / 2 + this.sx, y: H / 2, z: 1 };
     const k = Math.min(1, dt * 6);
     this.cam.x += (tgt.x - this.cam.x) * k;
     this.cam.y += (tgt.y - this.cam.y) * k;
@@ -819,18 +1040,22 @@ export class VillageView {
     const skyArt = art('bg_sky'), ground = art('bg_ground'), aurora = art('bg_aurora');
     if (skyArt && ground) {
       // Katmanlı görsel: gökyüzü, (Lv5'ten itibaren) kuzey ışıkları, yol ve temelleri çizili zemin.
-      // Zemin, AT konumlarına göre çizildiği için tuvale birebir oturtulur.
-      ctx.drawImage(skyArt, 0, 0, W, H);
-      if (vl >= 5 && aurora) {
-        ctx.globalAlpha = Math.min(1, (vl >= 9 ? 0.75 : 0.5) + night * 0.4) * (0.85 + 0.15 * Math.sin(time * 0.8));
-        ctx.drawImage(aurora, 0, 0, W, H);
-        ctx.globalAlpha = 1;
+      // Zemin, AT konumlarına göre çizildiği için tuvale birebir oturtulur. Sonraki panellerde gökyüzü
+      // aynalanarak tekrarlanır (kenarlar dikişsiz birleşir), zemin kodla çizilir.
+      for (let i = 0; i < n; i++) {
+        panelImage(ctx, skyArt, i, W, H);
+        if (vl >= 5 && aurora) {
+          ctx.globalAlpha = Math.min(1, (vl >= 9 ? 0.75 : 0.5) + night * 0.4) * (0.85 + 0.15 * Math.sin(time * 0.8));
+          panelImage(ctx, aurora, i, W, H);
+          ctx.globalAlpha = 1;
+        }
       }
       if (vl >= 11) this.fireworks(ctx, W, H, u, time);
       ctx.drawImage(ground, 0, 0, W, H);
+      for (let i = 1; i < n; i++) this.districtGround(ctx, i, W, H, u, night, vl, sampleColor(ground, 0.99, 0.7, '#eef4fb'));
       if (night > 0) {
         ctx.fillStyle = `rgba(20,26,70,${night * 0.35})`;
-        ctx.fillRect(0, 0, W, H);
+        ctx.fillRect(0, 0, W * n, H);
       }
     } else {
     if (vl >= 5) this.aurora(time, W, H, u, vl >= 9 ? Math.max(night, 0.7) : night);
@@ -846,13 +1071,13 @@ export class VillageView {
     ctx.lineTo(W * 0.36, H * 0.36);
     ctx.lineTo(W * 0.58, H * 0.12);
     ctx.lineTo(W * 0.8, H * 0.34);
-    ctx.lineTo(W * 2, H * 0.2);
-    ctx.lineTo(W * 2, H * 0.45);
+    ctx.lineTo(W * (n + 1), H * 0.2);
+    ctx.lineTo(W * (n + 1), H * 0.45);
     ctx.lineTo(-W, H * 0.45);
     ctx.fill();
 
     ctx.fillStyle = mix('#f4faff', '#c3cbe6', night);
-    ctx.fillRect(-W, H * 0.38, W * 3, H * 1.2);
+    ctx.fillRect(-W, H * 0.38, W * (n + 2), H * 1.2);
     ctx.fillStyle = mix('#5aa0d8', '#2c4f86', night);
     ctx.beginPath();
     ctx.moveTo(-W, H * 0.7);
@@ -862,6 +1087,7 @@ export class VillageView {
     ctx.fill();
 
     this.paths(ctx, W, H, u, night, vl);
+    for (let i = 1; i < n; i++) this.districtGround(ctx, i, W, H, u, night, vl, null);
     }
 
     if (vl >= 7) {
@@ -925,7 +1151,7 @@ export class VillageView {
       else if (w.wait > 0) w.wait -= dt;
       else {
         const d = w.tx - w.x;
-        if (Math.abs(d) < 0.01) { w.wait = 1 + Math.random() * 2.5; w.tx = WALK[0] + Math.random() * (WALK[1] - WALK[0]); }
+        if (Math.abs(d) < 0.01) { w.wait = 1 + Math.random() * 2.5; const wr = walkRange(land); w.tx = wr[0] + Math.random() * (wr[1] - wr[0]); }
         else { w.x += Math.sign(d) * dt * w.speed; w.face = Math.sign(d); }
       }
       const sale = hero ? this.sale : null;
@@ -972,6 +1198,8 @@ export class VillageView {
     items.sort((a, b) => a[0] - b[0]);
     for (const [, draw] of items) draw();
     if (vl >= 8) this.bunting(ctx, W, H, u, time);
+    this.lockRects = [];
+    for (let i = land; i < n; i++) this.lockedPanel(ctx, i, W, H, u, time, vl);
     for (const [x, y, kind] of markers) {
       if (kind === 'cups') cupBubble(ctx, x, y, u, time, this.cocoaInfo);
       else upgradeMarker(ctx, x, y, u, time);
@@ -985,6 +1213,7 @@ export class VillageView {
     ctx.restore();
 
     if (vl >= 2) this.snowfall(ctx, W, H, time);
+    if (!this.focus && n > 1) this.panelNav(ctx, W, H, u, time);
 
     this.parts = this.parts.filter(p => (p.life -= dt) > 0);
     ctx.save();
@@ -1005,9 +1234,17 @@ export class VillageView {
   }
 
   // Sıkıştırılmış kar patikalar: ana yol, her yapı yerine giden kol ve yapı temelleri.
-  paths(ctx, W, H, u, night, vl) {
+  // x0-x1: yalnızca bu aralıktaki (bölgedeki) yapıların patikaları ve temelleri; ana yol aralığa kırpılır.
+  paths(ctx, W, H, u, night, vl, x0 = -Infinity, x1 = Infinity) {
     const edge = mix('#cbd9e8', '#8a93b8', night), fill = mix('#e3ebf5', '#a9b1d0', night);
-    const spurs = Object.entries(AT).filter(([id]) => id !== 'lights' && id !== 'lighthouse').map(([, [fx, fy]]) => [fx, fy]);
+    const inRange = ([id, [fx]]) => fx >= x0 && fx < x1;
+    const spurs = Object.entries(AT).filter(e => !NO_SPUR.has(e[0]) && inRange(e)).map(([, [fx, fy]]) => [fx, fy]);
+    ctx.save();
+    if (x0 > -Infinity) {
+      ctx.beginPath();
+      ctx.rect(x0 * W, 0, (x1 - x0) * W, H);
+      ctx.clip();
+    }
     const stroke = w => {
       ctx.lineWidth = w;
       ctx.lineCap = 'round';
@@ -1038,9 +1275,10 @@ export class VillageView {
         ctx.fill();
       }
     }
-    // temeller: her yapının sabit yeri (iskele suyun üstünde, temeli yok)
-    for (const [id, [fx, fy]] of Object.entries(AT)) {
-      if (id === 'lights' || id === 'lighthouse' || id === 'pier') continue;
+    // temeller: her yapının sabit yeri (suyun üstündekilerin temeli yok)
+    for (const e of Object.entries(AT)) {
+      const [id, [fx, fy]] = e;
+      if (NO_PAD.has(id) || !inRange(e)) continue;
       ctx.fillStyle = fill;
       ellipse(ctx, fx * W, fy * H, u * 0.1, u * 0.026);
       ctx.fill();
@@ -1048,6 +1286,105 @@ export class VillageView {
       ctx.lineWidth = 1.2;
       ctx.stroke();
     }
+    ctx.restore();
+  }
+
+  // Bölge zemini (i ≥ 1). snow verilirse görsel zeminin rengiyle kar ve yollar da çizilir;
+  // verilmezse (kod çizimi) yalnızca bölgeye özgü su eklenir, yollar paths() ile zaten çizilmiştir.
+  districtGround(ctx, i, W, H, u, night, vl, snow) {
+    const x0 = i * W;
+    if (snow) {
+      ctx.fillStyle = mix(snow, '#c3cbe6', night);
+      ctx.fillRect(x0, H * 0.38, W, H * 0.62);
+      ctx.fillStyle = 'rgba(255,255,255,.5)';
+      for (let k = 0; k < 5; k++) {
+        ellipse(ctx, x0 + W * (0.1 + k * 0.2), H * (0.47 + (k % 2) * 0.05), u * 0.06, u * 0.015);
+        ctx.fill();
+      }
+      this.paths(ctx, W, H, u, night, vl, i, i + 1);
+    }
+    if (DISTRICTS[i]?.id === 'harbor') {
+      // liman: alt kenarda deniz, kıyıda buz kenarı ve yüzen buz parçaları
+      ctx.fillStyle = mix('#3f93d9', '#2c4f86', night);
+      ctx.beginPath();
+      ctx.moveTo(x0 + W * 0.26, H);
+      ctx.quadraticCurveTo(x0 + W * 0.36, H * 0.87, x0 + W * 0.5, H * 0.865);
+      ctx.lineTo(x0 + W * 1.02, H * 0.855);
+      ctx.lineTo(x0 + W * 1.02, H);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.85)';
+      ctx.lineWidth = u * 0.012;
+      ctx.beginPath();
+      ctx.moveTo(x0 + W * 0.26, H);
+      ctx.quadraticCurveTo(x0 + W * 0.36, H * 0.87, x0 + W * 0.5, H * 0.865);
+      ctx.lineTo(x0 + W * 1.02, H * 0.855);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.9)';
+      for (const [fx, fy, r] of [[0.42, 0.95, 0.03], [0.86, 0.92, 0.025], [0.95, 0.97, 0.02]]) {
+        ellipse(ctx, x0 + W * fx, H * fy, u * r, u * r * 0.4);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Açılmamış bölge: üstünde sis, ortada fiyat ve şartı yazan tabela.
+  lockedPanel(ctx, i, W, H, u, t, vl) {
+    const d = DISTRICTS[i], x0 = i * W;
+    ctx.fillStyle = 'rgba(236,244,252,.74)';
+    ctx.fillRect(x0, 0, W, H);
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    for (let k = 0; k < 6; k++) {
+      const cx = x0 + W * ((k * 0.19 + t * 0.01) % 1.05), cy = H * (0.3 + (k % 3) * 0.2);
+      ellipse(ctx, cx, cy, u * 0.16, u * 0.05);
+      ctx.fill();
+    }
+    const bx = x0 + W / 2, by = H * 0.6, bw = u * 0.62, bh = u * 0.24;
+    ctx.fillStyle = '#7a5434';
+    ctx.fillRect(bx - u * 0.012, by, u * 0.024, u * 0.16);
+    ctx.fillStyle = '#9a6a42';
+    roundRect(ctx, bx - bw / 2, by - bh, bw, bh, u * 0.03);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(bx - bw / 2 + u * 0.02, by - bh - u * 0.008, bw - u * 0.04, u * 0.016);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff6e6';
+    ctx.font = `700 ${Math.round(u * 0.06)}px Fredoka, sans-serif`;
+    ctx.fillText(d.name, bx, by - bh * 0.68);
+    ctx.font = `600 ${Math.round(u * 0.042)}px Fredoka, sans-serif`;
+    const line = d.soon ? 'Yakında' : vl < d.vl ? `Köy Lv${d.vl}'te açılır` : `Aç · ${d.price} coin`;
+    ctx.fillStyle = !d.soon && vl >= d.vl ? '#ffd166' : '#f3e2c8';
+    ctx.fillText(line, bx, by - bh * 0.3);
+    this.lockRects.push([i, bx - bw / 2, by - bh, bx + bw / 2, by + u * 0.16]);
+  }
+
+  // Panel okları (sağ/sol kenar) ve hangi panelde olunduğunu gösteren noktalar; ekran koordinatında.
+  panelNav(ctx, W, H, u, t) {
+    const cur = Math.round(this.sx / W), n = this.panels;
+    ctx.save();
+    ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    const arrow = (x, dir) => {
+      const y = H / 2 + Math.sin(t * 3) * 2;
+      ctx.fillStyle = 'rgba(29,53,87,.45)';
+      circle(ctx, x, y, 15);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x - dir * 4, y - 7);
+      ctx.lineTo(x + dir * 4, y);
+      ctx.lineTo(x - dir * 4, y + 7);
+      ctx.stroke();
+    };
+    if (cur < n - 1) arrow(W - 20, 1);
+    if (cur > 0) arrow(20, -1);
+    for (let i = 0; i < n; i++) {
+      ctx.fillStyle = i === cur ? '#ffffff' : 'rgba(255,255,255,.5)';
+      circle(ctx, W / 2 + (i - (n - 1) / 2) * 14, H - 10, i === cur ? 4 : 3);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   // Kurulmamış ama açık yapı yeri: temel üstünde kazıklar, ip ve tabela; parası yetiyorsa zıplayan "!"
@@ -1267,4 +1604,33 @@ function cupBubble(ctx, x, y, u, t, info) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(info.cups), x + w * 0.14, y - h / 2 + b + 1);
+}
+
+// Gökyüzü gibi tam panel görseller: tek sıradaki paneller aynalanır, böylece kenarlar dikişsiz birleşir.
+function panelImage(ctx, im, i, W, H) {
+  if (i % 2 === 0) { ctx.drawImage(im, i * W, 0, W, H); return; }
+  ctx.save();
+  ctx.translate((i + 1) * W, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(im, 0, 0, W, H);
+  ctx.restore();
+}
+
+// Görseldeki bir noktanın rengi (zemin katmanının kar rengiyle kodla çizilen bölgeyi eşlemek için).
+const colorCache = new Map();
+function sampleColor(im, fx, fy, fallback) {
+  const key = im.src + fx + fy;
+  if (!colorCache.has(key)) {
+    let col = fallback;
+    try {
+      const c = document.createElement('canvas');
+      c.width = c.height = 1;
+      const x = c.getContext('2d');
+      x.drawImage(im, Math.floor(im.width * fx), Math.floor(im.height * fy), 1, 1, 0, 0, 1, 1);
+      const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
+      col = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    } catch { /* örneklenemezse varsayılan */ }
+    colorCache.set(key, col);
+  }
+  return colorCache.get(key);
 }

@@ -254,14 +254,26 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 **İşaret kuralı:** Bakiye yeten her yerde (köydeki yapının üstünde ve listedeki kartında) yeşil ok çıkar. ❄ için v0.3'te yapıldı. Coin harcama yerleri de aynı işareti kullanacak.
 
 ### 12.4 Genişleyen köy
-- Köy ekranı **yatay kaydırılır**. Her bölge ekran genişliğinde bir paneldir, sırayla açılır:
-  1. Köy Meydanı (bugünkü 12 yapı)
-  2. Buz Limanı (iskele, yolcu teknesi, balıkhane)
-  3. Çam Ormanı (kızak kulübesi, oduncu, sıcak kaplıca)
-  4. Kuzey Tepesi (gözlemevi, ışık festivali alanı)
-  5. Donmuş Göl (paten pisti, buz balıkçılığı)
-- Bir bölgenin bütün yapıları kurulunca bir sonraki bölgenin kilidi coin'le açılabilir. Böylece içerik hep bir adım ileride durur, köy hiç "bitmez".
-- Yeni bölge = yeni yapılar + yeni buff'lar + yeni iç mekânlar. Köy seviyesi tavanı bölgeyle birlikte yükselir.
+**Uygulandı (v0.3 B2).** Oyunda bunlara **arazi** denir, çünkü "Bölge 1/2" adı seviye tavanı için kullanılıyor.
+
+- **Kaydırma:** Köy ekranı yatay kaydırılır. Her arazi ekran genişliğinde bir paneldir.
+  - Parmakla sürüklenir; kenarlarda oklar, altta hangi panelde olunduğunu gösteren noktalar var.
+  - Etiket o an bakılan arazinin adını gösterir.
+- **Sonraki arazi:** Her zaman sağda sisli bir panel olarak görünür. Tabelasında adı, şartı ve fiyatı yazar; dokununca açma ekranı gelir.
+  - Yapı listesinin başında da "Yeni arazi" kartı vardır.
+  - Açılabilir durumdaysa köy sekmesinde ve kartta kırmızı işaret çıkar.
+- **Kural:** Arazi **coin**'le açılır (köy seviyesi şartı var). İçindeki yapılar **kar tanesi**yle kurulur.
+
+| Arazi | Şart | Fiyat | İçerik |
+|---|---|---|---|
+| 1. Buzul Koyu | — | — | Bugünkü 12 yapı |
+| 2. Buz Limanı | Köy Lv5 | 2.000 coin | Liman kafesi (fincan +1…+5 coin), Yolcu teknesi (kakao üretimi +%10…50), Balık pazarı (yıldız başına +2…+6 coin), Liman çanı (etkinlik puanı +%10…50) |
+| 3. Çam Ormanı | Köy Lv9 | 5.000 coin | Yakında: tabela "Yakında" gösterir |
+| 4. Kuzey Tepesi, 5. Donmuş Göl | | | Fikir aşamasında |
+
+- **Yerleşim:** Liman yapıları ikinci panelin koordinatlarında: kafe (1.22, 0.63), pazar (1.47, 0.60), çan (1.76, 0.53), tekne denizde (1.64, 0.94). Ana yol limanda kıyı boyunca devam eder, penguenler iki arazi arasında yürür.
+- **Görsel:** Limanın zemini ve yapıları şimdilik kodla çiziliyor. Görsel isteği görsel chat'e gönderildi.
+- **Uyumluluk:** Paylaşım kodu yapıları sırayla kodladığı için yeni yapılar listenin sonuna eklenir. Ziyaret edilen köyde açık arazi sayısı kurulu yapılardan çıkarılır.
 
 ### 12.5 Köy yaşamı (cihaz saatine göre)
 | Saat | Ne olur |
@@ -278,7 +290,7 @@ Köylüler yollar boyunca yürür. Dokununca bir cümle söyler, bazen günlük 
 |---|---|---|
 | **A · Hızlı düzeltmeler** | Ara reklam kaldırıldı · gardırop önizlemesi düzeltildi (dene → "Satın al ve giy") · geliştirilebilir yapıya yeşil ok · **Pofi animasyonları**: göbek üstü kayış (4 yön), kar tozu, çarpınca baş dönmesi yıldızları ve sallanma, rampada süpermen uçuşu, buz deliğinde dönme, kazanınca zıplayıp sevinme, boşta nefes alma | ✅ v0.3 |
 | **B1 · Kakao** | Fincan birikmesi, Pofi'nin yürüyüp satması, tarifler | ✅ v0.3 |
-| **B2 · Genişleyen köy** | Yatay kaydırma, bölge paneli, arazi açma | |
+| **B2 · Genişleyen köy** | Yatay kaydırma, arazi paneli, arazi açma, Buz Limanı (4 yapı) | ✅ v0.3 (görseli bekliyor) |
 | **B3 · İç mekân** | İglo içi (6 yuva, 3 kademe, önizleme), sonra diğer yapılar | |
 | **B4 · Köy yaşamı** | Köylüler, saat rutini, köylü daveti | |
 | **B5 · Süsler** | Yerleştirilebilir süsler | |

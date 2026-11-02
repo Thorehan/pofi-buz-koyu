@@ -69,6 +69,14 @@ export const ZONES = [
   { name: 'Bölge 1 · Buzul Koyu', maxLevel: 3, fromVillageLevel: 1 },
   { name: 'Bölge 2 · Kuzey Işıkları', maxLevel: 5, fromVillageLevel: 8 },
 ];
+// Köy yana doğru genişler: her bölge ekran genişliğinde bir paneldir. İlki ücretsiz; sonrakiler köy
+// seviyesi şartıyla coin'le açılır (arazi), içindeki yapılar kar tanesiyle kurulur. soon: içeriği henüz yok.
+export const DISTRICTS = [
+  { id: 'bay', name: 'Buzul Koyu', price: 0, vl: 1 },
+  { id: 'harbor', name: 'Buz Limanı', price: 2000, vl: 5, text: 'Yolcu teknesi, liman kafesi, balık pazarı ve liman çanı' },
+  { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, soon: true },
+];
+
 export const BUILDINGS = [
   { id: 'igloo', name: 'İglo', costs: [1, 3, 6, 9, 12], unlock: 1, styles: ['Klasik', 'Kristal', 'Kar evi'], stylePrice: 120, buff: 'coinPct', values: [0.1, 0.2, 0.3, 0.4, 0.5] },
   { id: 'pier', name: 'Balık iskelesi', costs: [2, 3, 6, 9, 12], unlock: 1, styles: ['Meşe', 'Kızıl ahşap', 'Gri taş'], stylePrice: 100, buff: 'fishCoin', values: [1, 2, 3, 4, 5] },
@@ -82,6 +90,11 @@ export const BUILDINGS = [
   { id: 'lighthouse', name: 'Deniz feneri', costs: [4, 6, 9, 14, 18], unlock: 3, styles: ['Çizgili', 'Taş', 'Modern'], stylePrice: 150, buff: 'freeContinues', values: [1, 2, 3, 4, 5] },
   { id: 'fort', name: 'Kartopu kalesi', costs: [4, 6, 9, 14, 18], unlock: 5, styles: ['Kale', 'Şato', 'Kule'], stylePrice: 180, buff: 'discount', values: [0.1, 0.2, 0.3, 0.35, 0.4] },
   { id: 'observatory', name: 'Gözlem noktası', costs: [5, 7, 10, 15, 20], unlock: 7, styles: ['Kubbe', 'Teleskop', 'Anten'], stylePrice: 180, buff: 'cocoaCap', base: 8, values: [10, 12, 16, 20, 24] },
+  // Buz Limanı (district 1). Paylaşım kodu yapıları sırayla kodladığı için yeni yapılar hep sona eklenir.
+  { id: 'cafe', name: 'Liman kafesi', district: 1, costs: [5, 7, 10, 15, 20], unlock: 5, styles: ['Ahşap', 'Kırmızı tente', 'Buz camı'], stylePrice: 180, buff: 'cupBonus', values: [1, 2, 3, 4, 5] },
+  { id: 'ferry', name: 'Yolcu teknesi', district: 1, costs: [6, 8, 11, 16, 21], unlock: 5, styles: ['Kırmızı', 'Mavi', 'Sarı'], stylePrice: 180, buff: 'cocoaPct', values: [0.1, 0.2, 0.3, 0.4, 0.5] },
+  { id: 'market', name: 'Balık pazarı', district: 1, costs: [5, 7, 10, 15, 20], unlock: 5, styles: ['Tenteli', 'Kulübe', 'Buz tezgâhı'], stylePrice: 180, buff: 'starCoin', values: [2, 3, 4, 5, 6] },
+  { id: 'bell', name: 'Liman çanı', district: 1, costs: [6, 8, 11, 16, 21], unlock: 5, styles: ['Bronz', 'Gümüş', 'Altın'], stylePrice: 180, buff: 'eventPct', values: [0.1, 0.2, 0.3, 0.4, 0.5] },
 ];
 
 const pct = v => `%${Math.round(v * 100)}`;
@@ -90,6 +103,10 @@ export const BUFF_TEXT = {
   fishCoin: v => `Balık başına +${v} coin`,
   hardMoves: v => `Hamle limitli levellerde +${v} hamle`,
   cocoa: v => `Saatte ${v} fincan kakao`,
+  cupBonus: v => `Kakao fincanı +${v} coin`,
+  cocoaPct: v => `Kakao üretimi +${pct(v)}`,
+  starCoin: v => `Yıldız başına +${v} coin`,
+  eventPct: v => `Etkinlik puanı +${pct(v)}`,
   freeHints: v => `Her gün ${v} ücretsiz ipucu`,
   dailyPct: v => `Günlük ödül +${pct(v)}`,
   x5: v => `Çarpanda x5 bölgesi %${v}`,

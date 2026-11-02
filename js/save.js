@@ -11,6 +11,7 @@ function defaults() {
     hints: ECON.startHints,
     stars: {},
     village: {}, // { binaId: { lv, style, color } } — kurulu yapılar
+    land: 1, // açılmış bölge sayısı (DISTRICTS)
     styles: {}, // { binaId: [açılmış stil indeksleri] }
     colors: [], // açılmış renk kimlikleri (tüm yapılarda geçerli)
     vlClaimed: 1, // ödülü alınmış en yüksek köy seviyesi

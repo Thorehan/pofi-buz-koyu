@@ -395,6 +395,8 @@ html, body {
 .progress { height: 10px; background: rgba(255, 255, 255, .7); border-radius: 5px; overflow: hidden; margin-top: 6px; }
 #zoneBar { height: 100%; background: var(--green); width: 0; transition: width .4s; }
 .garden-wrap { position: relative; flex: none; height: 38vh; min-height: 220px; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 0 rgba(29, 53, 87, .12); }
+.garden-wrap canvas { touch-action: pan-y; } /* yatay sürükleme köyü kaydırır, dikey sayfayı */
+.b-card.district { grid-column: 1 / -1; background: #fff3e6; }
 #village, #visitCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .honey { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff3e6; border-radius: 16px; padding: 8px 10px; }
 .honey-label { flex: 1 1 100%; font-size: 16px; }

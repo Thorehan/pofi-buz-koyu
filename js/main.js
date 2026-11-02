@@ -5,6 +5,7 @@ import { ensureEvent, eventPoints, timeLeft, claimable, nextMilestone, prizeOf, 
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
   buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone, cupPrice, nextRecipe,
+  nextDistrict, landOf,
 } from './meta.js';
 import { drawPofi, drawFish } from './draw.js';
 import { loadArt, setArtEnabled } from './art.js';
@@ -12,7 +13,7 @@ import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
-  BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA,
+  BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -24,6 +25,7 @@ const board = new BoardView($('board'));
 const village = new VillageView($('village'));
 const visitView = new VillageView($('visitCanvas'));
 village.onSelect = id => openSheet(id);
+village.onDistrict = i => showDistrict(i);
 board.outfit = P.outfit;
 
 const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false });
@@ -51,7 +53,7 @@ function updateWallet() {
   $('coins').textContent = P.coins;
   $('flakes').textContent = P.flakes;
   $('playLevel').textContent = P.level;
-  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady());
+  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady());
   $('dotShop').classList.toggle('hidden', freeCoinsLeft() <= 0);
   renderNextCard();
   renderDailyButtons();
@@ -326,7 +328,7 @@ function win() {
     raw = Math.round(dailyPuzzleCoins(P.dailyPuzzleStreak) * (1 + buff(P, 'puzzlePct')));
     track('daily_puzzle_complete', { streak: P.dailyPuzzleStreak, moves: run.moves });
   } else {
-    raw = ECON.coin[run.def.tier] + stars * ECON.coinPerStar;
+    raw = ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
     P.stars[run.def.n] = Math.max(P.stars[run.def.n] || 0, stars);
     P.level = Math.max(P.level, run.def.n + 1);
     track('level_complete', { level: run.def.n, moves: run.moves, min: run.def.min, stars });
@@ -347,7 +349,7 @@ function win() {
   }, 150);
   // Haftalık etkinlik puanı
   const ev = ensureEvent(P);
-  const evPts = eventPoints(ev, { stars, fish: run.L.fishCells.length, daily: run.daily, hintsUsed: run.hintsUsed > 0 });
+  const evPts = Math.round(eventPoints(ev, { stars, fish: run.L.fishCells.length, daily: run.daily, hintsUsed: run.hintsUsed > 0 }) * (1 + buff(P, 'eventPct')));
   P.event.points += evPts;
   persist();
   const notes = [
@@ -510,9 +512,10 @@ function freeLeft(kind) {
 }
 
 // Kakao: stant saatte fincan üretir; birikim gözlem noktasının saat sınırıyla dolar.
-const cocoaCap = () => buff(P, 'cocoa') * buff(P, 'cocoaCap');
+const cocoaRate = () => buff(P, 'cocoa') * (1 + buff(P, 'cocoaPct'));
+const cocoaCap = () => Math.round(cocoaRate() * buff(P, 'cocoaCap'));
 function cocoaNow() {
-  const rate = buff(P, 'cocoa');
+  const rate = cocoaRate();
   if (!rate) return 0;
   const hours = (Date.now() - P.cocoaTs) / 3.6e6;
   return Math.min(P.cocoaCups + rate * hours, cocoaCap());
@@ -522,7 +525,7 @@ function bankCocoa() { P.cocoaCups = cocoaNow(); P.cocoaTs = Date.now(); }
 const recipeReady = () => { const r = nextRecipe(P); return !!r && villageLevel(P) >= r.vl && P.coins >= discounted(P, r.price); };
 
 function renderCocoa() {
-  const rate = buff(P, 'cocoa'), price = cupPrice(P), cups = Math.floor(cocoaNow());
+  const rate = Math.round(cocoaRate() * 10) / 10, price = cupPrice(P), cups = Math.floor(cocoaNow());
   $('cocoaAmt').textContent = cups;
   $('cocoaRate').textContent = rate
     ? `fincan ${price} coin · saatte ${rate} fincan · en fazla ${cocoaCap()}`
@@ -591,12 +594,52 @@ function showRecipes() {
 // Seviye tavanındaki yapı için açıklama: Bölge 2 açılmadıysa Lv4-5'in nerede açılacağını söyler.
 const capText = b => (bLevel(P, b.id) < b.costs.length ? "Lv4-5 Köy Lv8'de açılır" : 'En yüksek seviye');
 const dots = (lv, max) => `<span class="dots">${Array.from({ length: max }, (_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</span>`;
-const unlockNames = lv => BUILDINGS.filter(b => b.unlock === lv).map(b => b.name).join(', ');
+const unlockNames = lv => BUILDINGS.filter(b => b.unlock === lv && (P.land || 1) > (b.district || 0)).map(b => b.name).join(', ');
+
+// Köy etiketi: seviye bölgesi (Bölge 1/2) ve o an bakılan arazinin adı.
+let shownPanel = -1;
+function renderZoneTag() {
+  shownPanel = village.panel;
+  $('zoneName').textContent = `${zone(P).name.split(' · ')[0]} · ${DISTRICTS[shownPanel]?.name || ''}`;
+}
+
+// Arazi (yeni bölge): köy seviyesi şartı + coin. Açılabilir durumdaysa köy sekmesinde işaret çıkar.
+const districtReady = () => { const d = nextDistrict(P); return !!d && !d.soon && villageLevel(P) >= d.vl && P.coins >= d.price; };
+
+function showDistrict(i) {
+  const d = DISTRICTS[i];
+  if (!d || i !== (P.land || 1)) return;
+  const vl = villageLevel(P), ok = !d.soon && vl >= d.vl && P.coins >= d.price;
+  const why = d.soon ? 'Bu arazi yakında geliyor.' : vl < d.vl ? `Köy Lv${d.vl} gerekli (şu an Lv${vl}).` : P.coins < d.price ? `${d.price - P.coins} coin daha gerekli.` : '';
+  openOverlay(`
+    <span class="new-tag">YENİ ARAZİ</span>
+    <h2>${d.name}</h2>
+    <p>${d.soon ? 'Köy büyümeye devam edecek: yeni yapılar ve yeni bonuslarla.' : `Köy yana doğru genişler. Yeni yapılar: ${d.text}. Yapılar kar tanesiyle kurulur.`}</p>
+    ${why ? `<small class="breakdown">${why}</small>` : ''}
+    ${d.soon ? '' : `<button id="dsBuy" class="btn green" ${ok ? '' : 'disabled'}>Aç · ${coinIco}${d.price}</button>`}
+    <button id="dsClose" class="btn link">Kapat</button>`);
+  $('dsClose').onclick = closeOverlay;
+  if ($('dsBuy')) $('dsBuy').onclick = () => {
+    if (!districtReady()) return;
+    bankCocoa();
+    P.coins -= d.price;
+    P.land = i + 1;
+    persist();
+    closeOverlay();
+    sfx.reward();
+    track('district_unlock', { id: d.id, price: d.price });
+    toast(`${d.name} açıldı! Yeni yapılar listede.`);
+    renderVillage();
+    village.goPanel(i);
+  };
+}
 
 function renderVillage() {
-  $('zoneName').textContent = zone(P).name;
+  renderZoneTag();
   renderVlCard();
-  $('buildList').innerHTML = BUILDINGS.map(b => {
+  const nd = nextDistrict(P);
+  const dCard = nd ? `<button class="b-card district${districtReady() ? ' ready' : ''}" data-d="${P.land || 1}"><b>Yeni arazi: ${nd.name}</b><small>${nd.soon ? 'Yeni yapılar ve bonuslar' : `Köy Lv${nd.vl} · köy yana genişler`}</small><span class="act">${nd.soon ? 'Yakında' : `Aç ${coinIco}${nd.price}`}</span>${districtReady() ? '<i class="dot"></i>' : ''}</button>` : '';
+  $('buildList').innerHTML = dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
       return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
@@ -607,6 +650,7 @@ function renderVillage() {
     return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}"><b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span>${ready ? '<i class="dot"></i>' : ''}</button>`;
   }).join('');
   $('buildList').querySelectorAll('[data-b]').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.b); });
+  $('buildList').querySelectorAll('[data-d]').forEach(btn => { btn.onclick = () => { village.goPanel(+btn.dataset.d); showDistrict(+btn.dataset.d); }; });
   renderCocoa();
 }
 
@@ -1159,11 +1203,12 @@ function frame(now) {
       village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS,
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
-      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() },
+      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1,
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
+    if (village.panel !== shownPanel) renderZoneTag();
   } else if (screen === 'visit' && visit) {
-    visitView.draw(t, dt, { village: visit.village, vl: villageLevel({ village: visit.village }), outfit: visit.outfit, colors: COLORS, plots: [], ready: [] });
+    visitView.draw(t, dt, { village: visit.village, vl: villageLevel({ village: visit.village }), outfit: visit.outfit, colors: COLORS, plots: [], ready: [], land: landOf(visit.village), teaser: false });
   } else if (screen === 'home') {
     const ctx = fitCanvas($('homePofi'), 120, 120);
     drawPofi(ctx, 60, 117, 94, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });

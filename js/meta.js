@@ -1,5 +1,5 @@
 // Köy hesapları: yapı seviyeleri, buff'lar, köy seviyesi, indirimli fiyatlar.
-import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES, COCOA } from './config.js';
+import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES, COCOA, DISTRICTS } from './config.js';
 
 export const building = id => BUILDINGS.find(b => b.id === id);
 export const bLevel = (P, id) => P.village[id]?.lv || 0;
@@ -13,7 +13,12 @@ export function villageLevel(P) {
 }
 
 export const nextVillageLevel = P => VILLAGE_LEVELS.find(v => v.lv === villageLevel(P) + 1) || null;
-export const isUnlocked = (P, b) => villageLevel(P) >= b.unlock;
+export const isUnlocked = (P, b) => villageLevel(P) >= b.unlock && (P.land || 1) > (b.district || 0);
+
+// Sıradaki bölge (henüz açılmamış ilk panel) ya da null.
+export const nextDistrict = P => DISTRICTS[P.land || 1] || null;
+// Ziyaret edilen köyde açık bölge sayısı: en uzaktaki kurulu yapının bölgesi.
+export const landOf = village => 1 + Math.max(0, ...BUILDINGS.filter(b => village[b.id]).map(b => b.district || 0));
 
 // Açık olan en yüksek bölge; yapıların seviye tavanını belirler (Bölge 1: Lv3, Bölge 2: Lv5).
 export const zone = P => [...ZONES].reverse().find(z => villageLevel(P) >= z.fromVillageLevel);
@@ -37,7 +42,7 @@ export const villageBonusPct = P => (villageLevel(P) - 1) * VILLAGE_BONUS_PCT;
 export const coinBonusPct = P => buff(P, 'coinPct') + villageBonusPct(P);
 
 // Kakao: fincan fiyatı (taban + alınan tarifler) ve sıradaki tarif.
-export const cupPrice = P => COCOA.cupPrice + COCOA.recipes.filter(r => P.recipes.includes(r.id)).reduce((s, r) => s + r.add, 0);
+export const cupPrice = P => COCOA.cupPrice + buff(P, 'cupBonus') + COCOA.recipes.filter(r => P.recipes.includes(r.id)).reduce((s, r) => s + r.add, 0);
 export const nextRecipe = P => COCOA.recipes.find(r => !P.recipes.includes(r.id)) || null;
 
 // Kartopu kalesi indirimi uygulanmış fiyat.
