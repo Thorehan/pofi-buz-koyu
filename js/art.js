@@ -67,6 +67,17 @@ export const POFI = {
   slide_back: { foot: 387, h: 262, head: [256, 152, 240], rot: 0 },
 };
 
+// Lv4-5 görselleri hücreye sığsın diye Lv1-3'e göre r oranında küçültülerek çizildi (scales.json, pofi-r4).
+// Lv3 ile aynı ölçeğe dönmek için 1/r ile büyütülür.
+export const BLD_Z2 = {
+  cocoa_s0: 0.666, cocoa_s1: 0.585, cocoa_s2: 0.676, fort_s0: 0.614, fort_s1: 0.613, fort_s2: 0.605,
+  hut_s0: 0.667, hut_s1: 0.669, hut_s2: 0.746, igloo_s0: 0.612, igloo_s1: 0.621, igloo_s2: 0.64,
+  lighthouse_s0: 0.645, lighthouse_s1: 0.665, lighthouse_s2: 0.671, observatory_s0: 0.662, observatory_s1: 0.654, observatory_s2: 0.689,
+  pier_s0: 0.725, pier_s1: 0.719, pier_s2: 0.704, rink_s0: 0.704, rink_s1: 0.783, rink_s2: 0.856,
+  sled_s0: 0.648, sled_s1: 0.626, sled_s2: 0.678, snowman_s0: 0.692, snowman_s1: 0.728, snowman_s2: 0.668,
+  tree_s0: 0.721, tree_s1: 0.667, tree_s2: 0.653,
+};
+
 // Yapı görselleri: 512×512, taban ortası 496. satırda. cell = hücrenin köydeki genişliği (u cinsinden);
 // üç seviye aynı ölçekte çizildiği için seviye büyümesi görselin içinde, ayrıca ölçeklenmez.
 // Değerler, Lv3 yapının zemin katmanındaki temeli kapatacağı şekilde ayarlandı.

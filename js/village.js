@@ -1,16 +1,22 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
 import { roundRect, circle, ellipse, drawPofi } from './draw.js';
-import { art, tinted, BLD } from './art.js';
+import { art, tinted, BLD, BLD_Z2 } from './art.js';
 import { DISTRICTS } from './config.js';
 
-// Yapı görseli (varsa). Çağıran tuvali SCALE[lv] ile büyütmüş olur; görselde Lv1-3 büyümesi
-// zaten çizili olduğundan burada geri alınır, yalnızca Bölge 2'nin (Lv4-5) ek büyümesi kalır.
+// Yapı görseli (varsa). Çağıran tuvali SCALE[lvFull] ile büyütmüş olur; görselde seviye büyümesi
+// zaten çizili olduğundan burada geri alınır. Lv4-5 görseli yoksa Lv3 görseli kodun büyütmesiyle çizilir.
+// Lv4-5 tam 1/r ile çizilince köy kalabalıklaşıyor (yapılar birbirine biniyor); Lv4 ≈ Lv3 × 1.1 olacak şekilde küçültülür.
+const Z2_FIT = 0.72;
+const z2Art = (id, o) => o.lvFull >= 4 && BLD_Z2[`${id}_s${o.style}`] && art(`bld_${id}_s${o.style}_lv${o.lvFull}`);
 function bldArt(ctx, u, id, o) {
   if (!BLD[id]) return false;
-  const key = `bld_${id}_s${o.style}_lv${o.lv}`;
+  const lvFull = o.lvFull || o.lv, z2 = z2Art(id, o);
+  const key = `bld_${id}_s${o.style}_lv${z2 ? lvFull : o.lv}`;
   const im = typeof o.col === 'string' && o.col.startsWith('#') ? tinted(key, o.col) : art(key);
   if (!im) return false;
-  const k = (u * BLD[id]) / 512 / SCALE[o.lv];
+  const k = z2
+    ? ((u * BLD[id]) / 512 / BLD_Z2[`${id}_s${o.style}`]) * Z2_FIT / SCALE[lvFull]
+    : (u * BLD[id]) / 512 / SCALE[o.lv];
   // Taban görselin 496. satırında.
   ctx.drawImage(im, -256 * k, -496 * k, 512 * k, 512 * k);
   return true;
@@ -1125,15 +1131,17 @@ export class VillageView {
             ellipse(ctx, x, y + u * 0.01, u * 0.15, u * 0.035);
             ctx.fill();
           }
-          if (id === 'lights') { this.lights(ctx, x, y, u, W, { lv: Math.min(st.lv, 3), style: st.style, col, night: st.lv >= 4 ? Math.max(night, 0.6) : night, t: time }); return; }
+          if (id === 'lights') { this.lights(ctx, x, y, u, W, { lv: Math.min(st.lv, 3), lvFull: st.lv, style: st.style, col, night: st.lv >= 4 ? Math.max(night, 0.6) : night, t: time }); return; }
           ctx.save();
           ctx.translate(x, y);
           ctx.scale(SCALE[st.lv], SCALE[st.lv]);
-          if (st.lv >= 4) auroraHalo(ctx, u, time + x);
-          // Bölge 2 seviyeleri yapının kendi çizimini Lv3 ayrıntısıyla kullanır, üstüne süs ekler.
-          const dopt = { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time };
+          // Bölge 2 seviyeleri (Lv4-5): görseli varsa kristaller ve yıldız görselde çizili; yoksa yapının
+          // Lv3 çizimi kullanılır ve üstüne kodla hale ve parıltı eklenir.
+          const dopt = { lv: Math.min(st.lv, 3), lvFull: st.lv, style: st.style, col, night, t: time };
+          const deco = st.lv >= 4 && !z2Art(id, dopt);
+          if (deco) auroraHalo(ctx, u, time + x);
           if (!bldArt(ctx, u, id, dopt)) DRAW[id](ctx, u, dopt);
-          if (st.lv >= 4) sparkles(ctx, u, time + x, st.lv);
+          if (deco) sparkles(ctx, u, time + x, st.lv);
           ctx.restore();
         }]);
       } else if (plots.includes(id)) {
@@ -1422,7 +1430,8 @@ export class VillageView {
   }
 
   lights(ctx, x, y, u, W, o) {
-    const key = `bld_lights_s${o.style}_lv${o.lv}`;
+    const full = `bld_lights_s${o.style}_lv${o.lvFull}`;
+    const key = o.lvFull >= 4 && art(full) ? full : `bld_lights_s${o.style}_lv${o.lv}`;
     const im = o.col ? tinted(key, o.col) : art(key);
     if (im) {
       // görselde ip 8. pikselden 1528. piksele uzanır, kancalar ≈ 50. satırda; fenerler arka sıradaki
