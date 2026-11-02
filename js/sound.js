@@ -122,6 +122,16 @@ export const sfx = {
     tone(680, { type: 'triangle', dur: 0.08, vol: 0.12, when: 0.09 });
     noise({ dur: 0.04, vol: 0.15, freq: 2400, Q: 2, when: 0.09 });
   },
+  jump() {
+    if (!ready()) return;
+    tone(260, { type: 'triangle', dur: 0.28, vol: 0.16, slideTo: 760 });
+    noise({ dur: 0.3, vol: 0.06, freq: 1800, Q: 0.8, sweepTo: 3600 });
+  },
+  land() {
+    if (!ready()) return;
+    tone(140, { type: 'triangle', dur: 0.14, vol: 0.2, slideTo: 80 });
+    noise({ dur: 0.12, vol: 0.12, type: 'lowpass', freq: 900 });
+  },
   crate() {
     if (!ready()) return;
     tone(210, { type: 'triangle', dur: 0.1, vol: 0.2, slideTo: 150 });

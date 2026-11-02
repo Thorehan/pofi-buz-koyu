@@ -1,12 +1,18 @@
 // Pofi kayma motoru: kurallar, BFS çözücü ve level üreticisi.
 // Tarayıcıda ve Node'da (tools/gen-levels.mjs) aynı kod çalışır.
 
-export const T = { ICE: 0, ROCK: 1, SNOW: 2, WATER: 3, CRACK: 4, LEVER: 5, GATE: 6, UP: 7, RIGHT: 8, DOWN: 9, LEFT: 10, BRIDGE: 11 };
+export const T = {
+  ICE: 0, ROCK: 1, SNOW: 2, WATER: 3, CRACK: 4, LEVER: 5, GATE: 6, UP: 7, RIGHT: 8, DOWN: 9, LEFT: 10, BRIDGE: 11,
+  RAMP_UP: 12, RAMP_RIGHT: 13, RAMP_DOWN: 14, RAMP_LEFT: 15,
+};
 export const DX = [0, 1, 0, -1];
 export const DY = [-1, 0, 1, 0];
 const ARROW_CH = { '^': T.UP, '>': T.RIGHT, v: T.DOWN, '<': T.LEFT };
+const RAMP_CH = { 8: T.RAMP_UP, 6: T.RAMP_RIGHT, 2: T.RAMP_DOWN, 4: T.RAMP_LEFT }; // sayısal tuş takımı yönleri
 const isArrow = t => t >= T.UP && t <= T.LEFT;
+export const isRamp = t => t >= T.RAMP_UP && t <= T.RAMP_LEFT;
 const walkable = t => t === T.ICE || t === T.SNOW || t === T.CRACK || t === T.BRIDGE || isArrow(t);
+export const RAMP_FLIGHT = 2; // rampadan sonra uçulan hücre sayısı; iniş bir sonrakine
 
 export function rng(seed) {
   let a = seed >>> 0;
@@ -20,7 +26,7 @@ export function rng(seed) {
 
 // ---------- level okuma ----------
 // Karakterler: . buz  # kaya  s kar  ~ su  c çatlak  L kol  G kapalı kapı  g açık kapı
-//              ^ > v < ok  P Pofi  f balık  F kar üstünde balık  B kasa
+//              ^ > v < ok  8 6 2 4 rampa (yukarı, sağ, aşağı, sol)  P Pofi  f balık  F kar üstünde balık  B kasa
 export function parseLevel(def) {
   const h = def.rows.length, w = def.rows[0].length, size = w * h;
   const t = new Uint8Array(size);
@@ -37,6 +43,7 @@ export function parseLevel(def) {
       else if (ch === 'L') tile = T.LEVER;
       else if (ch === 'G' || ch === 'g') { tile = T.GATE; if (ch === 'g') gates |= 1 << gateCells.length; gateIdx[i] = gateCells.length; gateCells.push(i); }
       else if (ARROW_CH[ch] !== undefined) tile = ARROW_CH[ch];
+      else if (RAMP_CH[ch] !== undefined) tile = RAMP_CH[ch];
       if (ch === 'P') p = i;
       if (ch === 'f' || ch === 'F') { fishIdx[i] = fishCells.length; fishCells.push(i); }
       if (ch === 'B') crates.push(i);
@@ -64,15 +71,29 @@ export function neighbor(L, c, d) {
 
 export const won = (L, S) => S.fish === (1 << L.fishCells.length) - 1;
 
+// Pofi bu hücreye inebilir mi? (kasa yok, üzerinde durulabilen zemin)
+const landable = (L, n, c) => c >= 0 && !n.crates.includes(c) && walkable(tileOf(L, n, c));
+
 // ---------- tek hamle ----------
-// Dönüş: null (hiçbir şey değişmedi) veya { state, pPath, crate, fx }
+// Dönüş: null (hiçbir şey değişmedi) veya { state, pPath, jumps, crate, fx }
 // fx zamanları "adım" cinsinden (Pofi'nin hamle başından itibaren geçtiği hücre sayısı).
+// jumps: pPath içinde rampadan inişe kadar havada geçen aralıklar ({ from, to } indeksleri).
 export function simulate(L, S, dir) {
   const n = { p: S.p, fish: S.fish, gates: S.gates, dyn: S.dyn.slice(), crates: S.crates.slice() };
   const fx = [];
   const pPath = [S.p];
+  const jumps = [];
   const seen = new Set();
   let cur = S.p, d = dir, crate = null, lever = false;
+
+  // Pofi bir hücreye vardığında: balığı al; karda dur; okta dön.
+  const arrive = t => {
+    const fi = L.fishIdx[cur];
+    if (fi >= 0 && !((n.fish >> fi) & 1)) { n.fish |= 1 << fi; fx.push({ k: 'fish', cell: cur, at: pPath.length - 1 }); }
+    if (t === T.SNOW) { fx.push({ k: 'snow', at: pPath.length - 1 }); return true; }
+    if (isArrow(t)) { d = t - T.UP; fx.push({ k: 'arrow', cell: cur, at: pPath.length - 1 }); }
+    return false;
+  };
 
   for (;;) {
     const key = cur * 4 + d;
@@ -84,7 +105,9 @@ export function simulate(L, S, dir) {
     if (ci >= 0) { crate = pushCrate(L, n, ci, d, cur, pPath.length - 1, fx); break; }
     const t = tileOf(L, n, nx);
     if (t === T.LEVER) { lever = true; break; }
-    if (!walkable(t)) { fx.push({ k: 'bump', at: pPath.length - 1 }); break; }
+    // Rampa: kendi yönünde girilirse fırlatır, karşıdan gelinirse dik yüzü kaya gibi durdurur, yandan buz gibi geçilir.
+    const ramp = isRamp(t) ? t - T.RAMP_UP : -1;
+    if (ramp === (d + 2) % 4 || (ramp < 0 && !walkable(t))) { fx.push({ k: 'bump', at: pPath.length - 1 }); break; }
     // Çatlak buz, Pofi ayrılınca kırılır.
     if (L.t[cur] === T.CRACK && n.dyn[L.dynIdx[cur]] === 0) {
       n.dyn[L.dynIdx[cur]] = 1;
@@ -92,10 +115,23 @@ export function simulate(L, S, dir) {
     }
     cur = nx;
     pPath.push(cur);
-    const fi = L.fishIdx[cur];
-    if (fi >= 0 && !((n.fish >> fi) & 1)) { n.fish |= 1 << fi; fx.push({ k: 'fish', cell: cur, at: pPath.length - 1 }); }
-    if (t === T.SNOW) { fx.push({ k: 'snow', at: pPath.length - 1 }); break; }
-    if (isArrow(t)) { d = t - T.UP; fx.push({ k: 'arrow', cell: cur, at: pPath.length - 1 }); }
+
+    if (ramp === d) {
+      // Uçuş: altındaki her şeyin üstünden geçer, en uzak inilebilir hücreye iner.
+      const rampAt = pPath.length - 1;
+      const air = [];
+      for (let k = 0, c = cur; k <= RAMP_FLIGHT; k++) { c = c < 0 ? -1 : neighbor(L, c, d); air.push(c); }
+      let land = -1;
+      for (let k = RAMP_FLIGHT; k >= 0; k--) if (landable(L, n, air[k])) { land = k; break; }
+      if (land < 0) { fx.push({ k: 'bump', at: rampAt }); break; }
+      for (let k = 0; k <= land; k++) pPath.push(air[k]);
+      cur = air[land];
+      jumps.push({ from: rampAt, to: pPath.length - 1 });
+      fx.push({ k: 'jump', at: rampAt }, { k: 'land', cell: cur, at: pPath.length - 1 });
+      if (arrive(tileOf(L, n, cur))) break;
+      continue;
+    }
+    if (ramp < 0 && arrive(t)) break;
   }
   n.p = cur;
 
@@ -108,7 +144,7 @@ export function simulate(L, S, dir) {
 
   const moved = pPath.length > 1 || (crate && crate.moved) || lever;
   if (!moved) return null;
-  return { state: n, pPath, crate: crate && crate.moved ? crate : null, fx, dir };
+  return { state: n, pPath, jumps, crate: crate && crate.moved ? crate : null, fx, dir };
 }
 
 function pushCrate(L, n, ci, dir, penguinAt, at0, fx) {
@@ -173,7 +209,7 @@ export function solve(L, S0, maxStates = 120000) {
 
 // Çözümü oynatıp hangi mekaniklerin kullanıldığını say.
 export function usage(L, S0, moves) {
-  const u = { push: 0, sink: 0, crack: 0, lever: 0, arrow: 0, snow: 0 };
+  const u = { push: 0, sink: 0, crack: 0, lever: 0, arrow: 0, snow: 0, jump: 0 };
   let s = S0;
   for (const d of moves) {
     const r = simulate(L, s, d);
@@ -196,9 +232,12 @@ const STAGES = [
   { from: 27, mech: ['snow', 'crack'], req: 'crack' },
   { from: 37, mech: ['snow', 'lever'], req: 'lever' },
   { from: 49, mech: ['snow', 'arrow'], req: 'arrow' },
+  // Rampa su ile birlikte gelir: uçulacak engel olsun, "fazla uçup adaya düşme" riski doğsun.
+  { from: 61, mech: ['snow', 'ramp', 'water'], req: 'jump' },
 ];
-const MIX = ['crate', 'water', 'crack', 'lever', 'arrow'];
-const REQ_OF = { crate: 'push', water: 'sink', crack: 'crack', lever: 'lever', arrow: 'arrow', snow: 'snow' };
+const MIX_FROM = 76; // bu levelden sonra mekanikler karışık gelir
+const MIX = ['crate', 'water', 'crack', 'lever', 'arrow', 'ramp'];
+const REQ_OF = { crate: 'push', water: 'sink', crack: 'crack', lever: 'lever', arrow: 'arrow', snow: 'snow', ramp: 'jump' };
 
 export function levelSpec(n, r = rng(n * 31 + 7)) {
   // Yeni mekaniğin ilk 2 leveli her zaman kolay.
@@ -226,7 +265,7 @@ export function levelSpec(n, r = rng(n * 31 + 7)) {
   if (tier === 'veryhard') { lo += 2; hi += 2; }
 
   let mech, req;
-  if (n < 61) {
+  if (n < MIX_FROM) {
     const st = [...STAGES].reverse().find(s => n >= s.from);
     mech = st.mech;
     // Aşamanın ilk 4 levelinde yeni mekanik her zaman şart; sonra çoğunlukla.
@@ -265,6 +304,7 @@ function buildCandidate(spec, r) {
   }
   if (mech.includes('crack')) for (let k = 0, m = 2 + Math.floor(r() * 3); k < m; k++) put('c');
   if (mech.includes('arrow')) for (let k = 0, m = 1 + Math.floor(r() * 2); k < m; k++) put('^>v<'[Math.floor(r() * 4)]);
+  if (mech.includes('ramp')) for (let k = 0, m = 1 + Math.floor(r() * 2); k < m; k++) put('8624'[Math.floor(r() * 4)]);
   if (mech.includes('lever')) {
     put('L');
     for (let k = 0, m = 1 + Math.floor(r() * 3); k < m; k++) put(r() < 0.6 ? 'G' : 'g');
@@ -275,8 +315,9 @@ function buildCandidate(spec, r) {
   return g.map(row => row.join(''));
 }
 
-// Mekaniği etkisizleştiren dönüşümler: kasa → kaya, su → kaya, çatlak → buz, kol/kapı → kaya/buz, ok/kar → buz.
+// Mekaniği etkisizleştiren dönüşümler: kasa → kaya, su → kaya, çatlak → buz, kol/kapı → kaya/buz, ok/kar/rampa → buz.
 const NEUTRAL = {
+  jump: ch => ('8624'.includes(ch) ? '.' : ch),
   snow: ch => (ch === 's' ? '.' : ch === 'F' ? 'f' : ch),
   push: ch => (ch === 'B' ? '#' : ch),
   sink: ch => (ch === '~' ? '#' : ch),

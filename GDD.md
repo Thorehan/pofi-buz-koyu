@@ -59,8 +59,9 @@
 | 27–36 | Çatlak buz |
 | 37–48 | Kol + kapılar |
 | 49–60 | Oklar |
-| 61–75 | **Rampa** (v0.2) |
-| 76–90 | **Buz delikleri** (giriş-çıkış çifti) (v0.2) |
+| 61–75 | **Rampa** (v0.2 ✅, su ile birlikte gelir) |
+| 76+ (şu an) | Karışık: kasa, su, çatlak, kol, ok, rampa |
+| 76–90 (Faz 3) | **Buz delikleri** (giriş-çıkış çifti) |
 | 91–105 | **Eriyen kar** (v0.3) |
 | 106–120 | **Fok** (hareketli engel) (v0.3) |
 | 121–135 | **Sıralı balık** (1-2-3) (v0.3) |
@@ -195,7 +196,7 @@ Damla Bahçesi'nde doğrulanan model aynen geçerli:
 | Faz | İçerik | Neden bu sırada |
 |---|---|---|
 | **Faz 1 · Köy derinliği** ✅ | Yapı seviyeleri (Lv1–3, her seviyede yeni görünüm), yapı buff'ları, köy seviyesi + kutlama + ödül sandığı, 4 yeni yapı, 3 yıldıza +1 ❄, **önizlemeli satın alma** (köy stilleri, renk paleti, gardırop) | Meta şu an ~20. levelde bitiyor. Retention'ı en çok bu etkiler. |
-| **Faz 2 · Rampa** | Rampa mekaniği, levelleri 300'e çıkarma, yeni "YENİ" kartı ve sesler | 61. levelden sonra yeni mekanik yok; oyuncu 60'ı geçince bu eksik hissedilir. |
+| **Faz 2 · Rampa** ✅ | Rampa mekaniği, levelleri 300'e çıkarma, yeni "YENİ" kartı ve sesler | 61. levelden sonra yeni mekanik yok; oyuncu 60'ı geçince bu eksik hissedilir. |
 | **Faz 3 · Derinlik** | Buz delikleri, eriyen kar, fok, sıralı balık; Bölge 2 "Kuzey Işıkları" (Lv5'e kadar yapılar) | Uzun vadeli içerik |
 | **Faz 4 · Canlı operasyon** | Haftalık etkinlik, köy ziyareti (arkadaşın köyünü görme), sezon kıyafetleri | Sosyal ve sezonluk geri dönüş |
 

@@ -217,7 +217,7 @@ function startLevel(n, daily = false) {
 
 function drawIntroIcon(cv, kind) {
   const ctx = fitCanvas(cv, 84, 84);
-  const tile = { snow: T.SNOW, water: T.WATER, crack: T.CRACK, lever: T.LEVER, arrow: T.RIGHT }[kind] ?? T.ICE;
+  const tile = { snow: T.SNOW, water: T.WATER, crack: T.CRACK, lever: T.LEVER, arrow: T.RIGHT, ramp: T.RAMP_RIGHT }[kind] ?? T.ICE;
   paintTile(ctx, tile, 0, 0, 84, 0, {});
   if (kind === 'fish' || kind === 'crate') paintTile(ctx, kind, 0, 0, 84, 0, {});
 }
@@ -271,6 +271,8 @@ board.onFx = f => {
   else if (f.k === 'sink') sfx.splash();
   else if (f.k === 'lever') sfx.lever();
   else if (f.k === 'push') sfx.crate();
+  else if (f.k === 'jump') sfx.jump();
+  else if (f.k === 'land') sfx.land();
   else if (f.k === 'bump' || f.k === 'snow') sfx.bump();
 };
 

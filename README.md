@@ -6,7 +6,7 @@ Pofi'yi kaydır, bir şeye çarpana kadar kaysın. Tüm balıkları topla, kazan
 
 ## Oynanış
 - **Kaydır** (masaüstünde ok tuşları / WASD): Pofi o yönde bir şeye çarpana kadar kayar.
-- **Neden-sonuç:** Kasaya çarpınca kasa da kayar. Suya düşen kasa köprü olur. Çatlak buz arkanda kırılır. Kol kapıları açıp kapatır. Oklar yön değiştirir.
+- **Neden-sonuç:** Kasaya çarpınca kasa da kayar. Suya düşen kasa köprü olur. Çatlak buz arkanda kırılır. Kol kapıları açıp kapatır. Oklar yön değiştirir. Rampa Pofi'yi 2 kare uçurur; fazla uçmak sıkıştırabilir.
 - **Geri al** sınırsız ve ücretsiz (Z / Backspace). **İpucu** bulunduğun yerden en kısa çözümün sıradaki hamlesini gösterir.
 - **Köy:** Her level 1 kar tanesi verir, 3 yıldız +1 daha. 12 yapı Lv1'den Lv3'e yükselir; her seviye görünümü güzelleştirir ve yapının buff'ını büyütür. Toplam yapı seviyesi köy seviyesini belirler. Her köy seviyesi yeni bir görsel, coin bonusu ve ödül sandığı verir.
 - **Önizlemeli satın alma:** Stil, renk ve kıyafetler önce sahnede denenir, beğenilirse alınır.
@@ -20,9 +20,9 @@ Sonra `http://localhost:5174` adresini aç.
 
 ## Level üretimi
 ```bash
-node tools/gen-levels.mjs 200
+node tools/gen-levels.mjs 300
 ```
-İlk 200 leveli üretir, her birini çözücüyle doğrular ve `data/levels.json` dosyasına yazar. Bir level ancak şu şartları sağlarsa kabul edilir: en kısa çözümü hamle bandında olmalı ve o aşamanın yeni mekaniği çözüm için **gerçekten gerekli** olmalı. Mekanik etkisizleştirildiğinde bulmaca ya çözülemez hale gelmeli ya da en kısa çözümü değişmeli. 200'den sonraki leveller oyun sırasında aynı kodla üretilir.
+İlk 300 leveli üretir, her birini çözücüyle doğrular ve `data/levels.json` dosyasına yazar. Bir level ancak şu şartları sağlarsa kabul edilir: en kısa çözümü hamle bandında olmalı ve o aşamanın yeni mekaniği çözüm için **gerçekten gerekli** olmalı. Mekanik etkisizleştirildiğinde bulmaca ya çözülemez hale gelmeli ya da en kısa çözümü değişmeli. 300'den sonraki leveller oyun sırasında aynı kodla üretilir.
 
 ## Proje yapısı
 | Dosya | İçerik |
