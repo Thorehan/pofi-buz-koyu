@@ -86,10 +86,11 @@ export const ZONES = [
   { name: 'Bölge 2 · Kuzey Işıkları', maxLevel: 5, fromVillageLevel: 8 },
 ];
 // Köy yana doğru genişler: her bölge ekran genişliğinde bir paneldir. İlki ücretsiz; sonrakiler köy
-// seviyesi şartıyla coin'le açılır (arazi), içindeki yapılar kar tanesiyle kurulur. soon: içeriği henüz yok.
+// seviyesi şartıyla coin'le açılır (arazi), içindeki yapılar kar tanesiyle kurulur. soon: içeriği henüz yok;
+// ground: zemin görseli var (assets/art/bg_ground_<id>).
 export const DISTRICTS = [
   { id: 'bay', name: 'Buzul Koyu', price: 0, vl: 1 },
-  { id: 'harbor', name: 'Buz Limanı', price: 2000, vl: 5, text: 'Yolcu teknesi, liman kafesi, balık pazarı ve liman çanı' },
+  { id: 'harbor', name: 'Buz Limanı', price: 2000, vl: 5, ground: true, text: 'Yolcu teknesi, liman kafesi, balık pazarı ve liman çanı' },
   { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, soon: true },
 ];
 
@@ -150,6 +151,38 @@ export const VILLAGE_LEVELS = [
   { lv: 11, need: 54, visual: 'Havai fişekler', reward: { coins: 1200, hints: 5 } },
   { lv: 12, need: 60, visual: 'Uçan fenerler', reward: { hat: 'icecrown', coins: 2000 } },
 ];
+
+// Köy yaşamı (GDD 12.5): köylüler cihaz saatine göre bir rutin izler. Bobo köy Lv3'te kendiliğinden gelir
+// (eski "komşu penguen"), diğerleri coin'le davet edilir. kid: küçük boy.
+export const VILLAGERS = [
+  { id: 'bobo', name: 'Bobo', vl: 3, price: 0, outfit: { hat: 'beanieBlue', scarf: 'yellow' } },
+  { id: 'lili', name: 'Lili', vl: 3, price: 500, outfit: { hat: 'earmuffs', scarf: 'red' } },
+  { id: 'kiko', name: 'Kiko', vl: 4, price: 800, kid: true, outfit: { hat: 'beanieRed', scarf: 'green' } },
+  { id: 'nana', name: 'Nana', vl: 5, price: 1200, outfit: { hat: 'north', scarf: 'blue' } },
+  { id: 'tipi', name: 'Tipi', vl: 6, price: 1800, kid: true, outfit: { hat: 'fishhat', scarf: 'flakes' } },
+  { id: 'mavi', name: 'Mavi', vl: 7, price: 2500, outfit: { hat: 'tophat', scarf: 'striped' } },
+];
+// Günün saatine göre: sabah balık, öğlen kakao kuyruğu ve gezinti, akşam ateş başı, gece uyku.
+export const VILLAGE_PHASES = [
+  { id: 'night', from: 21, to: 7, name: 'Gece' },
+  { id: 'morning', from: 7, to: 11, name: 'Sabah' },
+  { id: 'day', from: 11, to: 17, name: 'Öğlen' },
+  { id: 'evening', from: 17, to: 21, name: 'Akşam' },
+];
+export const VILLAGER_LINES = {
+  morning: ['Sabah balığı en tazesidir!', 'Göl buz tutmuş ama bir delik buldum.', 'Bugün oltam boş dönmeyecek.'],
+  day: ['Kakao kokusu her yeri sardı!', 'Kızak tepesine kim gelir?', 'Pofi, yeni bir yapı mı kuruyoruz?'],
+  evening: ['Ateş başında hikâye vakti.', 'Kuzey ışıkları birazdan başlar.', 'Ellerim ısındı, sağ ol ateş!'],
+  night: ['Zzz…'],
+};
+// Bir köylü her gün küçük bir iş ister; bitince ödül verir.
+export const DAILY_TASKS = [
+  { type: 'levels', need: 3, text: '3 level bitir' },
+  { type: 'fish', need: 12, text: 'Levellerde 12 balık topla' },
+  { type: 'stars', need: 2, text: "2 level'i 3 yıldızla bitir" },
+  { type: 'cocoa', need: 1, text: 'Yolculara kakao sat', needs: 'cocoa' },
+];
+export const TASK_REWARD = { coins: 120, flakes: 1 };
 
 // Renk paleti: bir kez açılan renk tüm yapılarda kullanılabilir. null = stilin kendi rengi.
 export const COLOR_PRICE = 100;

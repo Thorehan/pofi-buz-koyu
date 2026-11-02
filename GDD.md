@@ -248,7 +248,7 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 | **İç mekân** ✅ (iglo) | Yapıya (önce iglo) dokununca kart açılır, tekrar dokununca **içine girilir**. Odada 6 yuva: yatak, halı, lamba, raf, pencere, duvar süsü. Her yuvanın 3 kademesi var. Önce önizleme, sonra "Satın al ve yerleştir". | 150–1.500 | 6 yapı × 6 yuva × 3 kademe |
 | **Arazi / bölge** | Köy yana doğru genişler. Yeni bölge coin'le açılır, içindeki yapılar ❄ ile kurulur. | 2.000 → 5.000 → 10.000 → 20.000 | Her yeni bölge yeni yapı getirir |
 | **Süsler** | Fener, çit, kardan adam, çam, buz heykeli. Bölgedeki süs yuvalarına yerleştirilir. | 50–400 | Yuvalar bölgeyle artar |
-| **Köylüler** | Yeni penguen köylü davet edilir, bir eve yerleşir. Köyde dolaşır, kakao kuyruğuna girer. | 500–3.000 | Ev açıldıkça yeni köylü |
+| **Köylüler** ✅ | Yeni penguen köylü davet edilir; saat rutinine katılır, günlük iş verir. | 500–2.500 | 5 davetli köylü (sonra yeni arazilerle artar) |
 | **Kakao tarifleri** ✅ | Fincan başına +1 / +1 / +2 / +2 coin | 300–4.500 | Yatırım, geri döner |
 
 **İşaret kuralı:** Bakiye yeten her yerde (köydeki yapının üstünde ve listedeki kartında) yeşil ok çıkar. ❄ için v0.3'te yapıldı. Coin harcama yerleri de aynı işareti kullanacak.
@@ -291,15 +291,31 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 - **Çizim:** Oda ve eşyalar şimdilik kodla çiziliyor (js/interior.js). Görsel istendi.
 - **Sonraki:** Diğer yapıların içi (kakao standı, kulübe…) aynı INTERIOR yapısıyla eklenir.
 
-### 12.5 Köy yaşamı (cihaz saatine göre)
+### 12.5 Köy yaşamı (cihaz saatine göre) — uygulandı (v0.3 B4)
+
+**Rutin**
 | Saat | Ne olur |
 |---|---|
-| 07–11 | Köylüler iskelede balık tutar, Pofi esner |
-| 11–17 | Kakao standının önünde kuyruk, çocuk penguenler kızakla kayar |
-| 17–21 | Ateş başında toplanma, fenerler yanar |
-| 21–07 | Kuzey ışıkları, iglo pencereleri sarı yanar, köylüler uyur (Zzz) |
+| 07–11 | Yetişkin köylüler balık tutar: liman açıksa limanın kıyısında, değilse iskelenin ön kenarında (iskele yoksa ana yolun göl ucunda). Çocuklar gezinir. |
+| 11–17 | İki köylü kakao standına çıkan patikada sıraya girer, diğerleri ana yolda gezinir. |
+| 17–21 | Hepsi iglo ile kale arasındaki kamp ateşinin başında toplanır; ateş yanar. |
+| 21–07 | Köylüler igloya girer, iglonun ve kulübenin üstünde "z"ler yükselir; ateşte kor kalır. |
 
-Köylüler yollar boyunca yürür. Dokununca bir cümle söyler, bazen günlük küçük bir iş verir ("3 balık topla" → ödül).
+- **Saat ve gece:**
+  - Saat dilimi değişince köylüler yürüyerek yeni yerlerine gider. Önce ana yola inerler, yol boyunca ilerler, sonra hedefe çıkarlar.
+  - Gece kararması köy Lv6 ödülü olarak kalır. Artık cihaz saatine bağlı: 18'den sonra kararır, 21–06 arası tam gece.
+  - Test için adrese `?saat=20` eklenebilir.
+- **Görünürlük:** Toplanma yerleri, Lv3 yapı görsellerinin kapladığı alanların dışından seçildi. Önde duran bir yapı köylüyü örtmez. Aynı nedenle kakao yolcuları da iskelenin ön kenarına alındı.
+- **Köylüler:**
+  - Bobo köy Lv3'te kendiliğinden gelir; eski "komşu penguen" odur.
+  - Diğerleri coin'le davet edilir: Lili 500 (Lv3), Kiko 800 (Lv4, çocuk), Nana 1.200 (Lv5), Tipi 1.800 (Lv6, çocuk), Mavi 2.500 (Lv7). Kale indirimi uygulanır.
+  - Yapı listesindeki "Köylüler" kartından davet edilir. Kartta o anki saat dilimi de yazar.
+- **Dokunma:** Köylüye dokununca saat dilimine uygun bir cümle söyler (konuşma balonu).
+- **Günlük iş:**
+  - Her gün köydeki bir köylü küçük bir iş ister: 3 level bitir, levellerde 12 balık topla, 2 level'i 3 yıldızla bitir ya da kakao sat (yalnızca stant kuruluysa).
+  - İş veren köylünün üstünde sarı "!", iş bitince yeşil "✓" görünür.
+  - Dokununca ilerleme ve ödül açılır: 120 coin + 1 kar tanesi.
+  - İş bitince bildirim çıkar, köy sekmesinde işaret olur.
 
 ### 12.6 Sıra (kullanıcı kararı: önce basit tasarım, sonra oyun içi, sonra görsel)
 | Adım | İçerik | Durum |
@@ -308,7 +324,7 @@ Köylüler yollar boyunca yürür. Dokununca bir cümle söyler, bazen günlük 
 | **B1 · Kakao** | Fincan birikmesi, Pofi'nin yürüyüp satması, tarifler | ✅ v0.3 |
 | **B2 · Genişleyen köy** | Yatay kaydırma, arazi paneli, arazi açma, Buz Limanı (4 yapı) | ✅ v0.3 (görseli bekliyor) |
 | **B3 · İç mekân** | İglo içi (6 yuva, 3 kademe, önizleme), sonra diğer yapılar | ✅ v0.3 iglo (görseli bekliyor) |
-| **B4 · Köy yaşamı** | Köylüler, saat rutini, köylü daveti | |
+| **B4 · Köy yaşamı** | Köylüler, saat rutini, köylü daveti, günlük iş | ✅ v0.3 |
 | **B5 · Süsler** | Yerleştirilebilir süsler | |
 | **C · Görsel** | GPT görsel modeliyle (Batch) Pofi, yapılar, zemin ve köy panoraması | Test isteği gönderildi |
 

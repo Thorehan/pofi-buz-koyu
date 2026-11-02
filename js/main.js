@@ -1,6 +1,6 @@
 import { parseLevel, simulate, solve, won, generateLevel, starsFor, T } from './engine.js';
 import { BoardView, paintTile } from './board.js';
-import { VillageView } from './village.js';
+import { VillageView, phaseOf } from './village.js';
 import { ensureEvent, eventPoints, timeLeft, claimable, nextMilestone, prizeOf, encodeVillage, decodeVillage, extractCode } from './live.js';
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
@@ -15,6 +15,7 @@ import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
+  VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -27,6 +28,7 @@ const village = new VillageView($('village'));
 const visitView = new VillageView($('visitCanvas'));
 village.onSelect = id => (sheet?.id === id && INTERIOR[id] && P.village[id] ? enterInterior(id) : openSheet(id));
 village.onDistrict = i => showDistrict(i);
+village.onVillager = id => talkTo(id);
 board.outfit = P.outfit;
 
 const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false });
@@ -54,7 +56,7 @@ function updateWallet() {
   $('coins').textContent = P.coins;
   $('flakes').textContent = P.flakes;
   $('playLevel').textContent = P.level;
-  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady() && !homesReady().length);
+  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady() && !homesReady().length && !taskDone());
   $('dotShop').classList.toggle('hidden', freeCoinsLeft() <= 0);
   renderNextCard();
   renderDailyButtons();
@@ -340,6 +342,9 @@ function win() {
   const base = raw + Math.round(raw * pct) + fishCoins;
   const lucky = Math.random() < buff(P, 'flakeChance');
   const flakes = 1 + (stars === 3 ? ECON.starFlake : 0) + (lucky ? 1 : 0);
+  taskProgress('levels', 1);
+  taskProgress('fish', run.L.fishCells.length);
+  if (stars === 3) taskProgress('stars', 1);
   P.flakes += flakes;
   persist();
   setTimeout(() => {
@@ -549,6 +554,7 @@ function sellCocoa(mult) {
   P.coins += coins;
   save(P);
   track('cocoa_sell', { cups, coins, mult });
+  taskProgress('cocoa', 1);
   const done = () => {
     updateWallet();
     sfx.coin();
@@ -640,7 +646,9 @@ function renderVillage() {
   renderVlCard();
   const nd = nextDistrict(P);
   const dCard = nd ? `<button class="b-card district${districtReady() ? ' ready' : ''}" data-d="${P.land || 1}"><b>Yeni arazi: ${nd.name}</b><small>${nd.soon ? 'Yeni yapılar ve bonuslar' : `Köy Lv${nd.vl} · köy yana genişler`}</small><span class="act">${nd.soon ? 'Yakında' : `Aç ${coinIco}${nd.price}`}</span>${districtReady() ? '<i class="dot"></i>' : ''}</button>` : '';
-  $('buildList').innerHTML = dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
+  const vNext = VILLAGERS.find(v => v.price && !P.villagers.includes(v.id));
+  const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
+  $('buildList').innerHTML = dCard + vCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
       return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
@@ -652,6 +660,7 @@ function renderVillage() {
   }).join('');
   $('buildList').querySelectorAll('[data-b]').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.b); });
   $('buildList').querySelectorAll('[data-d]').forEach(btn => { btn.onclick = () => { village.goPanel(+btn.dataset.d); showDistrict(+btn.dataset.d); }; });
+  $('buildList').querySelector('[data-vill]')?.addEventListener('click', showVillagers);
   renderCocoa();
 }
 
@@ -885,6 +894,114 @@ function renderWardrobe() {
   };
 }
 document.querySelectorAll('.seg-btn').forEach(b => { b.onclick = () => { wardrobeCat = b.dataset.cat; wardrobeDraft = null; renderWardrobe(); }; });
+
+// ---------- köy yaşamı (GDD 12.5) ----------
+// Saat cihazdan okunur; test için adrese ?saat=20 eklenebilir.
+const hourNow = () => {
+  const q = new URLSearchParams(location.search).get('saat');
+  if (q !== null && !Number.isNaN(+q)) return +q % 24;
+  const d = new Date();
+  return d.getHours() + d.getMinutes() / 60;
+};
+const phaseNow = () => VILLAGE_PHASES.find(p => p.id === phaseOf(hourNow()));
+const PHASE_TEXT = { morning: 'köylüler balıkta', day: 'kakao kuyruğu ve gezinti', evening: 'ateş başında toplanma', night: 'köylüler uyuyor' };
+// Bobo köy Lv3'te kendiliğinden gelir; diğerleri davetle.
+const villagersHere = () => VILLAGERS.filter(v => (v.price ? P.villagers.includes(v.id) : villageLevel(P) >= v.vl));
+
+// Günlük iş: o gün köydeki bir köylü küçük bir iş ister.
+function ensureTask() {
+  const here = villagersHere();
+  if (!here.length) return null;
+  if (P.task?.day === dateKey()) return P.task;
+  const pool = DAILY_TASKS.filter(t => !t.needs || P.village[t.needs]);
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  P.task = { day: dateKey(), type: t.type, need: t.need, have: 0, giver: here[Math.floor(Math.random() * here.length)].id, claimed: false };
+  save(P);
+  return P.task;
+}
+const taskDone = () => { const t = P.task; return !!t && t.day === dateKey() && !t.claimed && t.have >= t.need; };
+function taskProgress(type, n) {
+  const t = ensureTask();
+  if (!t || t.claimed || t.type !== type || t.have >= t.need) return;
+  t.have = Math.min(t.need, t.have + n);
+  if (t.have >= t.need) toast(`${VILLAGERS.find(v => v.id === t.giver).name}: "İşim bitti, köye uğra!"`);
+}
+function taskMarker() {
+  const t = ensureTask();
+  return t && !t.claimed ? { giver: t.giver, done: t.have >= t.need } : null;
+}
+
+function talkTo(id) {
+  const v = VILLAGERS.find(x => x.id === id), t = ensureTask();
+  if (t && !t.claimed && t.giver === id) { showTask(); return; }
+  const lines = VILLAGER_LINES[phaseOf(hourNow())];
+  village.say(id, `${v.name}: ${lines[Math.floor(Math.random() * lines.length)]}`);
+  sfx.ui();
+}
+
+function showTask() {
+  const t = ensureTask(), v = VILLAGERS.find(x => x.id === t.giver), def = DAILY_TASKS.find(d => d.type === t.type);
+  const done = t.have >= t.need;
+  openOverlay(`
+    <span class="new-tag">GÜNLÜK İŞ</span>
+    <canvas class="intro-icon" id="taskFace"></canvas>
+    <h2>${v.name}</h2>
+    <p>${done ? 'Harikasın, tam istediğim gibi! Al bakalım ödülün.' : `Bugün bana yardım eder misin? <b>${def.text}</b>.`}</p>
+    <div class="progress"><div style="width:${Math.round((t.have / t.need) * 100)}%;height:100%;background:var(--green)"></div></div>
+    <small class="breakdown">${t.have}/${t.need} · ödül ${coinIco}${TASK_REWARD.coins} + ${flakeIco}${TASK_REWARD.flakes}</small>
+    ${done ? '<button id="tkClaim" class="btn green">Ödülü al</button>' : ''}
+    <button id="tkClose" class="btn link">Kapat</button>`);
+  drawPofi(fitCanvas($('taskFace'), 84, 84), 42, 82, 64, { outfit: v.outfit, happy: done });
+  $('tkClose').onclick = closeOverlay;
+  if ($('tkClaim')) $('tkClaim').onclick = () => {
+    if (t.claimed || t.have < t.need) return;
+    t.claimed = true;
+    P.coins += TASK_REWARD.coins;
+    P.flakes += TASK_REWARD.flakes;
+    persist();
+    closeOverlay();
+    sfx.reward();
+    track('task_claim', { type: t.type, giver: t.giver });
+    toast(`+${TASK_REWARD.coins} coin, +${TASK_REWARD.flakes} kar tanesi`);
+  };
+}
+
+function showVillagers() {
+  const vl = villageLevel(P), here = villagersHere().map(v => v.id);
+  const rows = VILLAGERS.map(v => {
+    const price = discounted(P, v.price);
+    const act = here.includes(v.id) ? '<span class="check">Köyde</span>'
+      : !v.price ? `<small class="muted">Köy Lv${v.vl}</small>`
+      : vl < v.vl ? `<small class="muted">Köy Lv${v.vl}</small>`
+      : `<button class="btn green" data-inv="${v.id}" ${P.coins < price ? 'disabled' : ''}>${coinIco}${price}</button>`;
+    return `<div class="ev-step${here.includes(v.id) ? ' done' : ''}"><canvas class="vill-face" data-face="${v.id}"></canvas><span class="rw"><b>${v.name}</b>${v.kid ? '&nbsp;<small>çocuk</small>' : ''}</span>${act}</div>`;
+  }).join('');
+  openOverlay(`
+    <span class="new-tag">KÖYLÜLER</span>
+    <h2>Köyü şenlendir</h2>
+    <p>Köylüler günün saatine göre yaşar: sabah balığa çıkar, öğlen kakao kuyruğuna girer, akşam ateş başında toplanır, gece uyur. Her gün biri senden küçük bir iş ister.</p>
+    <div class="ev-track">${rows}</div>
+    <button id="vlClose" class="btn link">Kapat</button>`);
+  $('overlayCard').querySelectorAll('[data-face]').forEach(cv => {
+    const v = VILLAGERS.find(x => x.id === cv.dataset.face);
+    drawPofi(fitCanvas(cv, 36, 36), 18, 35, v.kid ? 24 : 30, { outfit: v.outfit });
+  });
+  $('vlClose').onclick = closeOverlay;
+  $('overlayCard').querySelectorAll('[data-inv]').forEach(btn => {
+    btn.onclick = () => {
+      const v = VILLAGERS.find(x => x.id === btn.dataset.inv), price = discounted(P, v.price);
+      if (P.villagers.includes(v.id) || P.coins < price || villageLevel(P) < v.vl) return;
+      P.coins -= price;
+      P.villagers.push(v.id);
+      persist();
+      sfx.reward();
+      track('villager_invite', { id: v.id, price });
+      toast(`${v.name} köye taşındı!`);
+      showVillagers();
+      renderVillage();
+    };
+  });
+}
 
 // ---------- iç mekân (GDD 12.3) ----------
 // Yuvaya dokun → kademeyi seç → odada önizle → "Satın al ve yerleştir". Kademeler sırayla alınır.
@@ -1278,6 +1395,7 @@ function frame(now) {
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
       cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1, homeReady: homesReady(),
+      villagers: villagersHere(), hour: hourNow(), task: taskMarker(),
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
     if (village.panel !== shownPanel) renderZoneTag();

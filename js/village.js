@@ -37,7 +37,8 @@ const SCALE = [0, 0.85, 1, 1.15, 1.2, 1.26]; // seviyeye göre boyut
 
 // Ana yol (penguenlerin yürüdüğü meydan yolu); her yapı yerine buradan bir patika ayrılır.
 // Ana yol bölgeler boyunca uzar; Buz Limanı'nda kıyı boyunca devam eder.
-const PROMENADE = [[0.1, 0.8], [0.3, 0.775], [0.5, 0.765], [0.7, 0.775], [0.92, 0.8], [1.08, 0.8], [1.3, 0.78], [1.5, 0.775], [1.72, 0.79], [1.92, 0.8]];
+// Limanın zemin görselinde yolun ortası y≈0.765; köy panelinden oraya yumuşakça geçer.
+const PROMENADE = [[0.1, 0.8], [0.3, 0.775], [0.5, 0.765], [0.7, 0.775], [0.92, 0.8], [1.08, 0.772], [1.3, 0.765], [1.5, 0.765], [1.72, 0.765], [1.92, 0.765]];
 const walkRange = land => [0.16, land >= 2 ? 1.86 : 0.88]; // yürüyüş aralığı (x)
 function promenadeY(x) {
   for (let i = 1; i < PROMENADE.length; i++) {
@@ -54,8 +55,20 @@ const TRAVELERS = [
   { hat: 'earmuffs', scarf: 'green' }, { hat: 'north', scarf: 'blue' }, { hat: 'beanieRed', scarf: 'yellow' },
 ];
 const travelerSpots = pier => (pier
-  ? [[0.115, 0.895], [0.165, 0.92], [0.215, 0.895]]
+  ? [[0.11, 0.935], [0.165, 0.955], [0.22, 0.935]]
   : [[0.175, promenadeY(0.175) + 0.004], [0.145, promenadeY(0.145) + 0.022], [0.12, promenadeY(0.12) + 0.002]]);
+
+// Köy yaşamı (GDD 12.5): köylüler cihaz saatine göre rutin izler.
+// Yerler, Lv3 yapı görsellerinin kapladığı alanların dışında seçildi (önde duran yapı köylüyü örtmesin).
+const FIRE = [0.612, 0.5]; // kamp ateşi: iglo ile kale arasındaki açık kar
+const HOME = [0.48, 0.61]; // gece iglo kapısından içeri girerler
+export const phaseOf = h => (h >= 7 && h < 11 ? 'morning' : h >= 11 && h < 17 ? 'day' : h >= 17 && h < 21 ? 'evening' : 'night');
+// Gece karanlığı (köy Lv6 ödülü): 18'den sonra kararır, 21-6 arası tam gece, 6-8 arası aydınlanır.
+const nightOf = h => (h >= 21 || h < 6 ? 1 : h >= 18 ? (h - 18) / 3 : h < 8 ? (8 - h) / 2 : 0);
+const LAKE_FISH = [[0.13, 0.797], [0.185, 0.791]]; // iskele yoksa ana yolun göl ucunda, yüzü göle dönük
+const PIER_FISH = [[0.12, 0.93], [0.2, 0.935]]; // iskele varsa güvertenin ön kenarında
+const HARBOR_FISH = [[1.4, 0.845], [1.56, 0.843], [1.84, 0.84]];
+const QUEUE = [[0.29, 0.727], [0.29, 0.752]]; // kakao standına çıkan patikada sıra
 
 // Fener dizisi gökyüzünde asılı; kurulmamışken yeri ufuk çizgisinde gösterilir.
 const plotAt = id => (id === 'lights' ? [0.5, 0.42] : AT[id]);
@@ -848,10 +861,9 @@ export class VillageView {
     this.c = canvas;
     this.ctx = canvas.getContext('2d');
     this.parts = [];
-    this.walkers = [
-      { x: 0.5, tx: 0.6, face: 1, wait: 0, lane: 0, size: 0.12, speed: 0.06 },
-      { x: 0.7, tx: 0.4, face: -1, wait: 1, lane: 0.025, size: 0.09, speed: 0.045, outfit: { hat: 'beanieBlue', scarf: 'yellow' } },
-    ];
+    this.walkers = [{ x: 0.5, tx: 0.6, face: 1, wait: 0, lane: 0, size: 0.12, speed: 0.06 }];
+    this.vs = new Map(); // köylü durumları
+    this.onVillager = null; // köylüye dokunulunca (id)
     this.cam = { x: 0, y: 0, z: 1 };
     this.focus = null;
     this.preview = null; // { id, style, color } — satın almadan önce sahnede gösterilir
@@ -878,6 +890,8 @@ export class VillageView {
         if (x > this.W - 40 && cur < this.panels - 1) { this.goPanel(cur + 1); return; }
         if (x < 40 && cur > 0) { this.goPanel(cur - 1); return; }
       }
+      const vid = this.villagerHit(x, y);
+      if (vid) { this.onVillager?.(vid); return; }
       const lock = this.lockHit(x, y);
       if (lock !== null) { this.onDistrict?.(lock); return; }
       const id = this.hit(x, y);
@@ -904,7 +918,7 @@ export class VillageView {
   playSale(o) {
     if (this.sale || !this.W) return false;
     const h = this.walkers[0], py = promenadeY;
-    const spot = o.pier ? [0.165, 0.86] : [0.205, py(0.205)];
+    const spot = o.pier ? [0.165, 0.928] : [0.205, py(0.205)];
     const wp = [
       [STAND[0], py(STAND[0])],
       [STAND[0], STAND[1], 'pick'],
@@ -948,6 +962,99 @@ export class VillageView {
       return;
     }
     s.i++;
+  }
+
+  // Köylünün bu saatteki yeri: [x, y, yön, iş] ya da null (ana yolda gezinir).
+  villagerSpot(i, list, phase, village, land) {
+    if (phase === 'night') return [HOME[0], HOME[1], 0, 'sleep'];
+    if (phase === 'evening') {
+      const a = (i / list.length) * Math.PI * 2 + 0.4;
+      return [FIRE[0] + Math.cos(a) * 0.045, FIRE[1] + Math.sin(a) * 0.022, Math.cos(a) > 0 ? -1 : 1, 'warm'];
+    }
+    // sabah ve öğlen: işler önce yetişkinlere dağıtılır, çocuklar gezinir
+    const adults = list.filter(v => !v.kid), k = adults.indexOf(list[i]);
+    if (k < 0) return null;
+    if (phase === 'morning') {
+      const spots = [...(land >= 2 ? HARBOR_FISH.map(p => [...p, 0]) : []), ...(village.pier ? PIER_FISH : LAKE_FISH).map(p => [...p, -1])];
+      return spots[k] ? [spots[k][0], spots[k][1], spots[k][2], 'fish'] : null;
+    }
+    return village.cocoa && QUEUE[k] ? [QUEUE[k][0], QUEUE[k][1], 0, 'queue'] : null;
+  }
+
+  stepVillagers(dt, list, phase, village, land) {
+    const py = promenadeY, wr = walkRange(land);
+    list.forEach((v, i) => {
+      const spot = this.villagerSpot(i, list, phase, village, land);
+      const lane = (i % 3) * 0.012;
+      let st = this.vs.get(v.id);
+      if (!st) {
+        // ilk açılışta yerinde başlar (yürüyerek gelmez)
+        const x = spot ? spot[0] : wr[0] + Math.random() * (wr[1] - wr[0]);
+        st = { x, y: spot ? spot[1] : py(x) + lane, route: [], wait: Math.random() * 2, face: spot ? spot[2] : 1, phase, act: spot?.[3] || null, wander: !spot, hidden: phase === 'night' };
+        this.vs.set(v.id, st);
+      }
+      if (st.phase !== phase) {
+        // yeni saat dilimi: ana yola in, yol boyunca git, hedefe çık
+        st.phase = phase;
+        st.act = null;
+        st.hidden = false;
+        st.wander = !spot;
+        st.route = [];
+        if (Math.abs(st.y - py(st.x)) > 0.012) st.route.push([st.x, py(st.x) + lane]);
+        if (spot) {
+          if (Math.abs(spot[1] - py(spot[0])) > 0.012) st.route.push([spot[0], py(spot[0]) + lane]);
+          st.route.push([spot[0], spot[1]]);
+        }
+      }
+      if (st.route.length) {
+        const [tx, ty] = st.route[0], dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy), step = 0.07 * dt;
+        if (d > step) { st.x += (dx / d) * step; st.y += (dy / d) * step; if (Math.abs(dx) > 0.001) st.face = Math.sign(dx); return; }
+        st.x = tx;
+        st.y = ty;
+        st.route.shift();
+        if (!st.route.length && spot) { st.act = spot[3]; st.face = spot[2]; if (spot[3] === 'sleep') st.hidden = true; }
+        return;
+      }
+      if (!st.wander) return;
+      // gezinme: ana yolda rastgele noktalara yürür, arada durur
+      if (st.wait > 0) { st.wait -= dt; return; }
+      if (st.tx === undefined || Math.abs(st.tx - st.x) < 0.01) { st.tx = wr[0] + Math.random() * (wr[1] - wr[0]); st.wait = 1 + Math.random() * 3; return; }
+      st.x += Math.sign(st.tx - st.x) * dt * 0.045;
+      st.y = py(st.x) + lane;
+      st.face = Math.sign(st.tx - st.x);
+    });
+  }
+
+  villagerHit(sx, sy) {
+    const { cam, W, H } = this;
+    const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
+    for (const [id, x, y, r] of this.vpos || []) if (Math.hypot(wx - x, wy - y) < r + 8) return id;
+    return null;
+  }
+
+  say(id, text) { this.speech = { id, text, until: performance.now() + 3200 }; }
+
+  drawSpeech(ctx, u, t) {
+    const sp = this.speech;
+    if (!sp || performance.now() > sp.until) return;
+    const p = (this.vpos || []).find(v => v[0] === sp.id);
+    if (!p) return;
+    const [, x, y, r] = p;
+    ctx.font = `600 ${Math.round(u * 0.045)}px Fredoka, sans-serif`;
+    const w = ctx.measureText(sp.text).width + u * 0.06, h = u * 0.08, by = y - r - h - u * 0.03;
+    const bx = Math.max(this.sx + 6, Math.min(this.sx + this.W - w - 6, x - w / 2));
+    ctx.fillStyle = 'rgba(255,255,255,.96)';
+    roundRect(ctx, bx, by, w, h, h / 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - u * 0.015, by + h);
+    ctx.lineTo(x, by + h + u * 0.025);
+    ctx.lineTo(x + u * 0.015, by + h);
+    ctx.fill();
+    ctx.fillStyle = '#1d3557';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(sp.text, bx + w / 2, by + h / 2 + 1);
   }
 
   // Coin'ler satış noktasından sağ üstteki sayaca doğru yay çizerek uçar.
@@ -1012,7 +1119,9 @@ export class VillageView {
   // village: P.village, vl: köy seviyesi, plots: kurulabilir yapılar, ready: parası yetenler
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [] }) {
+  // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null }) {
+    if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     const { ctx, W, H } = this;
     const u = Math.min(W, H);
@@ -1029,7 +1138,8 @@ export class VillageView {
     this.cam.x += (tgt.x - this.cam.x) * k;
     this.cam.y += (tgt.y - this.cam.y) * k;
     this.cam.z += (tgt.z - this.cam.z) * k;
-    const night = vl >= 6 ? Math.max(0, Math.sin((time / 90) * Math.PI * 2)) : 0;
+    const night = vl >= 6 ? nightOf(hour) : 0;
+    const phase = phaseOf(hour);
 
     // gökyüzü kamera dışında, tam ekran
     const sky = ctx.createLinearGradient(0, 0, 0, H * 0.5);
@@ -1153,8 +1263,7 @@ export class VillageView {
     }
 
     // penguenler yalnızca ana yolda yürür
-    const wk = vl >= 3 ? this.walkers : this.walkers.slice(0, 1);
-    for (const w of wk) {
+    for (const w of this.walkers) {
       const hero = w === this.walkers[0];
       if (hero && this.sale) this.stepSale(dt);
       else if (w.wait > 0) w.wait -= dt;
@@ -1204,6 +1313,30 @@ export class VillageView {
       this.cocoaInfo = cocoa;
     }
     if (vl >= 10) for (const [fx, fy] of [[0.58, 0.71], [0.9, 0.86]]) items.push([fy * H, () => iceSculpture(ctx, fx * W, fy * H, u, time)]);
+    if (villagers.length) {
+      items.push([FIRE[1] * H, () => campfire(ctx, FIRE[0] * W, FIRE[1] * H, u, time, phase)]);
+      this.stepVillagers(dt, villagers, phase, village, land);
+      this.vpos = [];
+      villagers.forEach((v, i) => {
+        const st = this.vs.get(v.id);
+        if (st.hidden) return;
+        const size = u * (v.kid ? 0.068 : 0.088), x = st.x * W, y = st.y * H;
+        this.vpos.push([v.id, x, y - size * 0.45, size * 0.6]);
+        items.push([y, () => {
+          const moving = !!st.route.length || (st.wander && st.wait <= 0);
+          const bob = moving ? Math.abs(Math.sin(time * 8 + i)) * u * 0.008 : 0;
+          drawPofi(ctx, x, y - bob, size, {
+            face: moving ? st.face : st.act === 'fish' || st.act === 'warm' || st.act === 'queue' ? st.face : 0,
+            outfit: v.outfit, blink: ((time + i) % 3.3) < 0.12,
+            lean: moving ? Math.sin(time * 8 + i) * 0.08 : st.act === 'warm' ? 0.08 * st.face : 0,
+            wave: st.act === 'warm' ? Math.max(0, Math.sin(time * 2 + i)) * 0.5 : 0,
+          });
+          if (st.act === 'fish' && !moving) rod(ctx, x, y, size, st.face, st.x > 1, time + i);
+          if (task?.giver === v.id) taskMark(ctx, x, y - size * 1.05 - bob, u, time, task.done);
+        }]);
+      });
+      if (phase === 'night') for (const id of ['igloo', 'hut']) if (village[id]) zzz(ctx, AT[id][0] * W, AT[id][1] * H - u * 0.2, u, time);
+    }
     items.sort((a, b) => a[0] - b[0]);
     for (const [, draw] of items) draw();
     if (vl >= 8) this.bunting(ctx, W, H, u, time);
@@ -1215,6 +1348,7 @@ export class VillageView {
       else upgradeMarker(ctx, x, y, u, time);
     }
     this.drawCoinFx(ctx, W, H, u, dt);
+    this.drawSpeech(ctx, u, time);
     if (vl >= 12) this.lanterns(ctx, W, H, u, time);
     if (night > 0) {
       ctx.fillStyle = `rgba(20,24,60,${night * 0.25})`;
@@ -1303,6 +1437,9 @@ export class VillageView {
   // verilmezse (kod çizimi) yalnızca bölgeye özgü su eklenir, yollar paths() ile zaten çizilmiştir.
   districtGround(ctx, i, W, H, u, night, vl, snow) {
     const x0 = i * W;
+    // arazinin kendi zemin görseli varsa (yol, temeller ve deniz çizili) onu kullan
+    const img = snow && DISTRICTS[i]?.ground && art(`bg_ground_${DISTRICTS[i].id}`);
+    if (img) { ctx.drawImage(img, x0, 0, W, H); return; }
     if (snow) {
       ctx.fillStyle = mix(snow, '#c3cbe6', night);
       ctx.fillRect(x0, H * 0.38, W, H * 0.62);
@@ -1669,4 +1806,84 @@ function homeMarker(ctx, x, y, u, t) {
   ctx.lineTo(x + r * 0.55, y);
   ctx.fill();
   ctx.fillRect(x - r * 0.38, y, r * 0.76, r * 0.45);
+}
+
+// Kamp ateşi: taş halka ve kütükler hep durur; akşam alev, gece kor yanar.
+function campfire(ctx, x, y, u, t, phase) {
+  ctx.fillStyle = '#8f9bb0';
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2;
+    ellipse(ctx, x + Math.cos(a) * u * 0.035, y + Math.sin(a) * u * 0.012, u * 0.01, u * 0.007);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#7a4a2e';
+  ellipse(ctx, x, y - u * 0.004, u * 0.028, u * 0.006, 0.4);
+  ctx.fill();
+  ellipse(ctx, x, y - u * 0.004, u * 0.028, u * 0.006, -0.4);
+  ctx.fill();
+  if (phase !== 'evening' && phase !== 'night') return;
+  const big = phase === 'evening' ? 1 : 0.45;
+  glow(ctx, x, y - u * 0.02, u * 0.12 * big, '#ffb347', 0.35 * big);
+  for (let k = 0; k < 3; k++) {
+    const f = 1 + Math.sin(t * 9 + k * 2) * 0.15, h = u * 0.05 * big * f * (k === 1 ? 1.2 : 0.8);
+    ctx.fillStyle = ['#ff8a3d', '#ffd166', '#ff8a3d'][k];
+    ctx.beginPath();
+    const bx = x + (k - 1) * u * 0.01;
+    ctx.moveTo(bx - u * 0.012 * big, y - u * 0.006);
+    ctx.quadraticCurveTo(bx, y - h * 1.3, bx + u * 0.012 * big, y - u * 0.006);
+    ctx.fill();
+  }
+}
+
+// Olta: elden göle/denize uzanan ip, suda inip kalkan şamandıra.
+function rod(ctx, x, y, size, face, sea, t) {
+  const dir = face || 1;
+  const hx = x + dir * size * 0.28, hy = y - size * 0.45;
+  const tx = hx + dir * size * 0.45, ty = hy - size * 0.35;
+  const wx = sea ? x + size * 0.25 : x + dir * size * 0.9, wy = y + size * (sea ? 0.45 : 0.25) + Math.sin(t * 3) * size * 0.03;
+  ctx.strokeStyle = '#7a4a2e';
+  ctx.lineWidth = Math.max(1.5, size * 0.04);
+  ctx.beginPath();
+  ctx.moveTo(hx, hy);
+  ctx.lineTo(tx, ty);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(tx, ty);
+  ctx.quadraticCurveTo((tx + wx) / 2, ty, wx, wy);
+  ctx.stroke();
+  ctx.fillStyle = '#e5484d';
+  circle(ctx, wx, wy, Math.max(1.5, size * 0.05));
+  ctx.fill();
+}
+
+// Günlük iş işareti: sarı "!" (iş var) ya da yeşil "✓" (bitti, ödül bekliyor).
+function taskMark(ctx, x, y, u, t, done) {
+  const b = Math.abs(Math.sin(t * 3)) * u * 0.01, r = u * 0.026;
+  ctx.fillStyle = done ? '#3cc977' : '#ffb400';
+  circle(ctx, x, y - b, r);
+  ctx.fill();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 ${Math.round(u * 0.036)}px Fredoka, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(done ? '✓' : '!', x, y - b + 1);
+}
+
+// Gece uyuyan köylülerin evlerinin üstünde yükselen "z"ler.
+function zzz(ctx, x, y, u, t) {
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let k = 0; k < 3; k++) {
+    const f = (t * 0.35 + k / 3) % 1;
+    ctx.globalAlpha = Math.sin(f * Math.PI);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 ${Math.round(u * (0.03 + f * 0.025))}px Fredoka, sans-serif`;
+    ctx.fillText('z', x + Math.sin(f * 6 + k) * u * 0.02 + f * u * 0.04, y - f * u * 0.12);
+  }
+  ctx.globalAlpha = 1;
 }

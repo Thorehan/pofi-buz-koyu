@@ -498,6 +498,7 @@ html, body {
 .seg-btn { flex: 1; border: none; background: none; border-radius: 10px; padding: 8px; font: 600 15px 'Fredoka', sans-serif; color: var(--ink-soft); }
 .seg-btn.active { background: #fff; color: var(--ink); box-shadow: 0 2px 0 rgba(29, 53, 87, .1); }
 .wardrobe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.vill-face { width: 36px; height: 36px; flex: none; }
 .room-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .room-stage { flex: none; height: 34vh; min-height: 200px; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 4px 0 rgba(29, 53, 87, .1); }
 #roomCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
