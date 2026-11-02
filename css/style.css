@@ -396,8 +396,10 @@ html, body {
 #zoneBar { height: 100%; background: var(--green); width: 0; transition: width .4s; }
 .garden-wrap { position: relative; flex: none; height: 38vh; min-height: 220px; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 0 rgba(29, 53, 87, .12); }
 #village, #visitCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.honey { display: flex; align-items: center; gap: 8px; background: #fff3e6; border-radius: 16px; padding: 8px 10px; }
-.honey-label { flex: 1; font-size: 16px; }
+.honey { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; background: #fff3e6; border-radius: 16px; padding: 8px 10px; }
+.honey-label { flex: 1 1 100%; font-size: 16px; }
+.honey .btn { flex: 1; position: relative; white-space: nowrap; }
+.honey .btn.has-dot::after { content: ''; position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; border-radius: 50%; background: #ff4d4d; border: 2px solid #fff; }
 .honey-label small { display: block; color: var(--ink-soft); font-size: 12px; }
 .honey .btn { padding: 8px 12px; font-size: 15px; }
 .tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }

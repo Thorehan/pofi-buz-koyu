@@ -33,6 +33,17 @@ function promenadeY(x) {
   }
   return PROMENADE[PROMENADE.length - 1][1];
 }
+// Kakao satışı: Pofi stantın önünden tepsiyi alır, yolculara götürür (iskele kuruluysa iskeleye,
+// değilse ana yolun sol ucuna), coin'ler sayaca uçar.
+const STAND = [0.29, 0.715];
+const SALE_SPEED = 0.24; // kesir/saniye
+const TRAVELERS = [
+  { hat: 'earmuffs', scarf: 'green' }, { hat: 'north', scarf: 'blue' }, { hat: 'beanieRed', scarf: 'yellow' },
+];
+const travelerSpots = pier => (pier
+  ? [[0.115, 0.895], [0.165, 0.92], [0.215, 0.895]]
+  : [[0.175, promenadeY(0.175) + 0.004], [0.145, promenadeY(0.145) + 0.022], [0.12, promenadeY(0.12) + 0.002]]);
+
 // Fener dizisi gökyüzünde asılı; kurulmamışken yeri ufuk çizgisinde gösterilir.
 const plotAt = id => (id === 'lights' ? [0.5, 0.42] : AT[id]);
 
@@ -680,6 +691,81 @@ export class VillageView {
   }
 
   // Ekran koordinatından en yakın yapıyı bul (kamera dönüşümü hesaba katılır).
+  // o: { cups, coins, pier, done } — done, yolculara servis anında çağrılır.
+  playSale(o) {
+    if (this.sale || !this.W) return false;
+    const h = this.walkers[0], py = promenadeY;
+    const spot = o.pier ? [0.165, 0.86] : [0.205, py(0.205)];
+    const wp = [
+      [STAND[0], py(STAND[0])],
+      [STAND[0], STAND[1], 'pick'],
+      [STAND[0], py(STAND[0])],
+      ...(o.pier ? [[0.165, py(0.165)]] : []),
+      [spot[0], spot[1], 'serve'],
+      ...(o.pier ? [[0.165, py(0.165)]] : []),
+      [0.42, py(0.42), 'end'],
+    ];
+    this.sale = { ...o, wp, i: 0, x: h.x, y: py(h.x) + h.lane, wait: 0, tray: false, served: false, face: 1 };
+    return true;
+  }
+
+  stepSale(dt) {
+    const s = this.sale;
+    if (s.wait > 0) { s.wait -= dt; return; }
+    const [tx, ty, act] = s.wp[s.i];
+    const dx = tx - s.x, dy = ty - s.y, d = Math.hypot(dx, dy), step = SALE_SPEED * dt;
+    if (d > step) {
+      s.x += (dx / d) * step;
+      s.y += (dy / d) * step;
+      if (Math.abs(dx) > 0.001) s.face = Math.sign(dx);
+      return;
+    }
+    s.x = tx;
+    s.y = ty;
+    if (act === 'pick') { s.tray = true; s.wait = 0.45; }
+    else if (act === 'serve') {
+      s.tray = false;
+      s.served = true;
+      s.wait = 0.8;
+      this.travCup = true;
+      this.travLeave = 0;
+      this.coinBurst(tx, ty, s.coins);
+      s.done?.();
+    } else if (act === 'end') {
+      const h = this.walkers[0];
+      h.x = h.tx = s.x;
+      h.wait = 0.8;
+      this.sale = null;
+      return;
+    }
+    s.i++;
+  }
+
+  // Coin'ler satış noktasından sağ üstteki sayaca doğru yay çizerek uçar.
+  coinBurst(fx, fy, coins) {
+    this.coinFx = this.coinFx || [];
+    const n = Math.min(14, 4 + Math.floor(coins / 15));
+    for (let i = 0; i < n; i++) this.coinFx.push({ x0: fx, y0: fy - 0.05, t: -i * 0.06, dx: (Math.random() - 0.5) * 0.08 });
+  }
+
+  drawCoinFx(ctx, W, H, u, dt) {
+    if (!this.coinFx?.length) return;
+    const tx = 0.94, ty = 0.04;
+    this.coinFx = this.coinFx.filter(c => (c.t += dt) < 0.9);
+    for (const c of this.coinFx) {
+      if (c.t < 0) continue;
+      const k = c.t / 0.9, e = k * k;
+      const x = (c.x0 + c.dx * Math.sin(k * Math.PI) + (tx - c.x0) * e) * W;
+      const y = (c.y0 + (ty - c.y0) * e) * H - Math.sin(k * Math.PI) * u * 0.12;
+      ctx.fillStyle = '#ffcf3f';
+      circle(ctx, x, y, u * 0.018);
+      ctx.fill();
+      ctx.strokeStyle = '#d99a12';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+  }
+
   hit(sx, sy) {
     const { cam, W, H } = this;
     const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
@@ -704,7 +790,7 @@ export class VillageView {
 
   // village: P.village, vl: köy seviyesi, plots: kurulabilir yapılar, ready: parası yetenler
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null }) {
     if (!this.W) this.resize();
     const { ctx, W, H } = this;
     const u = Math.min(W, H);
@@ -834,26 +920,63 @@ export class VillageView {
     // penguenler yalnızca ana yolda yürür
     const wk = vl >= 3 ? this.walkers : this.walkers.slice(0, 1);
     for (const w of wk) {
-      if (w.wait > 0) w.wait -= dt;
+      const hero = w === this.walkers[0];
+      if (hero && this.sale) this.stepSale(dt);
+      else if (w.wait > 0) w.wait -= dt;
       else {
         const d = w.tx - w.x;
         if (Math.abs(d) < 0.01) { w.wait = 1 + Math.random() * 2.5; w.tx = WALK[0] + Math.random() * (WALK[1] - WALK[0]); }
         else { w.x += Math.sign(d) * dt * w.speed; w.face = Math.sign(d); }
       }
-      const y = (promenadeY(w.x) + w.lane) * H;
+      const sale = hero ? this.sale : null;
+      const wx = sale ? sale.x : w.x, y = (sale ? sale.y : promenadeY(w.x) + w.lane) * H;
+      const moving = sale ? sale.wait <= 0 : w.wait <= 0;
+      const face = moving ? (sale ? sale.face : w.face) : 0;
       items.push([y, () => {
-        const bob = w.wait > 0 ? 0 : Math.abs(Math.sin(time * 8)) * u * 0.01;
-        drawPofi(ctx, w.x * W, y - bob, u * w.size, {
-          face: w.wait > 0 ? 0 : w.face, lean: w.wait > 0 ? 0 : Math.sin(time * 8) * 0.08,
-          outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, wave: w.wait > 0 && !w.outfit ? Math.sin(time * 6) * 0.4 : 0,
+        const bob = moving ? Math.abs(Math.sin(time * 8)) * u * 0.01 : 0;
+        drawPofi(ctx, wx * W, y - bob, u * w.size, {
+          face, lean: moving ? Math.sin(time * 8) * 0.08 : 0,
+          outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, wave: !moving && !w.outfit && !sale ? Math.sin(time * 6) * 0.4 : 0,
         });
+        if (sale?.tray) tray(ctx, wx * W + (face || 1) * u * w.size * 0.32, y - bob - u * w.size * 0.42, u * w.size * 0.42, time);
       }]);
+    }
+
+    // Kakao: stantta biriken fincan balonu ve bekleyen yolcular
+    if (cocoa && village.cocoa) {
+      const lv = Math.min(village.cocoa.lv, 3);
+      const showCups = cocoa.cups >= 1 && !(this.sale && (this.sale.tray || this.sale.served));
+      if (showCups) markers.push([STAND[0] * W + u * 0.08, AT.cocoa[1] * H - u * [0.15, 0.2, 0.24][lv - 1], 'cups']);
+      const waiting = cocoa.cups >= 1 || (this.sale && !this.sale.served);
+      if (waiting && this.travLeave == null) this.travCup = false;
+      if (this.travLeave != null) {
+        this.travLeave += dt / 2.6;
+        if (this.travLeave >= 1) this.travLeave = null;
+      }
+      if (waiting || this.travLeave != null) {
+        const k = this.travLeave ?? 0;
+        travelerSpots(!!village.pier).forEach(([fx, fy], i) => {
+          const x = (fx - k * 0.3) * W, y = fy * H;
+          items.push([y, () => {
+            ctx.globalAlpha = 1 - k;
+            const bob = k ? Math.abs(Math.sin(time * 8 + i)) * u * 0.008 : 0;
+            drawPofi(ctx, x, y - bob, u * 0.085, { face: k ? -1 : 0, outfit: TRAVELERS[i], blink: ((time + i) % 3.1) < 0.12, lean: k ? Math.sin(time * 8 + i) * 0.08 : 0 });
+            if (this.travCup) mug(ctx, x + u * 0.03, y - bob - u * 0.035, u * 0.016, time + i);
+            ctx.globalAlpha = 1;
+          }]);
+        });
+      }
+      this.cocoaInfo = cocoa;
     }
     if (vl >= 10) for (const [fx, fy] of [[0.58, 0.71], [0.9, 0.86]]) items.push([fy * H, () => iceSculpture(ctx, fx * W, fy * H, u, time)]);
     items.sort((a, b) => a[0] - b[0]);
     for (const [, draw] of items) draw();
     if (vl >= 8) this.bunting(ctx, W, H, u, time);
-    for (const [x, y] of markers) upgradeMarker(ctx, x, y, u, time);
+    for (const [x, y, kind] of markers) {
+      if (kind === 'cups') cupBubble(ctx, x, y, u, time, this.cocoaInfo);
+      else upgradeMarker(ctx, x, y, u, time);
+    }
+    this.drawCoinFx(ctx, W, H, u, dt);
     if (vl >= 12) this.lanterns(ctx, W, H, u, time);
     if (night > 0) {
       ctx.fillStyle = `rgba(20,24,60,${night * 0.25})`;
@@ -1094,4 +1217,54 @@ function mix(a, b, t) {
   const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
   const ch = s => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
   return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}
+
+// Kakao fincanı (kırmızı, beyaz şeritli, buharlı).
+function mug(ctx, x, y, r, t) {
+  ctx.fillStyle = '#e5484d';
+  roundRect(ctx, x - r, y - r, r * 2, r * 2.1, r * 0.35);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x - r, y - r * 0.15, r * 2, r * 0.4);
+  ctx.strokeStyle = '#e5484d';
+  ctx.lineWidth = Math.max(1, r * 0.35);
+  ctx.beginPath();
+  ctx.arc(x + r * 1.05, y + r * 0.1, r * 0.5, -Math.PI / 2, Math.PI / 2);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.8)';
+  ctx.lineWidth = Math.max(1, r * 0.25);
+  ctx.beginPath();
+  const sw = Math.sin(t * 3) * r * 0.3;
+  ctx.moveTo(x, y - r * 1.2);
+  ctx.quadraticCurveTo(x + r * 0.5 + sw, y - r * 1.8, x - sw, y - r * 2.4);
+  ctx.stroke();
+}
+
+// Pofi'nin taşıdığı tepsi: üstünde üç fincan.
+function tray(ctx, x, y, w, t) {
+  ctx.fillStyle = '#9a6a42';
+  ellipse(ctx, x, y, w * 0.55, w * 0.14);
+  ctx.fill();
+  for (let i = -1; i <= 1; i++) mug(ctx, x + i * w * 0.3, y - w * 0.16, w * 0.11, t + i);
+}
+
+// Stantın yanında biriken fincan balonu; doluysa turuncu.
+function cupBubble(ctx, x, y, u, t, info) {
+  const full = info.cups >= info.cap;
+  const b = Math.sin(t * 3) * u * 0.006;
+  const w = u * 0.13, h = u * 0.065;
+  ctx.fillStyle = full ? '#ff8a3d' : '#ffffff';
+  roundRect(ctx, x - w / 2, y - h + b, w, h, h / 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x - u * 0.012, y + b);
+  ctx.lineTo(x, y + u * 0.018 + b);
+  ctx.lineTo(x + u * 0.012, y + b);
+  ctx.fill();
+  mug(ctx, x - w * 0.24, y - h * 0.45 + b, u * 0.012, t);
+  ctx.fillStyle = full ? '#ffffff' : '#1d3557';
+  ctx.font = `700 ${Math.round(u * 0.036)}px Fredoka, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(info.cups), x + w * 0.14, y - h / 2 + b + 1);
 }

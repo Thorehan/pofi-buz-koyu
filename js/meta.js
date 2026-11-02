@@ -1,5 +1,5 @@
 // Köy hesapları: yapı seviyeleri, buff'lar, köy seviyesi, indirimli fiyatlar.
-import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES } from './config.js';
+import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES, COCOA } from './config.js';
 
 export const building = id => BUILDINGS.find(b => b.id === id);
 export const bLevel = (P, id) => P.village[id]?.lv || 0;
@@ -35,6 +35,10 @@ export function buff(P, key) {
 // Köy bonusu + iglo: level coin ödüllerine eklenen toplam yüzde.
 export const villageBonusPct = P => (villageLevel(P) - 1) * VILLAGE_BONUS_PCT;
 export const coinBonusPct = P => buff(P, 'coinPct') + villageBonusPct(P);
+
+// Kakao: fincan fiyatı (taban + alınan tarifler) ve sıradaki tarif.
+export const cupPrice = P => COCOA.cupPrice + COCOA.recipes.filter(r => P.recipes.includes(r.id)).reduce((s, r) => s + r.add, 0);
+export const nextRecipe = P => COCOA.recipes.find(r => !P.recipes.includes(r.id)) || null;
 
 // Kartopu kalesi indirimi uygulanmış fiyat.
 export const discounted = (P, price) => Math.round(price * (1 - buff(P, 'discount')));

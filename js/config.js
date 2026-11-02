@@ -16,6 +16,18 @@ export const ECON = {
   starFlake: 1, // 3 yıldıza ek kar tanesi
 };
 
+// Kakao: stant saatte fincan üretir (BUILDINGS.cocoa), Pofi fincanları yolculara satar.
+// Tarifler sırayla alınır ve fincan fiyatını kalıcı olarak artırır (coin harcama yeri, kendini geri öder).
+export const COCOA = {
+  cupPrice: 5,
+  recipes: [
+    { id: 'cinnamon', name: 'Tarçın', add: 1, price: 300, vl: 1 },
+    { id: 'marshmallow', name: 'Marşmelov', add: 1, price: 800, vl: 2 },
+    { id: 'caramel', name: 'Karamel', add: 2, price: 2000, vl: 4 },
+    { id: 'aurora', name: 'Kuzey ışığı köpüğü', add: 2, price: 4500, vl: 6 },
+  ],
+};
+
 // Ara reklam yok; yalnızca oyuncunun seçtiği ödüllü reklamlar.
 export const ADS = {
   rewardedSec: 3, // simülasyon süresi
@@ -61,7 +73,7 @@ export const BUILDINGS = [
   { id: 'igloo', name: 'İglo', costs: [1, 3, 6, 9, 12], unlock: 1, styles: ['Klasik', 'Kristal', 'Kar evi'], stylePrice: 120, buff: 'coinPct', values: [0.1, 0.2, 0.3, 0.4, 0.5] },
   { id: 'pier', name: 'Balık iskelesi', costs: [2, 3, 6, 9, 12], unlock: 1, styles: ['Meşe', 'Kızıl ahşap', 'Gri taş'], stylePrice: 100, buff: 'fishCoin', values: [1, 2, 3, 4, 5] },
   { id: 'snowman', name: 'Kardan adam', costs: [2, 4, 7, 11, 14], unlock: 1, styles: ['Havuç burunlu', 'Atkılı', 'Silindir şapkalı'], stylePrice: 100, buff: 'hardMoves', values: [1, 2, 3, 3, 4] },
-  { id: 'cocoa', name: 'Kakao standı', costs: [2, 4, 7, 11, 14], unlock: 1, styles: ['Tenteli', 'Kulübe', 'Karavan'], stylePrice: 120, buff: 'cocoa', values: [20, 40, 60, 80, 100] },
+  { id: 'cocoa', name: 'Kakao standı', costs: [2, 4, 7, 11, 14], unlock: 1, styles: ['Tenteli', 'Kulübe', 'Karavan'], stylePrice: 120, buff: 'cocoa', values: [4, 8, 12, 16, 20] },
   { id: 'lights', name: 'Fener dizisi', costs: [3, 4, 7, 11, 14], unlock: 1, styles: ['Sıcak sarı', 'Renkli', 'Buz mavisi'], stylePrice: 120, buff: 'freeHints', values: [1, 2, 3, 4, 5] },
   { id: 'tree', name: 'Çam ağacı', costs: [3, 5, 8, 12, 16], unlock: 1, styles: ['Sade', 'Süslü', 'Karlı'], stylePrice: 120, buff: 'dailyPct', values: [0.25, 0.5, 1, 1.5, 2] },
   { id: 'rink', name: 'Buz pisti', costs: [3, 5, 8, 12, 16], unlock: 1, styles: ['Buz', 'Gökkuşağı', 'Gece'], stylePrice: 150, buff: 'x5', base: 10, values: [14, 18, 22, 26, 30] },
@@ -77,7 +89,7 @@ export const BUFF_TEXT = {
   coinPct: v => `Level coin ödülü +${pct(v)}`,
   fishCoin: v => `Balık başına +${v} coin`,
   hardMoves: v => `Hamle limitli levellerde +${v} hamle`,
-  cocoa: v => `Saatte ${v} coin pasif gelir`,
+  cocoa: v => `Saatte ${v} fincan kakao`,
   freeHints: v => `Her gün ${v} ücretsiz ipucu`,
   dailyPct: v => `Günlük ödül +${pct(v)}`,
   x5: v => `Çarpanda x5 bölgesi %${v}`,

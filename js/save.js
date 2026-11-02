@@ -20,7 +20,8 @@ function defaults() {
     outfit: { hat: 'none', scarf: 'none' },
     owned: { hat: ['none'], scarf: ['none'] },
     cocoaTs: Date.now(),
-    cocoaBank: 0,
+    cocoaCups: 0, // biriken fincan (kesirli; satışta tam fincanlar satılır)
+    recipes: [], // alınan kakao tarifleri
     settings: { haptics: true, sfx: true, ambient: true },
     freeCoinDay: '',
     freeCoinCount: 0,
@@ -45,6 +46,8 @@ function migrate(s) {
     if (typeof v === 'number') s.village[id] = { lv: 1, style: v, color: null };
   }
   delete s.zoneRewardClaimed;
+  // v0.3: kakao coin yerine fincan olarak birikir (eski fiyat 5 coin/fincan)
+  if (s.cocoaBank !== undefined) { s.cocoaCups = (s.cocoaCups || 0) + s.cocoaBank / 5; delete s.cocoaBank; }
   // Ara reklam kaldırıldı (kullanıcı kararı); eski sayaçları temizle.
   delete s.levelsSinceInter;
   delete s.lastInterTs;

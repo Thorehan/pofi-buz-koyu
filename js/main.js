@@ -4,7 +4,7 @@ import { VillageView } from './village.js';
 import { ensureEvent, eventPoints, timeLeft, claimable, nextMilestone, prizeOf, encodeVillage, decodeVillage, extractCode } from './live.js';
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
-  buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone,
+  buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone, cupPrice, nextRecipe,
 } from './meta.js';
 import { drawPofi, drawFish } from './draw.js';
 import { loadArt, setArtEnabled } from './art.js';
@@ -12,7 +12,7 @@ import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
-  BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE,
+  BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -51,7 +51,7 @@ function updateWallet() {
   $('coins').textContent = P.coins;
   $('flakes').textContent = P.flakes;
   $('playLevel').textContent = P.level;
-  $('dotVillage').classList.toggle('hidden', !canAffordAny(P));
+  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady());
   $('dotShop').classList.toggle('hidden', freeCoinsLeft() <= 0);
   renderNextCard();
   renderDailyButtons();
@@ -509,34 +509,83 @@ function freeLeft(kind) {
   return Math.max(0, buff(P, kind === 'hints' ? 'freeHints' : 'freeContinues') - P.daily[kind]);
 }
 
+// Kakao: stant saatte fincan üretir; birikim gözlem noktasının saat sınırıyla dolar.
+const cocoaCap = () => buff(P, 'cocoa') * buff(P, 'cocoaCap');
 function cocoaNow() {
   const rate = buff(P, 'cocoa');
   if (!rate) return 0;
   const hours = (Date.now() - P.cocoaTs) / 3.6e6;
-  return Math.min(P.cocoaBank + rate * hours, rate * buff(P, 'cocoaCap'));
+  return Math.min(P.cocoaCups + rate * hours, cocoaCap());
 }
-function bankCocoa() { P.cocoaBank = cocoaNow(); P.cocoaTs = Date.now(); }
+function bankCocoa() { P.cocoaCups = cocoaNow(); P.cocoaTs = Date.now(); }
+
+const recipeReady = () => { const r = nextRecipe(P); return !!r && villageLevel(P) >= r.vl && P.coins >= discounted(P, r.price); };
 
 function renderCocoa() {
-  const rate = buff(P, 'cocoa');
-  const amt = Math.floor(cocoaNow());
-  $('cocoaAmt').textContent = amt;
-  $('cocoaRate').textContent = rate ? `saatte ${rate} coin · en fazla ${buff(P, 'cocoaCap')} saat birikir` : 'Kakao standını kurunca köy coin üretir';
-  $('btnCocoa').disabled = amt < 1;
-  $('btnCocoa2').disabled = amt < 1;
-  $('btnCocoa2').textContent = `x2 · ${amt * 2}`;
+  const rate = buff(P, 'cocoa'), price = cupPrice(P), cups = Math.floor(cocoaNow());
+  $('cocoaAmt').textContent = cups;
+  $('cocoaRate').textContent = rate
+    ? `fincan ${price} coin · saatte ${rate} fincan · en fazla ${cocoaCap()}`
+    : 'Kakao standını kurunca yolculara sıcak kakao satarsın';
+  const busy = cups < 1 || !!village.sale;
+  $('btnCocoa').disabled = busy;
+  $('btnCocoa').textContent = `Sat · ${cups * price}`;
+  $('btnCocoa2').disabled = busy;
+  $('btnCocoa2').textContent = `x2 · ${cups * price * 2}`;
+  $('btnRecipes').classList.toggle('has-dot', recipeReady());
 }
 
-function collectCocoa(mult) {
-  const amt = Math.floor(cocoaNow());
-  if (amt < 1) return;
-  P.coins += amt * mult;
-  P.cocoaBank = 0;
+// Satış: coin hemen kaydedilir; köy ekranında Pofi fincanları yolculara götürür, sayaç servis anında artar.
+function sellCocoa(mult) {
+  const cups = Math.floor(cocoaNow());
+  if (cups < 1 || village.sale) return;
+  const coins = cups * cupPrice(P) * mult;
+  P.cocoaCups = cocoaNow() - cups;
   P.cocoaTs = Date.now();
-  persist();
-  sfx.coin();
-  toast(`+${amt * mult} coin kakao satışından`);
+  P.coins += coins;
+  save(P);
+  track('cocoa_sell', { cups, coins, mult });
+  const done = () => {
+    updateWallet();
+    sfx.coin();
+    toast(`${cups} fincan satıldı · +${coins} coin`);
+    renderCocoa();
+  };
+  if (screen !== 'village' || !village.playSale({ cups, coins, pier: !!P.village.pier, done })) done();
   renderCocoa();
+}
+
+function showRecipes() {
+  const vl = villageLevel(P), next = nextRecipe(P);
+  const rows = COCOA.recipes.map(r => {
+    const have = P.recipes.includes(r.id), price = discounted(P, r.price);
+    const act = have ? '<span class="check">✓</span>'
+      : r !== next ? '<small class="muted">sırayla açılır</small>'
+      : vl < r.vl ? `<small class="muted">Köy Lv${r.vl}</small>`
+      : `<button class="btn green" data-rc="${r.id}" ${P.coins < price ? 'disabled' : ''}>${coinIco}${price}</button>`;
+    return `<div class="ev-step${have ? ' done' : ''}"><span class="pts">+${r.add}</span><span class="rw"><b>${r.name}</b></span>${act}</div>`;
+  }).join('');
+  openOverlay(`
+    <span class="new-tag">KAKAO TARİFLERİ</span>
+    <h2>Fincan ${cupPrice(P)} coin</h2>
+    <p>Kuzey ışıklarını izlemeye gelen yolcular üşür. Köyün geçimi onlara satılan sıcak kakao. Her tarif fincan başına kalıcı olarak coin ekler.</p>
+    <div class="ev-track">${rows}</div>
+    <button id="rcClose" class="btn link">Kapat</button>`);
+  $('rcClose').onclick = closeOverlay;
+  $('overlayCard').querySelectorAll('[data-rc]').forEach(btn => {
+    btn.onclick = () => {
+      const r = COCOA.recipes.find(x => x.id === btn.dataset.rc), price = discounted(P, r.price);
+      if (P.recipes.includes(r.id) || P.coins < price) return;
+      P.coins -= price;
+      P.recipes.push(r.id);
+      persist();
+      sfx.reward();
+      track('recipe_buy', { id: r.id, price });
+      toast(`${r.name} tarifi alındı · fincan artık ${cupPrice(P)} coin`);
+      showRecipes();
+      renderCocoa();
+    };
+  });
 }
 
 // Seviye tavanındaki yapı için açıklama: Bölge 2 açılmadıysa Lv4-5'in nerede açılacağını söyler.
@@ -1087,12 +1136,13 @@ $('btnBack').onclick = () => { closeOverlay(); if (screen === 'visit') { leaveVi
 $('btnUndo').onclick = undo;
 $('btnRestart').onclick = () => { if (run && !overlayOpen()) startLevel(run.def.n, run.daily); };
 $('btnHint').onclick = useHint;
-$('btnCocoa').onclick = () => collectCocoa(1);
+$('btnCocoa').onclick = () => sellCocoa(1);
+$('btnRecipes').onclick = showRecipes;
 $('eventCard').onclick = showEvent;
 $('btnShare').onclick = shareVillage;
 $('btnVisit').onclick = askVisit;
 $('btnVisitBack').onclick = leaveVisit;
-$('btnCocoa2').onclick = async () => { if (await showRewarded('cocoa_x2')) collectCocoa(2); };
+$('btnCocoa2').onclick = async () => { if (await showRewarded('cocoa_x2')) sellCocoa(2); };
 window.addEventListener('keydown', e => {
   if (screen === 'game' && (e.code === 'KeyZ' || e.code === 'Backspace')) { e.preventDefault(); undo(); }
 });
@@ -1109,6 +1159,7 @@ function frame(now) {
       village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS,
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
+      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() },
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
   } else if (screen === 'visit' && visit) {

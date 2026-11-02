@@ -107,7 +107,7 @@ Her yeni öğe ilk geldiğinde kısa bir "YENİ" kartıyla tanıtılır.
 | İglo | 1 / 3 / 6 | Level coin ödülü +%10 / +%20 / +%30 |
 | Balık iskelesi | 2 / 3 / 6 | Toplanan balık başına +1 / +2 / +3 coin |
 | Kardan adam | 2 / 4 / 7 | Zor levellerde +1 / +2 / +3 başlangıç hamlesi |
-| Kakao standı | 2 / 4 / 7 | Pasif gelir 20 / 40 / 60 coin/saat (8 saat birikir) |
+| Kakao standı | 2 / 4 / 7 | Saatte 4 / 8 / 12 fincan (Lv4-5: 16 / 20); fincan 5 coin + tarifler (bkz. 12.2) |
 | Fener dizisi | 3 / 4 / 7 | Her gün 1 / 2 / 3 ücretsiz ipucu |
 | Çam ağacı | 3 / 5 / 8 | Günlük ödül +%25 / +%50 / +%100 |
 | Buz pisti | 3 / 5 / 8 | Çarpan çubuğunda x5 bölgesi %10 → %14 / %18 / %22 |
@@ -225,11 +225,22 @@ Coin hızlı birikiyor ama harcanacak yer az: stil, renk, kıyafet ve ipucu. Bun
 ### 12.2 Kakao neden var? (hikâye)
 Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları izlemeye gelen yolcular üşür. Köyün geçimi, onlara satılan **sıcak kakao**dur. Kakao standı köyün dükkânıdır, coin'in hikâyedeki kaynağıdır.
 
-**Yeni akış (şu an görünmez bir sayaç, oyuncu anlamıyor):**
-1. Stant zamanla **fincan** üretir. Fincanlar standın tezgâhında görünür şekilde birikir (kapasite = kakao saati).
-2. Oyuncu "Sat" der. Pofi tezgâha yürür, tepsiyi alır ve **iskeledeki yolculara** taşır. Yolcular fincanı alır, coin'ler havaya sıçrayıp sayaca uçar.
-3. Fincan fiyatını artıran **tarifler** coin'le alınır: tarçın, marşmelov, karamel, kuzey ışığı köpüğü. Bunlar kendini zamanla geri ödeyen bir yatırım ve sürekli bir coin harcama yeri.
-4. Ödüllü reklam: "Yolcu otobüsü geldi": bir sonraki satış x2.
+**Akış (v0.3 B1, uygulandı):**
+1. Stant saatte **fincan** üretir (Lv1-5: 4 / 8 / 12 / 16 / 20). Birikim gözlem noktasının saat sınırıyla dolar (8 saat → en çok 24 saat).
+2. Köyde standın yanında fincan sayısını gösteren bir balon durur; doluysa turuncu olur. Satılacak kakao varken yolcular bekler: iskele kuruluysa iskelede, değilse ana yolun sol ucunda.
+3. Oyuncu "Sat"a basar. Pofi stanta yürür, tepsiyi alır ve yolculara götürür (~5 sn). Yolcular fincanlarını alıp gider, coin'ler sayaca uçar. Coin satış anında kaydedilir; animasyon yalnızca görünüm içindir.
+4. **Tarifler** sırayla ve coin'le alınır, fincan başına kalıcı olarak coin ekler. Kale indirimi tariflere de uygulanır.
+
+| Tarif | Fincana ek | Fiyat | Açılış |
+|---|---|---|---|
+| Tarçın | +1 | 300 | Köy Lv1 |
+| Marşmelov | +1 | 800 | Köy Lv2 |
+| Karamel | +2 | 2.000 | Köy Lv4 |
+| Kuzey ışığı köpüğü | +2 | 4.500 | Köy Lv6 |
+
+   Fincan 5 coin'den başlayıp tariflerle 11 coin'e çıkar. Örneğin saatte 8 fincanda Tarçın kendini yaklaşık 37 saatlik üretimde geri öder.
+5. Ödüllü reklam: satış x2 (oyuncu seçerse).
+6. Eski kayıtlardaki coin birikimi 5'e bölünerek fincana çevrilir.
 
 ### 12.3 Coin harcama yerleri
 | Sistem | Ne yapar | Fiyat aralığı | Neden sürekli |
@@ -238,7 +249,7 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 | **Arazi / bölge** | Köy yana doğru genişler. Yeni bölge coin'le açılır, içindeki yapılar ❄ ile kurulur. | 2.000 → 5.000 → 10.000 → 20.000 | Her yeni bölge yeni yapı getirir |
 | **Süsler** | Fener, çit, kardan adam, çam, buz heykeli. Bölgedeki süs yuvalarına yerleştirilir. | 50–400 | Yuvalar bölgeyle artar |
 | **Köylüler** | Yeni penguen köylü davet edilir, bir eve yerleşir. Köyde dolaşır, kakao kuyruğuna girer. | 500–3.000 | Ev açıldıkça yeni köylü |
-| **Kakao tarifleri** | Fincan fiyatı +%20'şer artar | 300–4.000 | Yatırım, geri döner |
+| **Kakao tarifleri** ✅ | Fincan başına +1 / +1 / +2 / +2 coin | 300–4.500 | Yatırım, geri döner |
 
 **İşaret kuralı:** Bakiye yeten her yerde (köydeki yapının üstünde ve listedeki kartında) yeşil ok çıkar. ❄ için v0.3'te yapıldı. Coin harcama yerleri de aynı işareti kullanacak.
 
@@ -266,7 +277,7 @@ Köylüler yollar boyunca yürür. Dokununca bir cümle söyler, bazen günlük 
 | Adım | İçerik | Durum |
 |---|---|---|
 | **A · Hızlı düzeltmeler** | Ara reklam kaldırıldı · gardırop önizlemesi düzeltildi (dene → "Satın al ve giy") · geliştirilebilir yapıya yeşil ok · **Pofi animasyonları**: göbek üstü kayış (4 yön), kar tozu, çarpınca baş dönmesi yıldızları ve sallanma, rampada süpermen uçuşu, buz deliğinde dönme, kazanınca zıplayıp sevinme, boşta nefes alma | ✅ v0.3 |
-| **B1 · Kakao** | Fincan birikmesi, Pofi'nin yürüyüp satması, tarifler | Sırada |
+| **B1 · Kakao** | Fincan birikmesi, Pofi'nin yürüyüp satması, tarifler | ✅ v0.3 |
 | **B2 · Genişleyen köy** | Yatay kaydırma, bölge paneli, arazi açma | |
 | **B3 · İç mekân** | İglo içi (6 yuva, 3 kademe, önizleme), sonra diğer yapılar | |
 | **B4 · Köy yaşamı** | Köylüler, saat rutini, köylü daveti | |
