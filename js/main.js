@@ -5,15 +5,16 @@ import { ensureEvent, eventPoints, timeLeft, claimable, nextMilestone, prizeOf, 
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
   buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone, cupPrice, nextRecipe,
-  nextDistrict, landOf,
+  nextDistrict, landOf, slotTier, interiorReady,
 } from './meta.js';
+import { drawRoom, drawItemIcon } from './interior.js';
 import { drawPofi, drawFish } from './draw.js';
 import { loadArt, setArtEnabled } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
-  BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS,
+  BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -24,7 +25,7 @@ let LEVELS = []; // data/levels.json — sonrası çalışma anında üretilir
 const board = new BoardView($('board'));
 const village = new VillageView($('village'));
 const visitView = new VillageView($('visitCanvas'));
-village.onSelect = id => openSheet(id);
+village.onSelect = id => (sheet?.id === id && INTERIOR[id] && P.village[id] ? enterInterior(id) : openSheet(id));
 village.onDistrict = i => showDistrict(i);
 board.outfit = P.outfit;
 
@@ -53,14 +54,14 @@ function updateWallet() {
   $('coins').textContent = P.coins;
   $('flakes').textContent = P.flakes;
   $('playLevel').textContent = P.level;
-  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady());
+  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady() && !homesReady().length);
   $('dotShop').classList.toggle('hidden', freeCoinsLeft() <= 0);
   renderNextCard();
   renderDailyButtons();
   renderEventCard();
 }
 
-const SCREENS = ['splash', 'login', 'intro', 'home', 'game', 'village', 'visit', 'wardrobe', 'shop', 'settings'];
+const SCREENS = ['splash', 'login', 'intro', 'home', 'game', 'village', 'visit', 'interior', 'wardrobe', 'shop', 'settings'];
 const TAB_SCREENS = ['home', 'village', 'wardrobe', 'shop', 'settings'];
 
 function showScreen(name) {
@@ -69,7 +70,7 @@ function showScreen(name) {
   $('app').dataset.screen = name;
   board.active = name === 'game';
   setAmbient(name === 'game' || name === 'village');
-  $('btnBack').classList.toggle('hidden', name !== 'game' && name !== 'visit');
+  $('btnBack').classList.toggle('hidden', name !== 'game' && name !== 'visit' && name !== 'interior');
   $('tabbar').classList.toggle('hidden', !TAB_SCREENS.includes(name));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   if (name !== 'village' && sheet) closeSheet();
@@ -727,12 +728,14 @@ function renderSheet() {
     <div class="sheet-head"><div><b>${b.name}</b><span class="lv-pill">${lv ? `Lv ${lv}/${max}` : 'Kurulmadı'}</span></div><button id="shX" class="sheet-x" aria-label="Kapat">×</button></div>
     <div class="buff-box">${buffLine}</div>
     <button id="shUp" class="btn green big" ${cost === null || P.flakes < cost ? 'disabled' : ''}>${cost !== null && P.flakes < cost ? `${cost - P.flakes} kar tanesi daha gerekli` : upLabel}</button>
+    ${INTERIOR[b.id] && st ? `<button id="shIn" class="btn secondary big in-btn">İçeri gir · eşya yerleştir${interiorReady(P, b.id) ? '<i class="dot"></i>' : ''}</button>` : ''}
     ${looks}
     ${action}`;
   $('sheet').classList.remove('hidden');
 
   $('shX').onclick = closeSheet;
   $('shUp').onclick = () => upgrade(b.id);
+  if ($('shIn')) $('shIn').onclick = () => enterInterior(b.id);
   if (!st) return;
   $('sheet').querySelectorAll('[data-style]').forEach(btn => { btn.onclick = () => { sheet.draft.style = +btn.dataset.style; renderSheet(); }; });
   $('sheet').querySelectorAll('[data-color]').forEach(btn => { btn.onclick = () => { sheet.draft.color = btn.dataset.color || null; renderSheet(); }; });
@@ -882,6 +885,71 @@ function renderWardrobe() {
   };
 }
 document.querySelectorAll('.seg-btn').forEach(b => { b.onclick = () => { wardrobeCat = b.dataset.cat; wardrobeDraft = null; renderWardrobe(); }; });
+
+// ---------- iç mekân (GDD 12.3) ----------
+// Yuvaya dokun → kademeyi seç → odada önizle → "Satın al ve yerleştir". Kademeler sırayla alınır.
+let room = null; // { id, slot, draft: önizlenen kademe ya da null }
+const homesReady = () => Object.keys(INTERIOR).filter(id => interiorReady(P, id));
+
+function enterInterior(id) {
+  if (!INTERIOR[id] || !P.village[id]) return;
+  closeSheet();
+  const slots = INTERIOR[id].slots;
+  // coin'i yeten ilk yuvadan, yoksa ilk boş yuvadan başla
+  const first = slots.find(s => { const t = slotTier(P, id, s.id); return t < 3 && P.coins >= discounted(P, s.items[t].price); })
+    || slots.find(s => slotTier(P, id, s.id) < 3) || slots[0];
+  room = { id, slot: first.id, draft: null };
+  showScreen('interior');
+  renderInterior();
+  track('interior_enter', { id });
+}
+
+function renderInterior() {
+  if (!room) return;
+  const cfg = INTERIOR[room.id], slot = cfg.slots.find(s => s.id === room.slot);
+  const have = slotTier(P, room.id, slot.id);
+  const placed = cfg.slots.reduce((n, s) => n + slotTier(P, room.id, s.id), 0);
+  $('roomTitle').textContent = cfg.title;
+  $('roomCount').textContent = `Eşya ${placed}/${cfg.slots.length * 3}`;
+  $('roomSlots').innerHTML = cfg.slots.map(s => {
+    const t = slotTier(P, room.id, s.id), ready = t < 3 && P.coins >= discounted(P, s.items[t].price);
+    return `<button class="chip-btn${s.id === room.slot ? ' sel' : ''}" data-slot="${s.id}">${s.name}<span class="tiers">${t}/3</span>${ready ? '<i class="dot"></i>' : ''}</button>`;
+  }).join('');
+  $('roomList').innerHTML = slot.items.map((it, i) => {
+    const tier = i + 1, owned = tier <= have, price = discounted(P, it.price);
+    const label = owned ? (tier === have ? 'Yerleşik' : 'Sahip') : tier > have + 1 ? 'Sırayla açılır' : `${coinIco}${price}`;
+    return `<button class="w-item${tier === have ? ' on' : ''}${room.draft === tier ? ' sel' : ''}${owned ? '' : ' locked'}" data-tier="${tier}"><canvas></canvas><span>${it.name}</span><span class="price">${label}</span></button>`;
+  }).join('');
+  $('roomSlots').querySelectorAll('[data-slot]').forEach(btn => { btn.onclick = () => { room.slot = btn.dataset.slot; room.draft = null; renderInterior(); }; });
+  $('roomList').querySelectorAll('[data-tier]').forEach(btn => {
+    const tier = +btn.dataset.tier;
+    drawItemIcon(fitCanvas(btn.querySelector('canvas'), 64, 64), 64, slot.id, tier);
+    btn.onclick = () => { room.draft = tier === room.draft || tier <= have ? null : tier; renderInterior(); };
+  });
+
+  const d = room.draft;
+  if (!d) {
+    $('roomAction').innerHTML = `<p class="sheet-note" style="flex:1">${have >= 3 ? `${slot.name} tamamlandı.` : 'Bir eşyaya dokun, odada önizle.'}</p>`;
+    return;
+  }
+  const it = slot.items[d - 1], price = discounted(P, it.price);
+  const btn = d > have + 1
+    ? `<button class="btn primary" disabled>Önce: ${slot.items[have].name}</button>`
+    : `<button id="rmBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz coin · ' : 'Satın al ve yerleştir · '}${coinIco}${price}</button>`;
+  $('roomAction').innerHTML = `<button id="rmCancel" class="btn link">Vazgeç</button>${btn}`;
+  $('rmCancel').onclick = () => { room.draft = null; renderInterior(); };
+  if ($('rmBuy')) $('rmBuy').onclick = () => {
+    if (d !== have + 1 || P.coins < price) return;
+    P.coins -= price;
+    P.interior[room.id] = { ...(P.interior[room.id] || {}), [slot.id]: d };
+    room.draft = null;
+    persist();
+    sfx.reward();
+    track('interior_buy', { id: room.id, slot: slot.id, tier: d, price });
+    toast(`${it.name} yerleştirildi`);
+    renderInterior();
+  };
+}
 
 // ---------- mağaza ----------
 const today = () => new Date().toDateString();
@@ -1176,7 +1244,13 @@ $('btnDailyPuzzle').onclick = () => {
   else startLevel(0, true);
 };
 document.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => showScreen(b.dataset.tab); });
-$('btnBack').onclick = () => { closeOverlay(); if (screen === 'visit') { leaveVisit(); return; } run = null; showScreen('home'); };
+$('btnBack').onclick = () => {
+  closeOverlay();
+  if (screen === 'visit') { leaveVisit(); return; }
+  if (screen === 'interior') { room = null; showScreen('village'); return; }
+  run = null;
+  showScreen('home');
+};
 $('btnUndo').onclick = undo;
 $('btnRestart').onclick = () => { if (run && !overlayOpen()) startLevel(run.def.n, run.daily); };
 $('btnHint').onclick = useHint;
@@ -1203,7 +1277,7 @@ function frame(now) {
       village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS,
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
-      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1,
+      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1, homeReady: homesReady(),
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
     if (village.panel !== shownPanel) renderZoneTag();
@@ -1212,6 +1286,14 @@ function frame(now) {
   } else if (screen === 'home') {
     const ctx = fitCanvas($('homePofi'), 120, 120);
     drawPofi(ctx, 60, 117, 94, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+  } else if (screen === 'interior' && room) {
+    const r = $('roomCanvas').getBoundingClientRect();
+    if (r.width) {
+      // Önizlenen kademe odada gerçekmiş gibi görünür; satın alınmadan kaydedilmez.
+      const items = { ...(P.interior[room.id] || {}) };
+      if (room.draft) items[room.slot] = room.draft;
+      drawRoom(fitCanvas($('roomCanvas'), r.width, r.height), r.width, r.height, t, { items, highlight: room.slot, highlightTier: items[room.slot] || 0, outfit: P.outfit });
+    }
   } else if (screen === 'wardrobe') {
     const r = $('wardrobePofi').getBoundingClientRect();
     if (r.width) {

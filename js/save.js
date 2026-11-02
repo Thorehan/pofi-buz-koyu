@@ -23,6 +23,7 @@ function defaults() {
     cocoaTs: Date.now(),
     cocoaCups: 0, // biriken fincan (kesirli; satışta tam fincanlar satılır)
     recipes: [], // alınan kakao tarifleri
+    interior: {}, // { binaId: { yuvaId: sahip olunan en yüksek kademe (1-3) } }
     settings: { haptics: true, sfx: true, ambient: true },
     freeCoinDay: '',
     freeCoinCount: 0,

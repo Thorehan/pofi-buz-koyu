@@ -16,6 +16,22 @@ export const ECON = {
   starFlake: 1, // 3 yıldıza ek kar tanesi
 };
 
+// İç mekân (GDD 12.3): yapıya girilip yuvalara eşya yerleştirilir. Her yuvanın 3 kademesi sırayla alınır,
+// önce odada önizlenir. Tamamen coin harcama yeri (görünüm); fiyatlara kale indirimi uygulanır.
+export const INTERIOR = {
+  igloo: {
+    title: 'İglonun içi',
+    slots: [
+      { id: 'bed', name: 'Yatak', items: [{ name: 'Hasır yatak', price: 200 }, { name: 'Yorganlı yatak', price: 600 }, { name: 'Cibinlikli yatak', price: 1500 }] },
+      { id: 'rug', name: 'Halı', items: [{ name: 'Yuvarlak kilim', price: 150 }, { name: 'Desenli halı', price: 450 }, { name: 'Yıldızlı halı', price: 1100 }] },
+      { id: 'lamp', name: 'Lamba', items: [{ name: 'Mum', price: 150 }, { name: 'Gaz lambası', price: 500 }, { name: 'Aurora avizesi', price: 1200 }] },
+      { id: 'shelf', name: 'Raf', items: [{ name: 'Tahta raf', price: 200 }, { name: 'Kitaplık', price: 550 }, { name: 'Kupa dolabı', price: 1300 }] },
+      { id: 'window', name: 'Pencere', items: [{ name: 'Buz pencere', price: 250 }, { name: 'Perdeli pencere', price: 600 }, { name: 'Vitray pencere', price: 1400 }] },
+      { id: 'wall', name: 'Duvar süsü', items: [{ name: 'Balık tablosu', price: 150 }, { name: 'Çam çelengi', price: 450 }, { name: 'Aurora halısı', price: 1000 }] },
+    ],
+  },
+};
+
 // Kakao: stant saatte fincan üretir (BUILDINGS.cocoa), Pofi fincanları yolculara satar.
 // Tarifler sırayla alınır ve fincan fiyatını kalıcı olarak artırır (coin harcama yeri, kendini geri öder).
 export const COCOA = {

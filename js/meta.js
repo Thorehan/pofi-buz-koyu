@@ -1,5 +1,5 @@
 // Köy hesapları: yapı seviyeleri, buff'lar, köy seviyesi, indirimli fiyatlar.
-import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES, COCOA, DISTRICTS } from './config.js';
+import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES, COCOA, DISTRICTS, INTERIOR } from './config.js';
 
 export const building = id => BUILDINGS.find(b => b.id === id);
 export const bLevel = (P, id) => P.village[id]?.lv || 0;
@@ -44,6 +44,11 @@ export const coinBonusPct = P => buff(P, 'coinPct') + villageBonusPct(P);
 // Kakao: fincan fiyatı (taban + alınan tarifler) ve sıradaki tarif.
 export const cupPrice = P => COCOA.cupPrice + buff(P, 'cupBonus') + COCOA.recipes.filter(r => P.recipes.includes(r.id)).reduce((s, r) => s + r.add, 0);
 export const nextRecipe = P => COCOA.recipes.find(r => !P.recipes.includes(r.id)) || null;
+
+// İç mekân: yuvanın kademesi ve coin'i yeten bir sonraki eşyası olan yapı var mı?
+export const slotTier = (P, id, slot) => P.interior?.[id]?.[slot] || 0;
+export const interiorReady = (P, id) => !!INTERIOR[id] && !!P.village[id]
+  && INTERIOR[id].slots.some(s => { const t = slotTier(P, id, s.id); return t < 3 && P.coins >= discounted(P, s.items[t].price); });
 
 // Kartopu kalesi indirimi uygulanmış fiyat.
 export const discounted = (P, price) => Math.round(price * (1 - buff(P, 'discount')));

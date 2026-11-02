@@ -245,7 +245,7 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 ### 12.3 Coin harcama yerleri
 | Sistem | Ne yapar | Fiyat aralığı | Neden sürekli |
 |---|---|---|---|
-| **İç mekân** | Yapıya (önce iglo) dokununca kart açılır, tekrar dokununca **içine girilir**. Odada 6 yuva: yatak, halı, lamba, raf, pencere, duvar süsü. Her yuvanın 3 kademesi var. Önce önizleme, sonra "Satın al ve yerleştir". | 150–1.500 | 6 yapı × 6 yuva × 3 kademe |
+| **İç mekân** ✅ (iglo) | Yapıya (önce iglo) dokununca kart açılır, tekrar dokununca **içine girilir**. Odada 6 yuva: yatak, halı, lamba, raf, pencere, duvar süsü. Her yuvanın 3 kademesi var. Önce önizleme, sonra "Satın al ve yerleştir". | 150–1.500 | 6 yapı × 6 yuva × 3 kademe |
 | **Arazi / bölge** | Köy yana doğru genişler. Yeni bölge coin'le açılır, içindeki yapılar ❄ ile kurulur. | 2.000 → 5.000 → 10.000 → 20.000 | Her yeni bölge yeni yapı getirir |
 | **Süsler** | Fener, çit, kardan adam, çam, buz heykeli. Bölgedeki süs yuvalarına yerleştirilir. | 50–400 | Yuvalar bölgeyle artar |
 | **Köylüler** | Yeni penguen köylü davet edilir, bir eve yerleşir. Köyde dolaşır, kakao kuyruğuna girer. | 500–3.000 | Ev açıldıkça yeni köylü |
@@ -275,6 +275,22 @@ Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları 
 - **Görsel:** Limanın zemini ve yapıları şimdilik kodla çiziliyor. Görsel isteği görsel chat'e gönderildi.
 - **Uyumluluk:** Paylaşım kodu yapıları sırayla kodladığı için yeni yapılar listenin sonuna eklenir. Ziyaret edilen köyde açık arazi sayısı kurulu yapılardan çıkarılır.
 
+### 12.4.1 İglo içi (uygulandı)
+- **Giriş:** Kurulu igloya dokununca kart açılır, kartta "İçeri gir · eşya yerleştir" butonu vardır. İgloya ikinci kez dokunmak da içeri sokar. Geri tuşu köye döner.
+- **Yuvalar:** 6 yuva (yatak, halı, lamba, raf, pencere, duvar süsü). Her yuvanın 3 kademesi var ve sırayla alınır.
+- **Fiyatlar ve toplam:**
+  - Kademe 1: 150–250 coin, Kademe 2: 450–600, Kademe 3: 1.000–1.500.
+  - Odanın tamamı yaklaşık 11.550 coin. Kale indirimi uygulanır.
+- **Önizleme:** Eşyaya dokununca odada gerçekmiş gibi görünür; seçili yuva turuncu kesik çerçeveyle işaretlenir. Ancak "Satın al ve yerleştir" ile kaydedilir.
+- **Lamba:** Oda ışığını ısıtır. Kademe 3 tavandan sarkan aurora avizesidir.
+- **İşaretler:** Coin'i yeten bir sonraki eşya varsa işaret çıkar:
+  - Köyde iglonun üstünde sarı ev işareti.
+  - Karttaki "İçeri gir" butonunda ve yuva sekmesinde kırmızı nokta.
+  - Köy sekmesinde işaret.
+- **Sayaç:** Odada "Eşya n/18" görünür.
+- **Çizim:** Oda ve eşyalar şimdilik kodla çiziliyor (js/interior.js). Görsel istendi.
+- **Sonraki:** Diğer yapıların içi (kakao standı, kulübe…) aynı INTERIOR yapısıyla eklenir.
+
 ### 12.5 Köy yaşamı (cihaz saatine göre)
 | Saat | Ne olur |
 |---|---|
@@ -291,7 +307,7 @@ Köylüler yollar boyunca yürür. Dokununca bir cümle söyler, bazen günlük 
 | **A · Hızlı düzeltmeler** | Ara reklam kaldırıldı · gardırop önizlemesi düzeltildi (dene → "Satın al ve giy") · geliştirilebilir yapıya yeşil ok · **Pofi animasyonları**: göbek üstü kayış (4 yön), kar tozu, çarpınca baş dönmesi yıldızları ve sallanma, rampada süpermen uçuşu, buz deliğinde dönme, kazanınca zıplayıp sevinme, boşta nefes alma | ✅ v0.3 |
 | **B1 · Kakao** | Fincan birikmesi, Pofi'nin yürüyüp satması, tarifler | ✅ v0.3 |
 | **B2 · Genişleyen köy** | Yatay kaydırma, arazi paneli, arazi açma, Buz Limanı (4 yapı) | ✅ v0.3 (görseli bekliyor) |
-| **B3 · İç mekân** | İglo içi (6 yuva, 3 kademe, önizleme), sonra diğer yapılar | |
+| **B3 · İç mekân** | İglo içi (6 yuva, 3 kademe, önizleme), sonra diğer yapılar | ✅ v0.3 iglo (görseli bekliyor) |
 | **B4 · Köy yaşamı** | Köylüler, saat rutini, köylü daveti | |
 | **B5 · Süsler** | Yerleştirilebilir süsler | |
 | **C · Görsel** | GPT görsel modeliyle (Batch) Pofi, yapılar, zemin ve köy panoraması | Test isteği gönderildi |

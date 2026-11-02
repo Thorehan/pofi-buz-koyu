@@ -74,7 +74,7 @@ export const BLD_Z2 = {
   hut_s0: 0.667, hut_s1: 0.669, hut_s2: 0.746, igloo_s0: 0.612, igloo_s1: 0.621, igloo_s2: 0.64,
   lighthouse_s0: 0.645, lighthouse_s1: 0.665, lighthouse_s2: 0.671, observatory_s0: 0.662, observatory_s1: 0.654, observatory_s2: 0.689,
   pier_s0: 0.725, pier_s1: 0.719, pier_s2: 0.704, rink_s0: 0.704, rink_s1: 0.783, rink_s2: 0.856,
-  sled_s0: 0.648, sled_s1: 0.626, sled_s2: 0.678, snowman_s0: 0.692, snowman_s1: 0.728, snowman_s2: 0.668,
+  sled_s0: 0.648, sled_s1: 0.626, sled_s2: 0.678, snowman_s0: 0.692, snowman_s1: 0.722, snowman_s2: 0.668,
   tree_s0: 0.721, tree_s1: 0.667, tree_s2: 0.653,
 };
 
@@ -84,4 +84,6 @@ export const BLD_Z2 = {
 export const BLD = {
   igloo: 0.3, cocoa: 0.24, fort: 0.28, snowman: 0.2, tree: 0.28, observatory: 0.32,
   sled: 0.34, hut: 0.33, rink: 0.37, pier: 0.3, lighthouse: 0.26,
+  // Buz Limanı (tekne: taban satırı su hattı)
+  cafe: 0.26, market: 0.28, bell: 0.26, ferry: 0.29,
 };

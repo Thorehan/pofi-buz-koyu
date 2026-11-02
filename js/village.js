@@ -1012,7 +1012,7 @@ export class VillageView {
   // village: P.village, vl: köy seviyesi, plots: kurulabilir yapılar, ready: parası yetenler
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [] }) {
     if (!this.W) this.resize();
     const { ctx, W, H } = this;
     const u = Math.min(W, H);
@@ -1125,6 +1125,7 @@ export class VillageView {
         const x = fx * W, y = fy * H;
         const col = st.color ? colors.find(c => c.id === st.color)?.hex : null;
         if (upgradable.includes(id)) markers.push([x, id === 'lights' ? y : y - u * 0.17 * SCALE[st.lv]]);
+        if (homeReady.includes(id)) markers.push([x - u * (upgradable.includes(id) ? 0.06 : 0), y - u * 0.17 * SCALE[st.lv], 'home']);
         items.push([id === 'lights' ? -1 : y, () => {
           if (this.focus === id) {
             ctx.fillStyle = 'rgba(255,209,102,.35)';
@@ -1210,6 +1211,7 @@ export class VillageView {
     for (let i = land; i < n; i++) this.lockedPanel(ctx, i, W, H, u, time, vl);
     for (const [x, y, kind] of markers) {
       if (kind === 'cups') cupBubble(ctx, x, y, u, time, this.cocoaInfo);
+      else if (kind === 'home') homeMarker(ctx, x, y, u, time);
       else upgradeMarker(ctx, x, y, u, time);
     }
     this.drawCoinFx(ctx, W, H, u, dt);
@@ -1304,6 +1306,12 @@ export class VillageView {
     if (snow) {
       ctx.fillStyle = mix(snow, '#c3cbe6', night);
       ctx.fillRect(x0, H * 0.38, W, H * 0.62);
+      // önceki panelin görsel zeminiyle dikişi yumuşat
+      const sc = mix(snow, '#c3cbe6', night), seam = ctx.createLinearGradient(x0 - W * 0.08, 0, x0, 0);
+      seam.addColorStop(0, sc.replace('rgb(', 'rgba(').replace(')', ',0)'));
+      seam.addColorStop(1, sc);
+      ctx.fillStyle = seam;
+      ctx.fillRect(x0 - W * 0.08, H * 0.39, W * 0.08, H * 0.61);
       ctx.fillStyle = 'rgba(255,255,255,.5)';
       for (let k = 0; k < 5; k++) {
         ellipse(ctx, x0 + W * (0.1 + k * 0.2), H * (0.47 + (k % 2) * 0.05), u * 0.06, u * 0.015);
@@ -1642,4 +1650,23 @@ function sampleColor(im, fx, fy, fallback) {
     colorCache.set(key, col);
   }
   return colorCache.get(key);
+}
+
+// İçine coin'le eşya alınabilecek yapı: sarı daire içinde küçük ev.
+function homeMarker(ctx, x, y, u, t) {
+  const b = Math.abs(Math.sin(t * 3 + 1)) * u * 0.012, r = u * 0.03;
+  y -= b;
+  ctx.fillStyle = '#ffb400';
+  circle(ctx, x, y, r);
+  ctx.fill();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.55, y);
+  ctx.lineTo(x, y - r * 0.55);
+  ctx.lineTo(x + r * 0.55, y);
+  ctx.fill();
+  ctx.fillRect(x - r * 0.38, y, r * 0.76, r * 0.45);
 }
