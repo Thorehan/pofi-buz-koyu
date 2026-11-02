@@ -24,6 +24,19 @@ const AT = {
 };
 const SCALE = [0, 0.85, 1, 1.15, 1.2, 1.26]; // seviyeye göre boyut
 
+// Ana yol (penguenlerin yürüdüğü meydan yolu); her yapı yerine buradan bir patika ayrılır.
+const PROMENADE = [[0.1, 0.8], [0.3, 0.775], [0.5, 0.765], [0.7, 0.775], [0.92, 0.8]];
+const WALK = [0.16, 0.88]; // yürüyüş aralığı (x)
+function promenadeY(x) {
+  for (let i = 1; i < PROMENADE.length; i++) {
+    const [x0, y0] = PROMENADE[i - 1], [x1, y1] = PROMENADE[i];
+    if (x <= x1) return y0 + ((y1 - y0) * Math.max(0, x - x0)) / (x1 - x0);
+  }
+  return PROMENADE[PROMENADE.length - 1][1];
+}
+// Fener dizisi gökyüzünde asılı; kurulmamışken yeri ufuk çizgisinde gösterilir.
+const plotAt = id => (id === 'lights' ? [0.5, 0.42] : AT[id]);
+
 // hex rengi açar (k>0) veya koyulaştırır (k<0)
 export function shade(hex, k) {
   const n = parseInt(hex.slice(1), 16);
@@ -637,8 +650,8 @@ export class VillageView {
     this.ctx = canvas.getContext('2d');
     this.parts = [];
     this.walkers = [
-      { x: 0.5, tx: 0.6, face: 1, wait: 0, y: 0.79, size: 0.12, speed: 0.06 },
-      { x: 0.7, tx: 0.4, face: -1, wait: 1, y: 0.83, size: 0.09, speed: 0.045, outfit: { hat: 'beanieBlue', scarf: 'yellow' } },
+      { x: 0.5, tx: 0.6, face: 1, wait: 0, lane: 0, size: 0.12, speed: 0.06 },
+      { x: 0.7, tx: 0.4, face: -1, wait: 1, lane: 0.025, size: 0.09, speed: 0.045, outfit: { hat: 'beanieBlue', scarf: 'yellow' } },
     ];
     this.cam = { x: 0, y: 0, z: 1 };
     this.focus = null;
@@ -673,8 +686,9 @@ export class VillageView {
     const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
     const u = Math.min(W, H);
     let best = null, bd = u * 0.12;
-    for (const [id, [fx, fy]] of Object.entries(AT)) {
+    for (const id of Object.keys(AT)) {
       if (!this.visible?.has(id)) continue;
+      const [fx, fy] = this.lastVillage?.[id] ? AT[id] : plotAt(id);
       const d = Math.hypot(wx - fx * W, wy - (fy * H - u * 0.05));
       if (d < bd) { bd = d; best = id; }
     }
@@ -717,17 +731,6 @@ export class VillageView {
     ctx.scale(this.cam.z, this.cam.z);
     ctx.translate(-this.cam.x, -this.cam.y);
 
-    const bg = art('village_bg');
-    if (bg) {
-      // Panorama: kenarları eklenebilir, yana doğru tekrarlanır. Kar zemini ≈ H * 0.49'dan başlar.
-      const ih = H * 1.15, iw = (ih * bg.width) / bg.height, x0 = W / 2 - iw / 2;
-      for (let i = -1; i <= 1; i++) ctx.drawImage(bg, x0 + i * iw, -H * 0.15, iw, ih);
-      if (night > 0) {
-        ctx.fillStyle = `rgba(14,20,52,${night * 0.45})`;
-        ctx.fillRect(-W, -H, W * 3, H * 3);
-      }
-      if (vl >= 11) this.fireworks(ctx, W, H, u, time);
-    } else {
     if (vl >= 5) this.aurora(time, W, H, u, vl >= 9 ? Math.max(night, 0.7) : night);
     if (vl >= 11) this.fireworks(ctx, W, H, u, time);
     ctx.fillStyle = night > 0.5 ? '#f3f0d0' : '#fff6d6';
@@ -755,18 +758,15 @@ export class VillageView {
     ctx.quadraticCurveTo(W * 0.2, H * 0.7, W * 0.3, H * 1.05);
     ctx.lineTo(-W, H * 1.6);
     ctx.fill();
-    }
 
-    if (vl >= 4) {
-      ctx.fillStyle = mix('#e4dccb', '#9d9aa8', night);
-      for (let i = 0; i < 7; i++) {
-        const f = i / 6;
-        ellipse(ctx, W * (0.5 + 0.05 * Math.sin(f * 5)), H * (0.62 + f * 0.36), u * 0.03 * (1 + f * 0.3), u * 0.012 * (1 + f * 0.3));
-        ctx.fill();
-      }
-    }
+    this.paths(ctx, W, H, u, night, vl);
+
     if (vl >= 7) {
-      const sx = W * 0.25, sy = H * 0.76 + Math.sin(time * 2) * 2;
+      // fok gölün kenarındaki buz kütlesinde dinlenir
+      ctx.fillStyle = mix('#ffffff', '#c3cbe6', night);
+      ellipse(ctx, W * 0.1, H * 0.87, u * 0.07, u * 0.022);
+      ctx.fill();
+      const sx = W * 0.1, sy = H * 0.86 + Math.sin(time * 2) * 1.5;
       ctx.fillStyle = '#8f9bb0';
       ellipse(ctx, sx, sy, u * 0.04, u * 0.022);
       ctx.fill();
@@ -777,56 +777,66 @@ export class VillageView {
       ctx.fill();
     }
 
-    // yapılar (arkadan öne)
+    // Yapılar, penguenler ve heykeller tabanlarının yüksekliğine göre arkadan öne çizilir;
+    // böylece bir penguen hiçbir zaman önündeki yapının çatısında görünmez.
     this.visible = new Set();
-    const order = Object.entries(AT).sort((a, b) => a[1][1] - b[1][1]);
-    for (const [id, [fx, fy]] of order) {
-      const x = fx * W, y = fy * H;
+    this.lastVillage = village;
+    const items = [], markers = [];
+    for (const [id, [fx, fy]] of Object.entries(AT)) {
       let st = village[id];
       if (this.preview && this.preview.id === id && st) st = { ...st, style: this.preview.style, color: this.preview.color };
       if (st) {
         this.visible.add(id);
+        const x = fx * W, y = fy * H;
         const col = st.color ? colors.find(c => c.id === st.color)?.hex : null;
-        if (this.focus === id) {
-          ctx.fillStyle = 'rgba(255,209,102,.35)';
-          ellipse(ctx, x, y + u * 0.01, u * 0.15, u * 0.035);
-          ctx.fill();
-        }
-        if (id === 'lights') { this.lights(ctx, x, y, u, W, { lv: Math.min(st.lv, 3), style: st.style, col, night: st.lv >= 4 ? Math.max(night, 0.6) : night, t: time }); continue; }
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.scale(SCALE[st.lv], SCALE[st.lv]);
-        if (st.lv >= 4) auroraHalo(ctx, u, time + x);
-        // Bölge 2 seviyeleri yapının kendi çizimini Lv3 ayrıntısıyla kullanır, üstüne süs ekler.
-        const dopt = { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time };
-        if (!(id === 'igloo' && igloArt(ctx, u, dopt))) DRAW[id](ctx, u, dopt);
-        if (st.lv >= 4) sparkles(ctx, u, time + x, st.lv);
-        ctx.restore();
-        if (upgradable.includes(id)) upgradeMarker(ctx, x, y - u * 0.17 * SCALE[st.lv], u, time);
+        if (upgradable.includes(id)) markers.push([x, id === 'lights' ? y : y - u * 0.17 * SCALE[st.lv]]);
+        items.push([id === 'lights' ? -1 : y, () => {
+          if (this.focus === id) {
+            ctx.fillStyle = 'rgba(255,209,102,.35)';
+            ellipse(ctx, x, y + u * 0.01, u * 0.15, u * 0.035);
+            ctx.fill();
+          }
+          if (id === 'lights') { this.lights(ctx, x, y, u, W, { lv: Math.min(st.lv, 3), style: st.style, col, night: st.lv >= 4 ? Math.max(night, 0.6) : night, t: time }); return; }
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(SCALE[st.lv], SCALE[st.lv]);
+          if (st.lv >= 4) auroraHalo(ctx, u, time + x);
+          // Bölge 2 seviyeleri yapının kendi çizimini Lv3 ayrıntısıyla kullanır, üstüne süs ekler.
+          const dopt = { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time };
+          if (!(id === 'igloo' && igloArt(ctx, u, dopt))) DRAW[id](ctx, u, dopt);
+          if (st.lv >= 4) sparkles(ctx, u, time + x, st.lv);
+          ctx.restore();
+        }]);
       } else if (plots.includes(id)) {
         this.visible.add(id);
-        this.plot(ctx, x, y, u, time, ready.includes(id), this.focus === id);
+        const [px, py] = plotAt(id);
+        items.push([py * H, () => this.plot(ctx, px * W, py * H, u, time, ready.includes(id), this.focus === id)]);
       }
     }
 
-    // penguenler
+    // penguenler yalnızca ana yolda yürür
     const wk = vl >= 3 ? this.walkers : this.walkers.slice(0, 1);
     for (const w of wk) {
       if (w.wait > 0) w.wait -= dt;
       else {
         const d = w.tx - w.x;
-        if (Math.abs(d) < 0.01) { w.wait = 1 + Math.random() * 2.5; w.tx = 0.3 + Math.random() * 0.5; }
+        if (Math.abs(d) < 0.01) { w.wait = 1 + Math.random() * 2.5; w.tx = WALK[0] + Math.random() * (WALK[1] - WALK[0]); }
         else { w.x += Math.sign(d) * dt * w.speed; w.face = Math.sign(d); }
       }
-      const bob = w.wait > 0 ? 0 : Math.abs(Math.sin(time * 8)) * u * 0.01;
-      drawPofi(ctx, w.x * W, H * w.y - bob, u * w.size, {
-        face: w.wait > 0 ? 0 : w.face, lean: w.wait > 0 ? 0 : Math.sin(time * 8) * 0.08,
-        outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, wave: w.wait > 0 && !w.outfit ? Math.sin(time * 6) * 0.4 : 0,
-      });
+      const y = (promenadeY(w.x) + w.lane) * H;
+      items.push([y, () => {
+        const bob = w.wait > 0 ? 0 : Math.abs(Math.sin(time * 8)) * u * 0.01;
+        drawPofi(ctx, w.x * W, y - bob, u * w.size, {
+          face: w.wait > 0 ? 0 : w.face, lean: w.wait > 0 ? 0 : Math.sin(time * 8) * 0.08,
+          outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, wave: w.wait > 0 && !w.outfit ? Math.sin(time * 6) * 0.4 : 0,
+        });
+      }]);
     }
-
+    if (vl >= 10) for (const [fx, fy] of [[0.58, 0.71], [0.9, 0.86]]) items.push([fy * H, () => iceSculpture(ctx, fx * W, fy * H, u, time)]);
+    items.sort((a, b) => a[0] - b[0]);
+    for (const [, draw] of items) draw();
     if (vl >= 8) this.bunting(ctx, W, H, u, time);
-    if (vl >= 10) for (const [fx, fy] of [[0.58, 0.73], [0.83, 0.79]]) iceSculpture(ctx, fx * W, fy * H, u, time);
+    for (const [x, y] of markers) upgradeMarker(ctx, x, y, u, time);
     if (vl >= 12) this.lanterns(ctx, W, H, u, time);
     if (night > 0) {
       ctx.fillStyle = `rgba(20,24,60,${night * 0.25})`;
@@ -854,11 +864,69 @@ export class VillageView {
     ctx.globalAlpha = 1;
   }
 
-  // Kurulmamış ama açık yapı yeri: tabela; parası yetiyorsa zıplayan "!"
+  // Sıkıştırılmış kar patikalar: ana yol, her yapı yerine giden kol ve yapı temelleri.
+  paths(ctx, W, H, u, night, vl) {
+    const edge = mix('#cbd9e8', '#8a93b8', night), fill = mix('#e3ebf5', '#a9b1d0', night);
+    const spurs = Object.entries(AT).filter(([id]) => id !== 'lights' && id !== 'lighthouse').map(([, [fx, fy]]) => [fx, fy]);
+    const stroke = w => {
+      ctx.lineWidth = w;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      PROMENADE.forEach(([x, y], i) => (i ? ctx.lineTo(x * W, y * H) : ctx.moveTo(x * W, y * H)));
+      ctx.stroke();
+      ctx.lineWidth = w * 0.55;
+      for (const [fx, fy] of spurs) {
+        const py = promenadeY(fx);
+        ctx.beginPath();
+        ctx.moveTo(fx * W, py * H);
+        // tepedeki yapılara giden patika kıvrılarak çıkar
+        ctx.quadraticCurveTo((fx + (fx > 0.5 ? -0.04 : 0.04)) * W, ((py + fy) / 2) * H, fx * W, fy * H);
+        ctx.stroke();
+      }
+    };
+    ctx.strokeStyle = edge;
+    stroke(u * 0.06);
+    ctx.strokeStyle = fill;
+    stroke(u * 0.045);
+    // Köy Lv4: ana yola taş döşenir
+    if (vl >= 4) {
+      ctx.fillStyle = mix('#e4dccb', '#9d9aa8', night);
+      for (let k = 0; k < 14; k++) {
+        const x = 0.14 + k * 0.057;
+        ellipse(ctx, x * W, promenadeY(x) * H, u * 0.017, u * 0.008);
+        ctx.fill();
+      }
+    }
+    // temeller: her yapının sabit yeri (iskele suyun üstünde, temeli yok)
+    for (const [id, [fx, fy]] of Object.entries(AT)) {
+      if (id === 'lights' || id === 'lighthouse' || id === 'pier') continue;
+      ctx.fillStyle = fill;
+      ellipse(ctx, fx * W, fy * H, u * 0.1, u * 0.026);
+      ctx.fill();
+      ctx.strokeStyle = edge;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+  }
+
+  // Kurulmamış ama açık yapı yeri: temel üstünde kazıklar, ip ve tabela; parası yetiyorsa zıplayan "!"
   plot(ctx, x, y, u, t, ready, focused) {
-    ctx.fillStyle = focused ? 'rgba(255,209,102,.45)' : 'rgba(180,205,230,.45)';
-    ellipse(ctx, x, y, u * 0.07, u * 0.02);
-    ctx.fill();
+    if (focused) {
+      ctx.fillStyle = 'rgba(255,209,102,.45)';
+      ellipse(ctx, x, y, u * 0.1, u * 0.026);
+      ctx.fill();
+    }
+    // dört köşede kazık, aralarında ip: "burası inşaat yeri"
+    const corners = [[-0.07, -0.012], [0.07, -0.012], [0.07, 0.012], [-0.07, 0.012]];
+    ctx.strokeStyle = '#c99a5b';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    corners.forEach(([cx, cy], i) => (i ? ctx.lineTo(x + cx * u, y + cy * u - u * 0.012) : ctx.moveTo(x + cx * u, y + cy * u - u * 0.012)));
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = '#8a5a34';
+    for (const [cx, cy] of corners) ctx.fillRect(x + cx * u - 1, y + cy * u - u * 0.02, 2, u * 0.02);
     ctx.fillStyle = '#9a6a42';
     ctx.fillRect(x - u * 0.004, y - u * 0.05, u * 0.008, u * 0.05);
     roundRect(ctx, x - u * 0.03, y - u * 0.07, u * 0.06, u * 0.03, u * 0.005);

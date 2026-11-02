@@ -26,7 +26,7 @@ const SCARF = { red: '#e5484d', blue: '#3d7bd9', green: '#3fae5a', yellow: '#f5b
 // Pofi: (x, y) ayakların ortası, size ≈ boy. o: { face: -1|0|1, lean, squash, blink, outfit, wave }
 export function drawPofi(ctx, x, y, size, o = {}) {
   const face = o.face || 0, squash = o.squash || 0, outfit = o.outfit || {};
-  const pose = o.dizzy ? 'dizzy' : o.happy ? 'happy' : face ? 'stand_side' : 'stand_front';
+  const pose = o.happy ? 'happy' : face ? 'stand_side' : 'stand_front';
   if (drawPofiArt(ctx, x, y, size, pose, { flip: face < 0, rot: o.lean, squash, outfit })) return;
   const s = size;
   ctx.save();
@@ -290,24 +290,6 @@ export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
       drawHat(ctx, outfit.hat, s);
       ctx.restore();
     }
-  }
-  ctx.restore();
-}
-
-// Çarpınca başın etrafında dönen yıldızlar. k: 1 → 0 sönerek
-export function drawDizzy(ctx, x, y, r, t, k) {
-  ctx.save();
-  ctx.globalAlpha = Math.min(1, k * 1.5);
-  ctx.fillStyle = '#ffd166';
-  for (let i = 0; i < 3; i++) {
-    const a = t * 7 + (i * Math.PI * 2) / 3;
-    const sx = x + Math.cos(a) * r, sy = y + Math.sin(a) * r * 0.35;
-    ctx.beginPath();
-    for (let p = 0; p < 10; p++) {
-      const rr = p % 2 ? r * 0.12 : r * 0.28, ang = -Math.PI / 2 + (p * Math.PI) / 5;
-      ctx.lineTo(sx + Math.cos(ang) * rr, sy + Math.sin(ang) * rr);
-    }
-    ctx.fill();
   }
   ctx.restore();
 }

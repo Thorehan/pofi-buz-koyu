@@ -1,6 +1,6 @@
 // Oyun tahtası: çizim, kayma animasyonu, kaydırma/klavye girdisi.
 import { T, tileOf, isRamp } from './engine.js';
-import { roundRect, circle, ellipse, drawPofi, drawPofiBelly, drawDizzy, drawFish, drawSeal } from './draw.js';
+import { roundRect, circle, ellipse, drawPofi, drawPofiBelly, drawFish, drawSeal } from './draw.js';
 import { art } from './art.js';
 
 export const STEP = 0.075; // saniye / hücre
@@ -325,7 +325,7 @@ export class BoardView {
     this.queued = -1;
     this.face = 1;
     this.squash = 0;
-    this.dizzy = 0;
+    this.brace = 0;
     this.cheer = 0;
     this.spray = 0;
     this.leverOn = false;
@@ -386,7 +386,7 @@ export class BoardView {
     for (const p of this.parts) { p.vy += 600 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
     this.hintT = Math.max(0, this.hintT - dt);
     this.squash = Math.max(0, this.squash - dt * 5);
-    this.dizzy = Math.max(0, this.dizzy - dt);
+    this.brace = Math.max(0, this.brace - dt * 4);
     this.cheer = Math.max(0, this.cheer - dt);
     const a = this.anim;
     if (!a) return;
@@ -424,7 +424,7 @@ export class BoardView {
     else if (f.k === 'warp') { this.burst(f.cell, '#9fd3ff', 14, s * 2.4, 0.5, s); this.burst(f.to, '#9fd3ff', 14, s * 2.4, 0.5, s); }
     else if (f.k === 'melt') this.burst(f.cell, '#5aa0d8', 10, s * 1.6, 0.5, s * 0.5);
     else if (f.k === 'skip') this.burst(f.cell, '#c9d6e3', 6, s * 1.5, 0.35, s * 0.5);
-    else if (f.k === 'bump') { this.squash = 1; this.dizzy = 1.1; }
+    else if (f.k === 'bump') { this.squash = 1; this.brace = 1; }
     else if (f.k === 'snow') this.squash = 1;
   }
 
@@ -552,16 +552,17 @@ export class BoardView {
       // Sevinç zıplaması, çarpınca sallanma, boşta nefes alma.
       const ch = this.cheer > 0 ? Math.abs(Math.sin((1.6 - this.cheer) * Math.PI * 2.5)) * Math.min(1, this.cheer * 2) : 0;
       cy -= ch * s * 0.35;
-      const wobble = this.dizzy > 0 ? Math.sin(time * 16) * 0.12 * this.dizzy : 0;
+      // durunca gidiş yönünün tersine kısa bir yaslanma
+      const dirX = a ? [0, 1, 0, -1][a.r.dir] : 0;
+      const wobble = -dirX * 0.18 * this.brace;
       const breathe = !a && !this.cheer ? Math.sin(time * 2.6) * 0.03 : 0;
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(spin);
       drawPofi(ctx, 0, 0, size, {
-        face: a ? this.face : 0, dizzy: this.dizzy > 0.25, lean: lean + wobble, squash: Math.max(this.squash, breathe), blink: blink && !this.cheer, happy: this.cheer > 0, outfit: this.outfit, wave: this.cheer > 0 ? 1 : lift * 0.8,
+        face: a ? this.face : 0, lean: lean + wobble, squash: Math.max(this.squash, breathe), blink: blink && !this.cheer, happy: this.cheer > 0, outfit: this.outfit, wave: this.cheer > 0 ? 1 : lift * 0.8,
       });
       ctx.restore();
-      if (this.dizzy > 0) drawDizzy(ctx, cx, cy - size * (art('pofi_dizzy') ? 0.62 : 0.95), size * 0.32, time, this.dizzy);
     }
 
     for (const p of this.parts) {
