@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pofi Müzik Listesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #eef6fd;
+    --card: #ffffff;
+    --ink: #1d3557;
+    --soft: #5a6f8c;
+    --line: #dbe7f3;
+    --field: #f5f9fd;
+    --accent: #ff8a3d;
+    --accent-ink: #ffffff;
+    --ok: #2b8443;
+    --p1: #e5484d;
+    --p2: #3d8fe0;
+    --p3: #8f5bd6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1724;
+      --card: #172235;
+      --ink: #e6eef8;
+      --soft: #9fb2c8;
+      --line: #263650;
+      --field: #101a2a;
+      --accent: #ff9a52;
+      --accent-ink: #1b1206;
+      --ok: #4cc26a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1724;
+    --card: #172235;
+    --ink: #e6eef8;
+    --soft: #9fb2c8;
+    --line: #263650;
+    --field: #101a2a;
+    --accent: #ff9a52;
+    --accent-ink: #1b1206;
+    --ok: #4cc26a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.5 'Fredoka', system-ui, sans-serif; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 30px; margin: 0 0 4px; }
+  h2 { font-size: 21px; margin: 32px 0 10px; }
+  .lead { color: var(--soft); margin: 0 0 18px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+  .box ul, .box ol { margin: 6px 0 0; padding-left: 20px; }
+  .box li { margin: 3px 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 14px; }
+  .chip { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: 500 14px 'Fredoka', sans-serif; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .count { color: var(--soft); font-size: 14px; margin-left: auto; }
+  .track { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; margin-bottom: 14px; }
+  .track.done { opacity: .6; }
+  .head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .head h3 { margin: 0; font-size: 19px; flex: 1 1 200px; }
+  .tag { font-size: 12px; font-weight: 600; border-radius: 8px; padding: 2px 8px; color: #fff; }
+  .tag.p1 { background: var(--p1); }
+  .tag.p2 { background: var(--p2); }
+  .tag.p3 { background: var(--p3); }
+  .tag.kind { background: transparent; color: var(--soft); border: 1px solid var(--line); }
+  .meta { color: var(--soft); font-size: 14px; margin: 6px 0 10px; }
+  .meta b { color: var(--ink); font-weight: 600; }
+  .field { margin-top: 8px; }
+  .label { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--soft); margin-bottom: 4px; }
+  .text { background: var(--field); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; white-space: pre-wrap; word-break: break-word; font: 400 14px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--ink); }
+  .copy { border: none; background: var(--accent); color: var(--accent-ink); border-radius: 10px; padding: 6px 12px; font: 600 13px 'Fredoka', sans-serif; cursor: pointer; white-space: nowrap; min-width: 88px; }
+  .copy.ok { background: var(--ok); color: #fff; }
+  .done-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--soft); cursor: pointer; }
+  .done-toggle input { width: 18px; height: 18px; accent-color: var(--ok); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--soft); font-weight: 600; }
+  code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--field); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
+  .warn { border-left: 4px solid var(--p1); }
+  @media (max-width: 520px) {
+    .wrap { padding: 16px 12px 48px; }
+    h1 { font-size: 25px; }
+    .copy { min-width: 76px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pofi: Buz Köyü · Müzik Listesi</h1>
+  <p class="lead">Suno AI için başlık ve stil promptları. Her metnin yanındaki tuş, metni olduğu gibi panoya kopyalar. Ses efektleri oyunda kodla üretiliyor; bu liste yalnızca müzik içindir.</p>
+
+  <div class="box">
+    <b>Suno'da nasıl girilir</b>
+    <ol>
+      <li><b>Custom</b> modunu aç, <b>Instrumental</b> anahtarını aç (sözsüz).</li>
+      <li><b>Title</b> alanına "Başlık", <b>Style of Music</b> alanına "Stil promptu" metnini yapıştır.</li>
+      <li>Modelin <b>Exclude Styles</b> alanı varsa "Hariç tut" metnini oraya yapıştır.</li>
+      <li>Her parçadan 2 sürüm çıkar, oyuna en iyi oturanı seç. Promptlar İngilizce, çünkü Suno en tutarlı sonucu İngilizce stil tarifleriyle veriyor.</li>
+    </ol>
+  </div>
+
+  <div class="box warn">
+    <b>Lisans</b>: Suno'nun ücretsiz planında yapılan şarkılar ticari olarak kullanılamıyor. Oyun yayımlanacağı için parçaları ücretli bir planla (Pro veya Premier) üret. Şartlar değişebileceği için yayından önce Suno'nun güncel kullanım koşullarına bak.
+  </div>
+
+  <div class="box">
+    <b>Ortak müzik kimliği</b>
+    <ul>
+      <li>Bütün parçalarda aynı enstrüman ailesi: marimba, glockenspiel, celesta, müzik kutusu, pizzicato yaylılar, yumuşak piyano, sıcak bas, hafif fırçalı davul, ölçülü kızak çanları.</li>
+      <li>Basit, akılda kalan, 5 notalı pentatonik bir motif (do-re-mi-sol-la). Oyundaki balık toplama sesleri de bu dizide, bu yüzden müzikle aynı dili konuşur.</li>
+      <li>Oyun içi parçalar dikkat dağıtmamalı: büyük patlama, ani tempo değişimi ve sona doğru sönme (fade-out) olmamalı. Döngüye (loop) uygun olmalı.</li>
+    </ul>
+  </div>
+
+  <h2>Parçalar</h2>
+  <div class="toolbar" role="group" aria-label="Önceliğe göre süz">
+    <button class="chip" data-filter="all" aria-pressed="true">Hepsi</button>
+    <button class="chip" data-filter="1" aria-pressed="false">Öncelik 1</button>
+    <button class="chip" data-filter="2" aria-pressed="false">Öncelik 2</button>
+    <button class="chip" data-filter="3" aria-pressed="false">Öncelik 3</button>
+    <span class="count" id="count"></span>
+  </div>
+  <div id="list"></div>
+
+  <h2>Teslim ve oyuna ekleme</h2>
+  <div class="box">
+    <table>
+      <tr><th>Biçim</th><td>MP3 (320 kbps) ya da WAV. Web için sıkıştırmayı ben yaparım.</td></tr>
+      <tr><th>Dosya adı</th><td>Her parçanın kartındaki <code>dosya</code> adını kullan (ör. <code>menu_main.mp3</code>).</td></tr>
+      <tr><th>Klasör</th><td><code>Documents\PofiBuzKoyu\assets\music\</code>. Dosyaları koyunca bana haber ver.</td></tr>
+      <tr><th>Döngüler</th><td>Parçanın tamamını ver. Sonunda sönme varsa sorun değil; döngü noktasını ve yumuşak geçişi kodda ayarlarım. Özellikle beğendiğin bir bölüm varsa saniye aralığını yaz.</td></tr>
+      <tr><th>Kısa jingle'lar</th><td>Suno kısa parça üretmediği için şarkının açılışındaki ilk birkaç saniyeyi kullanacağız. Bu parçalar gelene kadar oyundaki kodla üretilen kısa sesler çalmaya devam eder.</td></tr>
+      <tr><th>Oyundaki davranış</th><td>Müzik ayrı bir kanalda çalar. Ekran değişince 1 saniyelik yumuşak geçiş olur, reklam sırasında müzik susar. Ayarlar'a ayrı bir "Müzik" anahtarı eklenecek. Ses düzeyi farklarını kodda dengelerim.</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Her parça: id (dosya adı), başlık, stil, hariç tut, nerede çalar, süre, tür, öncelik.
+  const EXCLUDE_BASE = 'vocals, lyrics, choir singing, rap, heavy drums, EDM drop, dubstep, distorted guitar, metal, horror, dark ambient, aggressive';
+  const TRACKS = [
+    {
+      id: 'menu_main', p: 1, kind: 'Döngü', len: '1:30–2:30',
+      title: "Pofi'nin Sabahı",
+      use: 'Ana ekran, tanıtım, gardırop, mağaza, ayarlar. Oyunun ana teması.',
+      style: 'Instrumental, cozy wintery casual mobile game main theme, 96 BPM, C major, bright and warm, marimba and glockenspiel lead a simple hummable 5-note pentatonic melody, celesta sparkles, pizzicato strings, soft felt piano chords, round warm bass, light brushed drums, gentle sleigh bells, playful and optimistic, clean modern mix, loop-friendly, no fade-out ending',
+      exclude: EXCLUDE_BASE + ', sad, minor key',
+    },
+    {
+      id: 'game_glacier', p: 1, kind: 'Döngü', len: '2:00–3:00',
+      title: 'Buzda Düşünceler',
+      use: 'Oyun ekranı, Level 1–60 (buz, kar, kasa, su, çatlak, kol, ok).',
+      style: 'Instrumental, calm focus puzzle game background loop, 86 BPM, F major, soft marimba arpeggios, music box and celesta melody using a gentle pentatonic motif, warm airy pad, light pizzicato, soft shaker and soft kick, minimal and unobtrusive so the player can think, steady groove, icy and cozy, no big changes, seamless loop',
+      exclude: EXCLUDE_BASE + ', build-ups, sudden tempo changes, loud percussion',
+    },
+    {
+      id: 'village_day', p: 1, kind: 'Döngü', len: '1:30–2:30',
+      title: 'Buzul Koyu',
+      use: 'Köy ekranı, Bölge 1 (gündüz). Yapı kurma ve süsleme anı.',
+      style: 'Instrumental, cozy village building theme for a winter mobile game, 100 BPM, C major, fingerpicked acoustic guitar, soft accordion-like reed, marimba, pizzicato strings, sleigh bells, warm bass, gentle hand percussion, homely and happy, feeling of building a little snowy village with friends, seamless loop',
+      exclude: EXCLUDE_BASE + ', sad, epic orchestra',
+    },
+    {
+      id: 'game_ramp', p: 2, kind: 'Döngü', len: '2:00–3:00',
+      title: 'Kaygan Yollar',
+      use: 'Oyun ekranı, Level 61–135 (rampa, buz delikleri, eriyen kar, fok, sıralı balık).',
+      style: 'Instrumental, bouncy playful puzzle game loop, 104 BPM, G major, staccato marimba and xylophone, plucked ukulele, pizzicato strings, glockenspiel accents, bubbly synth bass, crisp light percussion with soft claps, feeling of sliding and jumping on ice, cheerful but not hectic, keeps focus, seamless loop',
+      exclude: EXCLUDE_BASE + ', frantic tempo',
+    },
+    {
+      id: 'game_aurora', p: 2, kind: 'Döngü', len: '2:00–3:00',
+      title: 'Kuzey Işıkları Altında',
+      use: 'Oyun ekranı, Level 136+ (bütün mekanikler karışık).',
+      style: 'Instrumental, dreamy winter night puzzle loop, 80 BPM, D major with a lydian color, shimmering celesta and vibraphone, soft electric piano, airy synth pads like northern lights, glassy bells, subtle sub bass, soft brushed beat, magical and calm, spacious reverb, seamless loop',
+      exclude: EXCLUDE_BASE + ', harsh synths',
+    },
+    {
+      id: 'village_aurora', p: 2, kind: 'Döngü', len: '1:30–2:30',
+      title: 'Kuzey Işıkları Köyü',
+      use: 'Köy ekranı, Bölge 2 (gece, kuzey ışıkları, fenerler).',
+      style: 'Instrumental, nighttime festive winter village theme, 88 BPM, F major, music box melody, celesta, warm strings, soft wordless synth pad, distant sleigh bells, gentle harp glissandos, magical aurora night, cozy and full of wonder, seamless loop',
+      exclude: EXCLUDE_BASE + ', christmas carol, sad',
+    },
+    {
+      id: 'game_hard', p: 2, kind: 'Döngü', len: '1:30–2:30',
+      title: 'Son Hamle',
+      use: 'Zor ve çok zor leveller (hamle limitli). Hafif gerilim, yine sevimli.',
+      style: 'Instrumental, light tension puzzle loop for hard levels, 112 BPM, A minor lifting to C major, ticking woodblock and pizzicato ostinato, marimba riff, staccato strings, soft low tom pulse, curious and focused, still cute and family friendly, not scary, seamless loop',
+      exclude: EXCLUDE_BASE + ', epic trailer hits, scary',
+    },
+    {
+      id: 'daily_puzzle', p: 2, kind: 'Döngü', len: '1:30–2:30',
+      title: 'Günün Bulmacası',
+      use: 'Günlük bulmaca levelinde.',
+      style: 'Instrumental, relaxed morning coffee puzzle music, 92 BPM, B-flat major, jazzy felt piano, brushed snare, light walking upright bass, vibraphone melody, soft glockenspiel, cozy little cafe in the snow, seamless loop',
+      exclude: EXCLUDE_BASE + ', saxophone solo',
+    },
+    {
+      id: 'event_fish', p: 3, kind: 'Döngü', len: '1:00–2:00',
+      title: 'Balık Festivali',
+      use: 'Haftalık etkinlik: Balık Festivali haftasında ana ekran ve etkinlik ekranı.',
+      style: 'Instrumental, cheerful festival loop, 116 BPM, G major, steel drum and marimba, ukulele strums, playful brass stabs, bouncy bass, handclaps, sunny fishing festival on the ice, fun and lively, seamless loop',
+      exclude: EXCLUDE_BASE,
+    },
+    {
+      id: 'event_flake', p: 3, kind: 'Döngü', len: '1:00–2:00',
+      title: 'Kar Tanesi Avı',
+      use: 'Haftalık etkinlik: Kar Tanesi Avı haftası.',
+      style: 'Instrumental, sparkling treasure hunt loop, 108 BPM, E major, glockenspiel and celesta runs, pizzicato strings, twinkling wind chimes, light synth arpeggio, crisp percussion, curious and magical, seamless loop',
+      exclude: EXCLUDE_BASE,
+    },
+    {
+      id: 'event_sled', p: 3, kind: 'Döngü', len: '1:00–2:00',
+      title: 'Kızak Yarışı',
+      use: 'Haftalık etkinlik: Kızak Yarışı haftası.',
+      style: 'Instrumental, energetic cartoon winter race loop, 128 BPM, D major, driving sleigh bells, galloping rhythm, bright brass stabs, fast pizzicato strings, upbeat drums, exciting but friendly, racing down a snowy hill, seamless loop',
+      exclude: EXCLUDE_BASE,
+    },
+    {
+      id: 'event_aurora', p: 3, kind: 'Döngü', len: '1:00–2:00',
+      title: 'Kuzey Işığı Haftası',
+      use: 'Haftalık etkinlik: Kuzey Işığı Haftası.',
+      style: 'Instrumental, wondrous celebration loop, 96 BPM, A major, shimmering synth pads, celesta, harp arpeggios, soft four-on-the-floor beat, glassy bells, uplifting and magical, seamless loop',
+      exclude: EXCLUDE_BASE,
+    },
+    {
+      id: 'jingle_win', p: 3, kind: 'Kısa jingle', len: 'ilk 3–5 sn kullanılır',
+      title: 'Kusursuz!',
+      use: 'Level bitince, sonuç ekranı açılırken.',
+      style: 'Instrumental, short bright victory jingle at the very start, rising marimba and glockenspiel arpeggio, sparkling chimes, happy final chord in C major, cartoon puzzle game level complete fanfare',
+      exclude: EXCLUDE_BASE + ', long intro',
+    },
+    {
+      id: 'jingle_levelup', p: 3, kind: 'Kısa jingle', len: 'ilk 5–7 sn kullanılır',
+      title: 'Köy Büyüdü!',
+      use: 'Köy seviyesi atlayınca, kutlama ekranında.',
+      style: 'Instrumental, short celebratory fanfare at the very start, warm brass and strings with glockenspiel, timpani roll, triumphant and cozy, village level up, big happy final chord',
+      exclude: EXCLUDE_BASE + ', long intro',
+    },
+    {
+      id: 'jingle_fail', p: 3, kind: 'Kısa jingle', len: 'ilk 2–4 sn kullanılır',
+      title: 'Bir Daha Dene',
+      use: '"Hamlen bitti" ekranında.',
+      style: 'Instrumental, short gentle try-again jingle at the very start, descending marimba notes, soft muted trombone wah, playful and encouraging, not sad, cartoon',
+      exclude: EXCLUDE_BASE + ', sad, long intro',
+    },
+    {
+      id: 'splash_funday', p: 3, kind: 'Kısa jingle', len: 'ilk 4–6 sn kullanılır',
+      title: 'Funday Morning',
+      use: 'Açılıştaki Funday Morning logo ekranı ve "sunar" anı.',
+      style: 'Instrumental, short sunrise logo sting at the very start, warm rising pad, bright bell chime, soft whoosh, joyful morning sunrise feeling, ends on a sparkling major chord',
+      exclude: EXCLUDE_BASE + ', long intro',
+    },
+  ];
+
+  const DONE_KEY = 'pofi-music-done';
+  const loadDone = () => { try { return JSON.parse(localStorage.getItem(DONE_KEY)) || []; } catch { return []; } };
+  const saveDone = ids => { try { localStorage.setItem(DONE_KEY, JSON.stringify(ids)); } catch { /* yoksay */ } };
+  let done = loadDone();
+  let filter = 'all';
+
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function field(label, text) {
+    return `<div class="field"><div class="label"><span>${label}</span><button class="copy" data-copy="${esc(text)}">Kopyala</button></div><div class="text">${esc(text)}</div></div>`;
+  }
+
+  function render() {
+    const shown = TRACKS.filter(t => filter === 'all' || String(t.p) === filter);
+    document.getElementById('list').innerHTML = shown.map(t => `
+      <article class="track${done.includes(t.id) ? ' done' : ''}">
+        <div class="head">
+          <h3>${esc(t.title)}</h3>
+          <span class="tag p${t.p}">Öncelik ${t.p}</span>
+          <span class="tag kind">${t.kind}</span>
+          <label class="done-toggle"><input type="checkbox" data-done="${t.id}" ${done.includes(t.id) ? 'checked' : ''}> Yapıldı</label>
+        </div>
+        <div class="meta"><b>Nerede:</b> ${esc(t.use)} · <b>Süre:</b> ${t.len} · <b>Dosya:</b> <code>${t.id}.mp3</code></div>
+        ${field('Başlık (Title)', t.title)}
+        ${field('Stil promptu (Style of Music)', t.style)}
+        ${field('Hariç tut (Exclude Styles)', t.exclude)}
+      </article>`).join('');
+    const total = TRACKS.length, finished = TRACKS.filter(t => done.includes(t.id)).length;
+    document.getElementById('count').textContent = `${finished}/${total} parça yapıldı`;
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // file:// veya izin yoksa eski yöntem
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+  }
+
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('.copy');
+    if (btn) {
+      await copyText(btn.dataset.copy);
+      btn.textContent = 'Kopyalandı ✓';
+      btn.classList.add('ok');
+      setTimeout(() => { btn.textContent = 'Kopyala'; btn.classList.remove('ok'); }, 1500);
+      return;
+    }
+    const chip = e.target.closest('.chip');
+    if (chip) {
+      filter = chip.dataset.filter;
+      document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === chip)));
+      render();
+    }
+  });
+
+  document.addEventListener('change', e => {
+    const id = e.target.dataset.done;
+    if (!id) return;
+    done = e.target.checked ? [...new Set([...done, id])] : done.filter(x => x !== id);
+    saveDone(done);
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
