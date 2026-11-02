@@ -15,6 +15,8 @@ function defaults() {
     colors: [], // açılmış renk kimlikleri (tüm yapılarda geçerli)
     vlClaimed: 1, // ödülü alınmış en yüksek köy seviyesi
     daily: { day: '', hints: 0, cont: 0 }, // günlük ücretsiz ipucu / +5 hamle sayaçları
+    event: null, // { key, points, claimed: [basamak indeksleri] } — haftalık etkinlik
+    visits: { day: '', seen: [] }, // bugün hediyesi alınan arkadaş köyleri
     outfit: { hat: 'none', scarf: 'none' },
     owned: { hat: ['none'], scarf: ['none'] },
     cocoaTs: Date.now(),

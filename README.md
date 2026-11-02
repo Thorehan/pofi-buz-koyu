@@ -11,6 +11,8 @@ Pofi'yi kaydır, bir şeye çarpana kadar kaysın. Tüm balıkları topla, kazan
 - **Köy:** Her level 1 kar tanesi verir, 3 yıldız +1 daha. 12 yapı Lv1'den Lv3'e (Bölge 2'de Lv5'e) yükselir; her seviye görünümü güzelleştirir ve yapının buff'ını büyütür. Toplam yapı seviyesi köy seviyesini belirler. Her köy seviyesi yeni bir görsel, coin bonusu ve ödül sandığı verir.
 - **Önizlemeli satın alma:** Stil, renk ve kıyafetler önce sahnede denenir, beğenilirse alınır.
 - **Gardırop:** Şapka ve atkı; seçilen kıyafet oyunda da görünür.
+- **Haftalık etkinlik:** Her pazartesi yeni tema, puan yolu ve temaya özel kıyafet.
+- **Arkadaş köyü:** Köyünü bağlantıyla paylaş, arkadaşının köyünü gez (günde 3 köyden ziyaret hediyesi).
 
 ## Yerelde çalıştırma
 ```bash
@@ -33,6 +35,7 @@ node tools/gen-levels.mjs 300
 | `js/draw.js` | Pofi karakteri (kıyafetleriyle) ve balık çizimi |
 | `js/village.js` | Pofi'nin köyü: 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesi efektleri, kamera |
 | `js/meta.js` | Köy hesapları: yapı seviyeleri, buff'lar, köy seviyesi, indirimler |
+| `js/live.js` | Haftalık etkinlik (tema dönüşü, puan) ve köy paylaşım kodu |
 | `js/main.js` | Ekranlar ve oyun akışı |
 | `js/sound.js` | Web Audio ile üretilen sesler |
 | `js/ads.js` | Reklam simülasyonu + analitik (gerçek SDK burada bağlanacak) |

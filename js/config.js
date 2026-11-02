@@ -122,6 +122,30 @@ export const COLORS = [
   { id: 'coral', name: 'Mercan', hex: '#ff6b5e' },
 ];
 
+// ---------- Haftalık etkinlik (GDD 10, Faz 4) ----------
+// Her pazartesi 00:00'da (yerel saat) sıradaki temaya geçilir. Puanlar level bitirerek kazanılır;
+// her temanın bir "odak" kuralı ek puan verir. Son basamak o temanın özel kıyafeti.
+export const EVENTS = [
+  { id: 'fish', name: 'Balık Festivali', color: '#ff8c42', text: 'Topladığın her balık +5 etkinlik puanı.', reward: { hat: 'fishhat' } },
+  { id: 'flake', name: 'Kar Tanesi Avı', color: '#3d8fe0', text: '3 yıldızla bitirdiğin her level +15 etkinlik puanı.', reward: { scarf: 'flakes' } },
+  { id: 'sled', name: 'Kızak Yarışı', color: '#e5484d', text: 'Günlük bulmaca +60 etkinlik puanı.', reward: { hat: 'helmet' } },
+  { id: 'aurora', name: 'Kuzey Işığı Haftası', color: '#8f5bd6', text: 'İpucu kullanmadan bitirdiğin her level +15 etkinlik puanı.', reward: { hat: 'starhat' } },
+];
+export const EVENT_POINTS = { level: 10, star: 5, daily: 20 };
+export const EVENT_TRACK = [
+  { pts: 30, r: { coins: 100 } },
+  { pts: 80, r: { hints: 2 } },
+  { pts: 150, r: { coins: 250 } },
+  { pts: 250, r: { flakes: 3 } },
+  { pts: 380, r: { coins: 400 } },
+  { pts: 540, r: { hints: 3, flakes: 3 } },
+  { pts: 730, r: { coins: 700 } },
+  { pts: 950, r: { prize: true } }, // temanın özel kıyafeti
+];
+
+// Arkadaş köyü ziyareti: günde en fazla 3 farklı köyden hediye.
+export const VISIT_GIFT = { coins: 20, perDay: 3 };
+
 // Gardırop: seçilen kıyafet oyunda da görünür.
 export const WARDROBE = {
   hat: [
@@ -134,6 +158,9 @@ export const WARDROBE = {
     { id: 'north', name: 'Kuzey beresi', price: 0, reward: 5 },
     { id: 'sealhood', name: 'Fok başlığı', price: 0, reward: 7 },
     { id: 'icecrown', name: 'Buz tacı', price: 0, reward: 12 },
+    { id: 'fishhat', name: 'Balık şapka', price: 0, event: 'fish' },
+    { id: 'helmet', name: 'Kızak kaskı', price: 0, event: 'sled' },
+    { id: 'starhat', name: 'Yıldız şapka', price: 0, event: 'aurora' },
   ],
   scarf: [
     { id: 'none', name: 'Yok', price: 0 },
@@ -143,5 +170,6 @@ export const WARDROBE = {
     { id: 'yellow', name: 'Sarı', price: 50 },
     { id: 'striped', name: 'Çizgili', price: 150 },
     { id: 'aurora', name: 'Kuzey ışığı', price: 0, reward: 10 },
+    { id: 'flakes', name: 'Kar taneli', price: 0, event: 'flake' },
   ],
 };

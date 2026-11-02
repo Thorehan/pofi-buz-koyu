@@ -200,7 +200,12 @@ Damla Bahçesi'nde doğrulanan model aynen geçerli:
 | **Faz 1 · Köy derinliği** ✅ | Yapı seviyeleri (Lv1–3, her seviyede yeni görünüm), yapı buff'ları, köy seviyesi + kutlama + ödül sandığı, 4 yeni yapı, 3 yıldıza +1 ❄, **önizlemeli satın alma** (köy stilleri, renk paleti, gardırop) | Meta şu an ~20. levelde bitiyor. Retention'ı en çok bu etkiler. |
 | **Faz 2 · Rampa** ✅ | Rampa mekaniği, levelleri 300'e çıkarma, yeni "YENİ" kartı ve sesler | 61. levelden sonra yeni mekanik yok; oyuncu 60'ı geçince bu eksik hissedilir. |
 | **Faz 3 · Derinlik** ✅ (Bölge 2: yapılar Lv4-5, köy Lv9-12; Lv4-5 için ortak süsleme: hale, parıltı, Lv5 yıldızı) | Buz delikleri, eriyen kar, fok, sıralı balık; Bölge 2 "Kuzey Işıkları" (Lv5'e kadar yapılar) | Uzun vadeli içerik |
-| **Faz 4 · Canlı operasyon** | Haftalık etkinlik, köy ziyareti (arkadaşın köyünü görme), sezon kıyafetleri | Sosyal ve sezonluk geri dönüş |
+| **Faz 4 · Canlı operasyon** ✅ | Haftalık etkinlik, köy ziyareti (arkadaşın köyünü görme), sezon kıyafetleri | Sosyal ve sezonluk geri dönüş |
+
+### 10.1 Faz 4 uygulaması (sunucusuz)
+- **Haftalık etkinlik:** Her pazartesi 00:00'da (yerel saat) 4 tema sırayla döner: Balık Festivali (balık başına +5), Kar Tanesi Avı (3 yıldız +15), Kızak Yarışı (günlük bulmaca +60), Kuzey Işığı Haftası (ipucusuz +15). Taban puan: level 10, yıldız başına +5, günlük bulmaca +20. 8 basamaklı ödül yolu (30–950 puan, yaklaşık 30 level/hafta). Son basamak temanın özel kıyafeti: balık şapka, kar taneli atkı, kızak kaskı, yıldız şapka. Hafta bitince alınmamış ödüller silinir.
+- **Arkadaş köyü:** Köy, bağlantının içine kodlanır (`#ziyaret=…`). Yalnızca ad, yapı seviyesi/stili/rengi ve kıyafet paylaşılır. Gelen kod güvenilmez veri sayılır: alanlar doğrulanır ve sınırlanır, isim kaçışlanarak gösterilir. Ziyaretçi günde 3 farklı köyden +20 coin alır.
+- **Sınırlar (sunucu gelince çözülecek):** Etkinlik saati cihaz saatine bağlı (saat ileri alınarak hile yapılabilir). Ziyaret edilen oyuncu ziyaret edildiğini bilmez ve ödül almaz. Arkadaş listesi ve sıralama tablosu yok.
 
 ## 11. Yol Haritası
 

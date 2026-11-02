@@ -226,8 +226,8 @@ html, body {
 /* ---------- ana ekran ---------- */
 #screenHome { align-items: center; justify-content: space-between; padding: 0 20px 22px; }
 .logo { text-align: center; margin-top: 1vh; display: flex; flex-direction: column; align-items: center; }
-#homePofi { width: 150px; height: 150px; }
-.logo h1 { font-size: 64px; line-height: .9; margin: 0 0 10px; color: var(--ink); text-shadow: 0 4px 0 #fff; }
+#homePofi { width: 120px; height: 120px; }
+.logo h1 { font-size: 56px; line-height: .9; margin: 0 0 10px; color: var(--ink); text-shadow: 0 4px 0 #fff; }
 .logo p { color: var(--ink-soft); margin: 10px 0 0; font-size: 17px; }
 .home-actions { width: 100%; display: flex; flex-direction: column; gap: 12px; }
 .btn.play { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px 12px 28px; font-size: 32px; }
@@ -259,6 +259,40 @@ html, body {
 .quick small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .quick .dot { top: -5px; right: -5px; }
 .quick.muted-q { opacity: .65; }
+
+/* haftalık etkinlik kartı */
+.event-card {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 9px 12px;
+  color: #fff;
+  font: 500 14px 'Fredoka', sans-serif;
+  text-align: left;
+  background: var(--ev, #ff8c42);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, .15);
+}
+.event-card canvas { width: 40px; height: 40px; flex: none; background: rgba(255, 255, 255, .25); border-radius: 12px; }
+.event-card .ev-text { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.event-card b { font-size: 15px; }
+.event-card small { opacity: .9; font-size: 12px; }
+.ev-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .35); overflow: hidden; }
+.ev-bar div { height: 100%; background: #fff; }
+.event-card .dot { top: -5px; right: -5px; }
+.ev-track { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.ev-step { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 12px; padding: 7px 10px; border: 2px solid #e1ecf7; }
+.ev-step .pts { min-width: 44px; font-weight: 700; color: var(--ink-soft); }
+.ev-step .rw { flex: 1; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.ev-step .rw .ico { width: 18px; height: 18px; }
+.ev-step.done { opacity: .5; }
+.ev-step.ready { border-color: var(--green); }
+.ev-step .btn { padding: 5px 12px; font-size: 14px; }
+.ev-step .check { color: var(--green-d); font-weight: 700; }
+.share-row { display: flex; gap: 8px; flex: none; }
+.share-row .btn { flex: 1; padding: 10px; font-size: 15px; }
+.code-box { width: 100%; font: 500 13px 'Fredoka', sans-serif; padding: 10px; border: 2px solid #e1ecf7; border-radius: 12px; color: var(--ink); background: #fff; user-select: text; -webkit-user-select: text; resize: none; }
 
 /* ---------- oyun ---------- */
 .hud { display: flex; justify-content: space-between; align-items: center; padding: 0 18px; }
@@ -361,7 +395,7 @@ html, body {
 .progress { height: 10px; background: rgba(255, 255, 255, .7); border-radius: 5px; overflow: hidden; margin-top: 6px; }
 #zoneBar { height: 100%; background: var(--green); width: 0; transition: width .4s; }
 .garden-wrap { position: relative; flex: none; height: 38vh; min-height: 220px; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 0 rgba(29, 53, 87, .12); }
-#village { position: absolute; inset: 0; width: 100%; height: 100%; }
+#village, #visitCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .honey { display: flex; align-items: center; gap: 8px; background: #fff3e6; border-radius: 16px; padding: 8px 10px; }
 .honey-label { flex: 1; font-size: 16px; }
 .honey-label small { display: block; color: var(--ink-soft); font-size: 12px; }

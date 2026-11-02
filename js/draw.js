@@ -94,7 +94,8 @@ export function drawPofi(ctx, x, y, size, o = {}) {
       g.addColorStop(0.5, '#4fb3ff');
       g.addColorStop(1, '#8f5bd6');
       ctx.fillStyle = g;
-    } else ctx.fillStyle = SCARF[outfit.scarf];
+    } else if (outfit.scarf === 'flakes') ctx.fillStyle = '#9fd3ff';
+    else ctx.fillStyle = SCARF[outfit.scarf];
     roundRect(ctx, -s * 0.3, -s * 0.43, s * 0.6, s * 0.09, s * 0.04);
     ctx.fill();
     roundRect(ctx, -face * s * 0.12 + s * 0.08 - s * 0.05, -s * 0.38, s * 0.1, s * 0.2, s * 0.03);
@@ -102,6 +103,10 @@ export function drawPofi(ctx, x, y, size, o = {}) {
     if (outfit.scarf === 'striped') {
       ctx.fillStyle = '#ffffff';
       for (let k = -2; k <= 2; k++) ctx.fillRect(k * s * 0.11 - s * 0.02, -s * 0.43, s * 0.04, s * 0.09);
+    }
+    if (outfit.scarf === 'flakes') {
+      ctx.fillStyle = '#ffffff';
+      for (let k = -2; k <= 2; k++) { circle(ctx, k * s * 0.11, -s * 0.385, s * 0.018); ctx.fill(); }
     }
   }
 
@@ -150,6 +155,54 @@ export function drawPofi(ctx, x, y, size, o = {}) {
     ctx.fill();
     ctx.fillStyle = '#e5484d';
     ctx.fillRect(-s * 0.17, top - s * 0.04, s * 0.34, s * 0.05);
+  } else if (hat === 'fishhat') {
+    // Başın üstünde yatan turuncu balık
+    ctx.fillStyle = '#ff8c42';
+    ellipse(ctx, 0, top - s * 0.02, s * 0.2, s * 0.09);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(s * 0.16, top - s * 0.02);
+    ctx.lineTo(s * 0.3, top - s * 0.12);
+    ctx.lineTo(s * 0.3, top + s * 0.08);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffd3b0';
+    ellipse(ctx, -s * 0.02, top + s * 0.02, s * 0.1, s * 0.035);
+    ctx.fill();
+    ctx.fillStyle = '#1b1b24';
+    circle(ctx, -s * 0.12, top - s * 0.04, s * 0.02);
+    ctx.fill();
+  } else if (hat === 'helmet') {
+    ctx.fillStyle = '#e5484d';
+    ctx.beginPath();
+    ctx.ellipse(0, top + s * 0.06, s * 0.3, s * 0.24, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-s * 0.03, top - s * 0.18, s * 0.06, s * 0.24);
+    ctx.fillStyle = '#1d3557';
+    roundRect(ctx, -s * 0.24, top + s * 0.03, s * 0.48, s * 0.07, s * 0.03);
+    ctx.fill();
+    ctx.fillStyle = '#9fd3ff';
+    roundRect(ctx, -s * 0.2, top + s * 0.04, s * 0.17, s * 0.05, s * 0.02);
+    ctx.fill();
+    roundRect(ctx, s * 0.03, top + s * 0.04, s * 0.17, s * 0.05, s * 0.02);
+    ctx.fill();
+  } else if (hat === 'starhat') {
+    ctx.fillStyle = '#5b3fa8';
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.24, top + s * 0.05);
+    ctx.lineTo(s * 0.06, top - s * 0.38);
+    ctx.lineTo(s * 0.24, top + s * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#8f5bd6';
+    roundRect(ctx, -s * 0.28, top + s * 0.01, s * 0.56, s * 0.07, s * 0.03);
+    ctx.fill();
+    ctx.fillStyle = '#ffd166';
+    for (const [dx, dy, r] of [[-0.06, -0.08, 0.025], [0.06, -0.18, 0.02], [0.02, -0.02, 0.018], [0.06, -0.38, 0.03]]) {
+      circle(ctx, dx * s, top + dy * s, r * s);
+      ctx.fill();
+    }
   } else if (hat === 'icecrown') {
     ctx.fillStyle = '#bfe7ff';
     ctx.strokeStyle = '#ffffff';
