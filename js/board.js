@@ -1,6 +1,6 @@
 // Oyun tahtası: çizim, kayma animasyonu, kaydırma/klavye girdisi.
 import { T, tileOf, isRamp } from './engine.js';
-import { roundRect, circle, ellipse, drawPofi, drawFish } from './draw.js';
+import { roundRect, circle, ellipse, drawPofi, drawFish, drawSeal } from './draw.js';
 
 export const STEP = 0.075; // saniye / hücre
 
@@ -156,6 +156,43 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
       ctx.stroke();
     }
     ctx.restore();
+  } else if (t === T.HOLE) {
+    // Buz deliği: koyu su ve dönen halka; eşleşen delikler aynı görünür.
+    ctx.fillStyle = '#9cc8ea';
+    ellipse(ctx, cx, cy, s * 0.36, s * 0.3);
+    ctx.fill();
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, s * 0.3);
+    g.addColorStop(0, '#0f2a4d');
+    g.addColorStop(1, '#2a5d8f');
+    ctx.fillStyle = g;
+    ellipse(ctx, cx, cy, s * 0.29, s * 0.23);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(160,220,255,.8)';
+    ctx.lineWidth = Math.max(1.5, s * 0.035);
+    for (let k = 0; k < 2; k++) {
+      const a = time * 2.4 + k * Math.PI;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, s * 0.18, s * 0.13, 0, a, a + 1.6);
+      ctx.stroke();
+    }
+  } else if (t === T.MELT) {
+    // Eriyen kar: karın altından su sızar.
+    ctx.fillStyle = 'rgba(90,160,216,.35)';
+    ellipse(ctx, cx, cy + s * 0.2, s * 0.42, s * 0.14);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ellipse(ctx, cx - s * 0.08, cy + s * 0.04, s * 0.22, s * 0.17);
+    ctx.fill();
+    ellipse(ctx, cx + s * 0.12, cy + s * 0.08, s * 0.17, s * 0.13);
+    ctx.fill();
+    ctx.fillStyle = '#5aa0d8';
+    for (let k = 0; k < 3; k++) {
+      const f = (time * 0.7 + k / 3) % 1;
+      ctx.globalAlpha = 1 - f;
+      ellipse(ctx, cx + (k - 1) * s * 0.15, cy + s * (0.14 + f * 0.12), s * 0.025, s * 0.04);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   } else if (isRamp(t)) {
     // Rampa: alçak kenardan yüksek dudağa doğru yükselen buz; dudak rampanın yönünde.
     ctx.save();
@@ -189,11 +226,31 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
     ctx.lineTo(s * 0.14, (0.12 - lift) * s);
     ctx.stroke();
     ctx.restore();
+  } else if (t === 'seal') {
+    drawSeal(ctx, cx, cy + s * 0.38, s * 0.8, 1, time);
+  } else if (t === 'order') {
+    drawFish(ctx, cx, cy, s * 0.8, time);
+    orderBadge(ctx, cx, cy, s, 1);
   } else if (t === 'fish') {
     drawFish(ctx, cx, cy, s * 0.8, time);
   } else if (t === 'crate') {
     drawCrate(ctx, cx, cy, s);
   }
+}
+
+// Sıralı balığın numarası (sağ üst köşede).
+function orderBadge(ctx, cx, cy, s, k) {
+  ctx.fillStyle = '#ffffff';
+  circle(ctx, cx + s * 0.24, cy - s * 0.22, s * 0.15);
+  ctx.fill();
+  ctx.strokeStyle = '#ff8c42';
+  ctx.lineWidth = Math.max(1.5, s * 0.03);
+  ctx.stroke();
+  ctx.fillStyle = '#1d3557';
+  ctx.font = `700 ${Math.round(s * 0.2)}px Fredoka, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(k), cx + s * 0.24, cy - s * 0.21);
 }
 
 export class BoardView {
@@ -267,7 +324,9 @@ export class BoardView {
     this.S = result.state;
     const pEnd = result.pPath.length - 1;
     const cEnd = result.crate ? result.crate.at0 + result.crate.path.length - 1 : 0;
-    this.anim = { t: 0, r: result, end: Math.max(pEnd, cEnd), fired: new Set() };
+    // Foklar Pofi ve kasa durduktan sonra 2 adımlık sürede yürür.
+    const sealEnd = result.seals.some(m => m.from !== m.to) ? 2 : 0;
+    this.anim = { t: 0, r: result, moveEnd: Math.max(pEnd, cEnd), end: Math.max(pEnd, cEnd) + sealEnd, fired: new Set() };
     this.hintDir = -1;
     this.tutorialDir = -1;
     if (result.dir === 1) this.face = 1;
@@ -330,6 +389,9 @@ export class BoardView {
     else if (f.k === 'sink') this.burst(f.cell, '#8fd0ff', 18, s * 3.5, 0.7, s * 3);
     else if (f.k === 'lever') this.leverOn = !this.leverOn;
     else if (f.k === 'land') { this.squash = 1; this.burst(f.cell, '#ffffff', 12, s * 2.2, 0.45, s); }
+    else if (f.k === 'warp') { this.burst(f.cell, '#9fd3ff', 14, s * 2.4, 0.5, s); this.burst(f.to, '#9fd3ff', 14, s * 2.4, 0.5, s); }
+    else if (f.k === 'melt') this.burst(f.cell, '#5aa0d8', 10, s * 1.6, 0.5, s * 0.5);
+    else if (f.k === 'skip') this.burst(f.cell, '#c9d6e3', 6, s * 1.5, 0.35, s * 0.5);
     else if (f.k === 'bump' || f.k === 'snow') this.squash = 1;
   }
 
@@ -338,7 +400,7 @@ export class BoardView {
     const a = this.anim;
     if (a) {
       for (const f of a.r.fx) {
-        if ((f.k === 'crack' || f.k === 'sink') && f.cell === c && u < f.at) return tileOf(this.L, this.prev, c);
+        if ((f.k === 'crack' || f.k === 'sink' || f.k === 'melt') && f.cell === c && u < f.at) return tileOf(this.L, this.prev, c);
         if (f.k === 'lever' && u < f.at && this.L.t[c] === T.GATE) return tileOf(this.L, this.prev, c);
       }
     }
@@ -364,13 +426,30 @@ export class BoardView {
       paintTile(ctx, t, x, y, s, time, { leverOn: this.leverOn, gateOpen: L.t[c] === T.GATE });
     }
 
-    // balıklar
+    // balıklar (sıralı olanlarda numara; sırası gelmeyen soluk)
+    const fishNow = a ? this.prev.fish : this.S.fish;
     L.fishCells.forEach((c, i) => {
       const got = (this.S.fish >> i) & 1;
       const pending = a && a.r.fx.some(f => f.k === 'fish' && f.cell === c && u < f.at);
       if (got && !pending) return;
       const [x, y] = this.cellXY(c);
+      const ord = L.fishOrder[i];
+      const waiting = ord && L.fishOrder.some((o, j) => o && o < ord && !((fishNow >> j) & 1));
+      ctx.globalAlpha = waiting ? 0.5 : 1;
       drawFish(ctx, x + s / 2, y + s / 2, s * 0.75, time + i);
+      ctx.globalAlpha = 1;
+      if (ord) orderBadge(ctx, x + s / 2, y + s / 2, s, ord);
+    });
+
+    // foklar: hamle bitince eski yerinden yenisine yürür
+    const sealK = a ? Math.max(0, Math.min(1, (u - a.moveEnd) / 2)) : 1;
+    this.S.seals.forEach((sv, i) => {
+      const m = a && a.r.seals[i];
+      const to = sv >> 2, from = m ? m.from : to;
+      const [x0, y0] = this.cellXY(from), [x1, y1] = this.cellXY(to);
+      const x = x0 + (x1 - x0) * sealK, y = y0 + (y1 - y0) * sealK;
+      const face = (sv & 3) === 3 ? -1 : 1;
+      drawSeal(ctx, x + s / 2, y + s * 0.88 - Math.abs(Math.sin(sealK * Math.PI)) * s * 0.08, s * 0.85, face, time + i);
     });
 
     // kasalar
@@ -391,13 +470,17 @@ export class BoardView {
     }
 
     // Pofi (rampadan uçarken yay çizerek yükselir, yerde gölgesi kalır)
-    let px, py, lean = 0, lift = 0;
+    let px, py, lean = 0, lift = 0, warpScale = 1;
     if (a) {
       const path = a.r.pPath, last = path.length - 1;
       [px, py] = this.lerpPath(path, Math.min(u, last));
       if (u < last) lean = a.r.dir === 1 ? 0.22 : a.r.dir === 3 ? -0.22 : 0;
       for (const j of a.r.jumps) {
         if (u > j.from && u < j.to) lift = Math.sin(((u - j.from) / (j.to - j.from)) * Math.PI);
+      }
+      // Buz deliği: girişte küçülerek kaybolur, çıkışta büyüyerek belirir.
+      for (const w of a.r.warps) {
+        if (u > w - 1 && u < w) { const k = u - (w - 1); warpScale = k < 0.5 ? 1 - k * 2 : (k - 0.5) * 2; }
       }
     } else {
       [px, py] = this.cellXY(this.S.p);
@@ -408,7 +491,7 @@ export class BoardView {
       ctx.fill();
     }
     const blink = (time % 3.4) < 0.12;
-    drawPofi(ctx, px + s / 2, py + s * 0.9 - lift * s * 0.95, s * 0.88 * (1 + lift * 0.22), {
+    if (warpScale > 0.02) drawPofi(ctx, px + s / 2, py + s * 0.9 - lift * s * 0.95, s * 0.88 * (1 + lift * 0.22) * warpScale, {
       face: this.face, lean: lean - lift * 0.15 * Math.sign(lean || 1), squash: this.squash, blink, outfit: this.outfit, wave: lift * 0.8,
     });
 
@@ -429,6 +512,8 @@ export class BoardView {
     const [x0, y0] = this.cellXY(path[i]);
     if (i >= path.length - 1) return [x0, y0];
     const [x1, y1] = this.cellXY(path[i + 1]);
+    // Komşu olmayan iki hücre = buz deliğinden geçiş: süzülmez, yarı yolda ışınlanır.
+    if (Math.abs(x1 - x0) + Math.abs(y1 - y0) > this.s * 1.5) return k < 0.5 ? [x0, y0] : [x1, y1];
     return [x0 + (x1 - x0) * k, y0 + (y1 - y0) * k];
   }
 

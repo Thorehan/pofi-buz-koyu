@@ -7,7 +7,7 @@ const AT = {
   igloo: [0.48, 0.59], fort: [0.74, 0.61], snowman: [0.93, 0.7], cocoa: [0.29, 0.69],
   lighthouse: [0.06, 0.8], hut: [0.38, 0.87], pier: [0.17, 0.92], rink: [0.7, 0.88],
 };
-const SCALE = [0, 0.85, 1, 1.15]; // seviyeye göre boyut
+const SCALE = [0, 0.85, 1, 1.15, 1.2, 1.26]; // seviyeye göre boyut
 
 // hex rengi açar (k>0) veya koyulaştırır (k<0)
 export function shade(hex, k) {
@@ -42,6 +42,54 @@ function flag(ctx, x, y, h, col, t) {
   ctx.moveTo(x, y - h);
   ctx.lineTo(x + h * 0.45, y - h * 0.85 + Math.sin(t * 4) * h * 0.04);
   ctx.lineTo(x, y - h * 0.7);
+  ctx.fill();
+}
+
+// Bölge 2 süsleri: Lv4-5 yapının arkasında kuzey ışığı halesi, çevresinde parıltılar; Lv5 tepede altın yıldız.
+function auroraHalo(ctx, u, t) {
+  const g = ctx.createRadialGradient(0, -u * 0.08, 0, 0, -u * 0.08, u * 0.2);
+  g.addColorStop(0, `rgba(80,255,180,${0.28 + 0.08 * Math.sin(t * 1.5)})`);
+  g.addColorStop(0.6, 'rgba(170,120,255,.15)');
+  g.addColorStop(1, 'rgba(170,120,255,0)');
+  ctx.fillStyle = g;
+  ellipse(ctx, 0, -u * 0.08, u * 0.2, u * 0.16);
+  ctx.fill();
+}
+
+function sparkles(ctx, u, t, lv) {
+  ctx.fillStyle = '#fffbe0';
+  for (let k = 0; k < 6; k++) {
+    const a = t * 0.8 + (k / 6) * Math.PI * 2;
+    ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 4 + k);
+    circle(ctx, Math.cos(a) * u * 0.15, -u * 0.08 + Math.sin(a) * u * 0.06, u * 0.006);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  if (lv >= 5) {
+    const y = -u * 0.25 - Math.sin(t * 2) * u * 0.01;
+    glow(ctx, 0, y, u * 0.05, '#fff2b0', 0.6);
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    for (let k = 0; k < 10; k++) {
+      const r = k % 2 ? u * 0.009 : u * 0.022, a = -Math.PI / 2 + (k * Math.PI) / 5;
+      ctx.lineTo(Math.cos(a) * r, y + Math.sin(a) * r);
+    }
+    ctx.fill();
+  }
+}
+
+// Köy Lv10: buzdan penguen heykeli.
+function iceSculpture(ctx, x, y, u, t) {
+  ctx.fillStyle = 'rgba(200,235,255,.85)';
+  ellipse(ctx, x, y, u * 0.03, u * 0.008);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(170,220,255,.75)';
+  ellipse(ctx, x, y - u * 0.04, u * 0.025, u * 0.04);
+  ctx.fill();
+  circle(ctx, x, y - u * 0.085, u * 0.018);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.9)';
+  circle(ctx, x - u * 0.008, y - u * 0.05 + Math.sin(t * 2) * u * 0.004, u * 0.004);
   ctx.fill();
 }
 
@@ -630,7 +678,8 @@ export class VillageView {
     ctx.scale(this.cam.z, this.cam.z);
     ctx.translate(-this.cam.x, -this.cam.y);
 
-    if (vl >= 5) this.aurora(time, W, H, u, night);
+    if (vl >= 5) this.aurora(time, W, H, u, vl >= 9 ? Math.max(night, 0.7) : night);
+    if (vl >= 11) this.fireworks(ctx, W, H, u, time);
     ctx.fillStyle = night > 0.5 ? '#f3f0d0' : '#fff6d6';
     circle(ctx, W * 0.86, H * 0.1, u * 0.05);
     ctx.fill();
@@ -692,11 +741,14 @@ export class VillageView {
           ellipse(ctx, x, y + u * 0.01, u * 0.15, u * 0.035);
           ctx.fill();
         }
-        if (id === 'lights') { this.lights(ctx, x, y, u, W, { lv: st.lv, style: st.style, col, night, t: time }); continue; }
+        if (id === 'lights') { this.lights(ctx, x, y, u, W, { lv: Math.min(st.lv, 3), style: st.style, col, night: st.lv >= 4 ? Math.max(night, 0.6) : night, t: time }); continue; }
         ctx.save();
         ctx.translate(x, y);
         ctx.scale(SCALE[st.lv], SCALE[st.lv]);
-        DRAW[id](ctx, u, { lv: st.lv, style: st.style, col, night, t: time });
+        if (st.lv >= 4) auroraHalo(ctx, u, time + x);
+        // Bölge 2 seviyeleri yapının kendi çizimini Lv3 ayrıntısıyla kullanır, üstüne süs ekler.
+        DRAW[id](ctx, u, { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time });
+        if (st.lv >= 4) sparkles(ctx, u, time + x, st.lv);
         ctx.restore();
       } else if (plots.includes(id)) {
         this.visible.add(id);
@@ -721,6 +773,8 @@ export class VillageView {
     }
 
     if (vl >= 8) this.bunting(ctx, W, H, u, time);
+    if (vl >= 10) for (const [fx, fy] of [[0.58, 0.73], [0.83, 0.79]]) iceSculpture(ctx, fx * W, fy * H, u, time);
+    if (vl >= 12) this.lanterns(ctx, W, H, u, time);
     if (night > 0) {
       ctx.fillStyle = `rgba(20,24,60,${night * 0.25})`;
       ctx.fillRect(-W, -H, W * 3, H * 3);
@@ -835,6 +889,44 @@ export class VillageView {
       ctx.lineTo(x + u * 0.012, yy);
       ctx.lineTo(x, yy + u * 0.025 + Math.sin(t * 3 + k) * u * 0.003);
       ctx.fill();
+    }
+  }
+
+  // Köy Lv11: gökyüzünde her 2,5 saniyede bir havai fişek.
+  fireworks(ctx, W, H, u, t) {
+    const slot = Math.floor(t / 2.5), k = (t / 2.5) % 1;
+    for (let j = 0; j < 2; j++) {
+      const seed = slot * 2 + j;
+      const x = W * (0.2 + ((seed * 0.618) % 1) * 0.6), y = H * (0.1 + ((seed * 0.37) % 1) * 0.15);
+      const col = ['#ffd166', '#ff5a6a', '#3cc977', '#9fd3ff', '#c3a2ff'][seed % 5];
+      const p = Math.max(0, k - j * 0.3) / 0.7;
+      if (p <= 0 || p >= 1) continue;
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = 1 - p;
+      ctx.lineWidth = 1.5;
+      for (let a = 0; a < 12; a++) {
+        const ang = (a / 12) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.moveTo(x + Math.cos(ang) * u * 0.02 * p, y + Math.sin(ang) * u * 0.02 * p);
+        ctx.lineTo(x + Math.cos(ang) * u * 0.07 * p, y + Math.sin(ang) * u * 0.07 * p + p * p * u * 0.02);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Köy Lv12: yerden göğe yükselen fenerler.
+  lanterns(ctx, W, H, u, t) {
+    for (let k = 0; k < 8; k++) {
+      const f = (t * 0.04 + k / 8) % 1;
+      const x = W * (0.15 + ((k * 0.618) % 1) * 0.7) + Math.sin(t + k) * u * 0.02;
+      const y = H * (0.8 - f * 0.75);
+      ctx.globalAlpha = Math.min(1, (1 - f) * 2);
+      glow(ctx, x, y, u * 0.05, '#ffcf7a', 0.5);
+      ctx.fillStyle = '#ff9f43';
+      roundRect(ctx, x - u * 0.012, y - u * 0.016, u * 0.024, u * 0.03, u * 0.006);
+      ctx.fill();
+      ctx.globalAlpha = 1;
     }
   }
 

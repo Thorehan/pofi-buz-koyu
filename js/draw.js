@@ -88,7 +88,13 @@ export function drawPofi(ctx, x, y, size, o = {}) {
 
   // atkı
   if (outfit.scarf && outfit.scarf !== 'none') {
-    ctx.fillStyle = SCARF[outfit.scarf];
+    if (outfit.scarf === 'aurora') {
+      const g = ctx.createLinearGradient(-s * 0.3, 0, s * 0.3, 0);
+      g.addColorStop(0, '#3cdc9a');
+      g.addColorStop(0.5, '#4fb3ff');
+      g.addColorStop(1, '#8f5bd6');
+      ctx.fillStyle = g;
+    } else ctx.fillStyle = SCARF[outfit.scarf];
     roundRect(ctx, -s * 0.3, -s * 0.43, s * 0.6, s * 0.09, s * 0.04);
     ctx.fill();
     roundRect(ctx, -face * s * 0.12 + s * 0.08 - s * 0.05, -s * 0.38, s * 0.1, s * 0.2, s * 0.03);
@@ -144,6 +150,20 @@ export function drawPofi(ctx, x, y, size, o = {}) {
     ctx.fill();
     ctx.fillStyle = '#e5484d';
     ctx.fillRect(-s * 0.17, top - s * 0.04, s * 0.34, s * 0.05);
+  } else if (hat === 'icecrown') {
+    ctx.fillStyle = '#bfe7ff';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = s * 0.012;
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.2, top + s * 0.04);
+    [[-0.17, -0.12], [-0.1, -0.02], [-0.05, -0.2], [0, -0.04], [0.05, -0.2], [0.1, -0.02], [0.17, -0.12], [0.2, 0.04]]
+      .forEach(([dx, dy]) => ctx.lineTo(dx * s, top + dy * s));
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#8f5bd6';
+    circle(ctx, 0, top - s * 0.01, s * 0.025);
+    ctx.fill();
   } else if (hat === 'crown') {
     ctx.fillStyle = '#f5c518';
     ctx.beginPath();
@@ -170,6 +190,45 @@ export function drawPofi(ctx, x, y, size, o = {}) {
       circle(ctx, side * s * 0.31, -s * 0.6, s * 0.08);
       ctx.fill();
     }
+  }
+  ctx.restore();
+}
+
+// Fok: (x, y) taban ortası; face: -1 sola, 1 sağa bakar.
+export function drawSeal(ctx, x, y, size, face = 1, t = 0) {
+  const s = size;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(face, 1);
+  ctx.fillStyle = '#8f9bb0';
+  ellipse(ctx, 0, -s * 0.22, s * 0.38, s * 0.2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.32, -s * 0.2);
+  ctx.lineTo(-s * 0.5, -s * 0.34);
+  ctx.lineTo(-s * 0.46, -s * 0.12);
+  ctx.fill();
+  circle(ctx, s * 0.24, -s * 0.38 + Math.sin(t * 3) * s * 0.02, s * 0.17);
+  ctx.fill();
+  ctx.fillStyle = '#c3cbd8';
+  ellipse(ctx, s * 0.02, -s * 0.12, s * 0.26, s * 0.08);
+  ctx.fill();
+  ctx.fillStyle = '#6f7b90';
+  ellipse(ctx, s * 0.08, -s * 0.06, s * 0.1, s * 0.05, 0.5);
+  ctx.fill();
+  const hy = -s * 0.38 + Math.sin(t * 3) * s * 0.02;
+  ctx.fillStyle = '#1b1b24';
+  circle(ctx, s * 0.29, hy - s * 0.04, s * 0.03);
+  ctx.fill();
+  circle(ctx, s * 0.39, hy + s * 0.02, s * 0.03);
+  ctx.fill();
+  ctx.strokeStyle = '#4a5466';
+  ctx.lineWidth = Math.max(1, s * 0.015);
+  for (const dy of [-0.01, 0.03]) {
+    ctx.beginPath();
+    ctx.moveTo(s * 0.36, hy + s * (0.04 + dy));
+    ctx.lineTo(s * 0.5, hy + s * (0.02 + dy * 2));
+    ctx.stroke();
   }
   ctx.restore();
 }

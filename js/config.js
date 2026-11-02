@@ -39,6 +39,10 @@ export const INTRO = {
   27: { title: 'Çatlak buz', text: 'Çatlak buz, Pofi üzerinden geçince kırılır ve suya döner. Sırayı iyi planla.', icon: 'crack' },
   37: { title: 'Kol ve kapılar', text: 'Kola çarpınca tüm buz kapıları açılır ya da kapanır.', icon: 'lever' },
   49: { title: 'Oklar', text: 'Ok karosuna gelen Pofi ve kasalar okun yönüne döner.', icon: 'arrow' },
+  76: { title: 'Buz delikleri', text: 'Bir delikten giren, eşinden aynı yönde çıkar ve kaymaya devam eder. Kasalar da geçer. Çıkış doluysa delik duvar gibidir.', icon: 'hole' },
+  91: { title: 'Eriyen kar', text: 'Eriyen kar seni bir kez durdurur; üzerinden ayrılınca erir ve buza döner. Frenini dikkatli kullan!', icon: 'melt' },
+  106: { title: 'Fok', text: 'Fok her hamlenden sonra bir adım yürür ve önü kapanınca geri döner. Seni de kasaları da durdurur; zamanlamayı iyi ayarla.', icon: 'seal' },
+  121: { title: 'Sıralı balıklar', text: 'Numaralı balıkları sırayla topla. Sırası gelmeyen balığın üstünden geçersin ama onu alamazsın.', icon: 'order' },
   61: { title: 'Rampa', text: 'Rampaya kendi yönünde girersen 2 kare uçarsın; su ve kaya altında kalır. Ama dikkat: uçtuğun balığı alamazsın ve fazla uçmak seni bir adaya hapsedebilir!', icon: 'ramp' },
 };
 
@@ -50,22 +54,25 @@ export const DAILY_REWARDS = [
 export const DAILY_PUZZLE = { unlockLevel: 5, coins: 100, streakBonus: 20 };
 
 // ---------- Pofi'nin köyü (GDD 4) ----------
-// costs: [kurulum, Lv2, Lv3] kar tanesi. values: Lv1/Lv2/Lv3 buff değerleri; base: yapı yokken.
+// costs: [kurulum, Lv2, Lv3, Lv4, Lv5] kar tanesi; Lv4-5 Bölge 2'de açılır. values: seviye başına buff; base: yapı yokken.
 // unlock: yapının açıldığı köy seviyesi. Stilin ilki kurulumla gelir, diğerleri coin ile.
-export const ZONE_NAME = 'Bölge 1 · Buzul Koyu';
+export const ZONES = [
+  { name: 'Bölge 1 · Buzul Koyu', maxLevel: 3, fromVillageLevel: 1 },
+  { name: 'Bölge 2 · Kuzey Işıkları', maxLevel: 5, fromVillageLevel: 8 },
+];
 export const BUILDINGS = [
-  { id: 'igloo', name: 'İglo', costs: [1, 3, 6], unlock: 1, styles: ['Klasik', 'Kristal', 'Kar evi'], stylePrice: 120, buff: 'coinPct', values: [0.1, 0.2, 0.3] },
-  { id: 'pier', name: 'Balık iskelesi', costs: [2, 3, 6], unlock: 1, styles: ['Meşe', 'Kızıl ahşap', 'Gri taş'], stylePrice: 100, buff: 'fishCoin', values: [1, 2, 3] },
-  { id: 'snowman', name: 'Kardan adam', costs: [2, 4, 7], unlock: 1, styles: ['Havuç burunlu', 'Atkılı', 'Silindir şapkalı'], stylePrice: 100, buff: 'hardMoves', values: [1, 2, 3] },
-  { id: 'cocoa', name: 'Kakao standı', costs: [2, 4, 7], unlock: 1, styles: ['Tenteli', 'Kulübe', 'Karavan'], stylePrice: 120, buff: 'cocoa', values: [20, 40, 60] },
-  { id: 'lights', name: 'Fener dizisi', costs: [3, 4, 7], unlock: 1, styles: ['Sıcak sarı', 'Renkli', 'Buz mavisi'], stylePrice: 120, buff: 'freeHints', values: [1, 2, 3] },
-  { id: 'tree', name: 'Çam ağacı', costs: [3, 5, 8], unlock: 1, styles: ['Sade', 'Süslü', 'Karlı'], stylePrice: 120, buff: 'dailyPct', values: [0.25, 0.5, 1] },
-  { id: 'rink', name: 'Buz pisti', costs: [3, 5, 8], unlock: 1, styles: ['Buz', 'Gökkuşağı', 'Gece'], stylePrice: 150, buff: 'x5', base: 10, values: [14, 18, 22] },
-  { id: 'sled', name: 'Kızak tepesi', costs: [4, 5, 8], unlock: 1, styles: ['Kızak', 'Kayak', 'Snowboard'], stylePrice: 150, buff: 'puzzlePct', values: [0.25, 0.5, 1] },
-  { id: 'hut', name: 'Balıkçı kulübesi', costs: [3, 5, 8], unlock: 3, styles: ['Ahşap', 'Taş', 'Buz'], stylePrice: 150, buff: 'flakeChance', values: [0.1, 0.2, 0.3] },
-  { id: 'lighthouse', name: 'Deniz feneri', costs: [4, 6, 9], unlock: 3, styles: ['Çizgili', 'Taş', 'Modern'], stylePrice: 150, buff: 'freeContinues', values: [1, 2, 3] },
-  { id: 'fort', name: 'Kartopu kalesi', costs: [4, 6, 9], unlock: 5, styles: ['Kale', 'Şato', 'Kule'], stylePrice: 180, buff: 'discount', values: [0.1, 0.2, 0.3] },
-  { id: 'observatory', name: 'Gözlem noktası', costs: [5, 7, 10], unlock: 7, styles: ['Kubbe', 'Teleskop', 'Anten'], stylePrice: 180, buff: 'cocoaCap', base: 8, values: [10, 12, 16] },
+  { id: 'igloo', name: 'İglo', costs: [1, 3, 6, 9, 12], unlock: 1, styles: ['Klasik', 'Kristal', 'Kar evi'], stylePrice: 120, buff: 'coinPct', values: [0.1, 0.2, 0.3, 0.4, 0.5] },
+  { id: 'pier', name: 'Balık iskelesi', costs: [2, 3, 6, 9, 12], unlock: 1, styles: ['Meşe', 'Kızıl ahşap', 'Gri taş'], stylePrice: 100, buff: 'fishCoin', values: [1, 2, 3, 4, 5] },
+  { id: 'snowman', name: 'Kardan adam', costs: [2, 4, 7, 11, 14], unlock: 1, styles: ['Havuç burunlu', 'Atkılı', 'Silindir şapkalı'], stylePrice: 100, buff: 'hardMoves', values: [1, 2, 3, 3, 4] },
+  { id: 'cocoa', name: 'Kakao standı', costs: [2, 4, 7, 11, 14], unlock: 1, styles: ['Tenteli', 'Kulübe', 'Karavan'], stylePrice: 120, buff: 'cocoa', values: [20, 40, 60, 80, 100] },
+  { id: 'lights', name: 'Fener dizisi', costs: [3, 4, 7, 11, 14], unlock: 1, styles: ['Sıcak sarı', 'Renkli', 'Buz mavisi'], stylePrice: 120, buff: 'freeHints', values: [1, 2, 3, 4, 5] },
+  { id: 'tree', name: 'Çam ağacı', costs: [3, 5, 8, 12, 16], unlock: 1, styles: ['Sade', 'Süslü', 'Karlı'], stylePrice: 120, buff: 'dailyPct', values: [0.25, 0.5, 1, 1.5, 2] },
+  { id: 'rink', name: 'Buz pisti', costs: [3, 5, 8, 12, 16], unlock: 1, styles: ['Buz', 'Gökkuşağı', 'Gece'], stylePrice: 150, buff: 'x5', base: 10, values: [14, 18, 22, 26, 30] },
+  { id: 'sled', name: 'Kızak tepesi', costs: [4, 5, 8, 12, 16], unlock: 1, styles: ['Kızak', 'Kayak', 'Snowboard'], stylePrice: 150, buff: 'puzzlePct', values: [0.25, 0.5, 1, 1.5, 2] },
+  { id: 'hut', name: 'Balıkçı kulübesi', costs: [3, 5, 8, 12, 16], unlock: 3, styles: ['Ahşap', 'Taş', 'Buz'], stylePrice: 150, buff: 'flakeChance', values: [0.1, 0.2, 0.3, 0.4, 0.5] },
+  { id: 'lighthouse', name: 'Deniz feneri', costs: [4, 6, 9, 14, 18], unlock: 3, styles: ['Çizgili', 'Taş', 'Modern'], stylePrice: 150, buff: 'freeContinues', values: [1, 2, 3, 4, 5] },
+  { id: 'fort', name: 'Kartopu kalesi', costs: [4, 6, 9, 14, 18], unlock: 5, styles: ['Kale', 'Şato', 'Kule'], stylePrice: 180, buff: 'discount', values: [0.1, 0.2, 0.3, 0.35, 0.4] },
+  { id: 'observatory', name: 'Gözlem noktası', costs: [5, 7, 10, 15, 20], unlock: 7, styles: ['Kubbe', 'Teleskop', 'Anten'], stylePrice: 180, buff: 'cocoaCap', base: 8, values: [10, 12, 16, 20, 24] },
 ];
 
 const pct = v => `%${Math.round(v * 100)}`;
@@ -94,7 +101,12 @@ export const VILLAGE_LEVELS = [
   { lv: 5, need: 18, visual: 'Kuzey ışıkları', reward: { hat: 'north', coins: 300 } },
   { lv: 6, need: 24, visual: 'Gece ve gündüz', reward: { coins: 500, hints: 3 } },
   { lv: 7, need: 30, visual: 'Köy maskotu fok', reward: { hat: 'sealhood', coins: 500 } },
-  { lv: 8, need: 36, visual: 'Kış festivali', reward: { hat: 'crown', coins: 1000 } },
+  { lv: 8, need: 36, visual: 'Kış festivali · Bölge 2 açıldı, yapılar Lv5\'e kadar yükselir', reward: { hat: 'crown', coins: 1000 } },
+  // Bölge 2 · Kuzey Işıkları (yapılar Lv4-5)
+  { lv: 9, need: 42, visual: 'Kuzey ışıkları dansı', reward: { coins: 800, flakes: 5 } },
+  { lv: 10, need: 48, visual: 'Buz heykelleri', reward: { scarf: 'aurora', coins: 800 } },
+  { lv: 11, need: 54, visual: 'Havai fişekler', reward: { coins: 1200, hints: 5 } },
+  { lv: 12, need: 60, visual: 'Uçan fenerler', reward: { hat: 'icecrown', coins: 2000 } },
 ];
 
 // Renk paleti: bir kez açılan renk tüm yapılarda kullanılabilir. null = stilin kendi rengi.
@@ -121,6 +133,7 @@ export const WARDROBE = {
     { id: 'crown', name: 'Taç', price: 250 },
     { id: 'north', name: 'Kuzey beresi', price: 0, reward: 5 },
     { id: 'sealhood', name: 'Fok başlığı', price: 0, reward: 7 },
+    { id: 'icecrown', name: 'Buz tacı', price: 0, reward: 12 },
   ],
   scarf: [
     { id: 'none', name: 'Yok', price: 0 },
@@ -129,5 +142,6 @@ export const WARDROBE = {
     { id: 'green', name: 'Yeşil', price: 50 },
     { id: 'yellow', name: 'Sarı', price: 50 },
     { id: 'striped', name: 'Çizgili', price: 150 },
+    { id: 'aurora', name: 'Kuzey ışığı', price: 0, reward: 10 },
   ],
 };

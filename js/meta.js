@@ -1,5 +1,5 @@
 // Köy hesapları: yapı seviyeleri, buff'lar, köy seviyesi, indirimli fiyatlar.
-import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT } from './config.js';
+import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES } from './config.js';
 
 export const building = id => BUILDINGS.find(b => b.id === id);
 export const bLevel = (P, id) => P.village[id]?.lv || 0;
@@ -14,12 +14,15 @@ export function villageLevel(P) {
 
 export const nextVillageLevel = P => VILLAGE_LEVELS.find(v => v.lv === villageLevel(P) + 1) || null;
 export const isUnlocked = (P, b) => villageLevel(P) >= b.unlock;
-export const maxLevel = b => b.costs.length;
 
-// Kurulum veya bir sonraki seviye için gereken kar tanesi; maks seviyedeyse null.
+// Açık olan en yüksek bölge; yapıların seviye tavanını belirler (Bölge 1: Lv3, Bölge 2: Lv5).
+export const zone = P => [...ZONES].reverse().find(z => villageLevel(P) >= z.fromVillageLevel);
+export const maxLevel = (P, b) => Math.min(b.costs.length, zone(P).maxLevel);
+
+// Kurulum veya bir sonraki seviye için gereken kar tanesi; bölge tavanındaysa null.
 export function nextCost(P, b) {
   const lv = bLevel(P, b.id);
-  return lv < b.costs.length ? b.costs[lv] : null;
+  return lv < maxLevel(P, b) ? b.costs[lv] : null;
 }
 
 // Buff'ın şu anki değeri (yapı yoksa taban değeri veya 0).

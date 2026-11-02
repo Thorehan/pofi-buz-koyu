@@ -6,9 +6,9 @@ Pofi'yi kaydır, bir şeye çarpana kadar kaysın. Tüm balıkları topla, kazan
 
 ## Oynanış
 - **Kaydır** (masaüstünde ok tuşları / WASD): Pofi o yönde bir şeye çarpana kadar kayar.
-- **Neden-sonuç:** Kasaya çarpınca kasa da kayar. Suya düşen kasa köprü olur. Çatlak buz arkanda kırılır. Kol kapıları açıp kapatır. Oklar yön değiştirir. Rampa Pofi'yi 2 kare uçurur; fazla uçmak sıkıştırabilir.
+- **Neden-sonuç:** Kasaya çarpınca kasa da kayar. Suya düşen kasa köprü olur. Çatlak buz arkanda kırılır. Kol kapıları açıp kapatır. Oklar yön değiştirir. Rampa Pofi'yi 2 kare uçurur; fazla uçmak sıkıştırabilir. Buz delikleri ışınlar, eriyen kar bir kez durdurur, fok her hamlede yürür, numaralı balıklar sırayla toplanır.
 - **Geri al** sınırsız ve ücretsiz (Z / Backspace). **İpucu** bulunduğun yerden en kısa çözümün sıradaki hamlesini gösterir.
-- **Köy:** Her level 1 kar tanesi verir, 3 yıldız +1 daha. 12 yapı Lv1'den Lv3'e yükselir; her seviye görünümü güzelleştirir ve yapının buff'ını büyütür. Toplam yapı seviyesi köy seviyesini belirler. Her köy seviyesi yeni bir görsel, coin bonusu ve ödül sandığı verir.
+- **Köy:** Her level 1 kar tanesi verir, 3 yıldız +1 daha. 12 yapı Lv1'den Lv3'e (Bölge 2'de Lv5'e) yükselir; her seviye görünümü güzelleştirir ve yapının buff'ını büyütür. Toplam yapı seviyesi köy seviyesini belirler. Her köy seviyesi yeni bir görsel, coin bonusu ve ödül sandığı verir.
 - **Önizlemeli satın alma:** Stil, renk ve kıyafetler önce sahnede denenir, beğenilirse alınır.
 - **Gardırop:** Şapka ve atkı; seçilen kıyafet oyunda da görünür.
 

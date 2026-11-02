@@ -3,14 +3,14 @@ import { BoardView, paintTile } from './board.js';
 import { VillageView } from './village.js';
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
-  buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion,
+  buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone,
 } from './meta.js';
 import { drawPofi, drawFish } from './draw.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, maybeInterstitial, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE,
-  ZONE_NAME, BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE,
+  BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -217,9 +217,9 @@ function startLevel(n, daily = false) {
 
 function drawIntroIcon(cv, kind) {
   const ctx = fitCanvas(cv, 84, 84);
-  const tile = { snow: T.SNOW, water: T.WATER, crack: T.CRACK, lever: T.LEVER, arrow: T.RIGHT, ramp: T.RAMP_RIGHT }[kind] ?? T.ICE;
+  const tile = { snow: T.SNOW, water: T.WATER, crack: T.CRACK, lever: T.LEVER, arrow: T.RIGHT, ramp: T.RAMP_RIGHT, hole: T.HOLE, melt: T.MELT }[kind] ?? T.ICE;
   paintTile(ctx, tile, 0, 0, 84, 0, {});
-  if (kind === 'fish' || kind === 'crate') paintTile(ctx, kind, 0, 0, 84, 0, {});
+  if (['fish', 'crate', 'seal', 'order'].includes(kind)) paintTile(ctx, kind, 0, 0, 84, 0, {});
 }
 
 function renderHud() {
@@ -259,12 +259,14 @@ board.onMove = dir => {
   run.moves++;
   run.stuck = false;
   run.fishSound = popcount(run.history[run.history.length - 1].fish);
+  sealSounded = false;
   board.play(r, run.history[run.history.length - 1]);
   sfx.slide(r.pPath.length - 1);
   if (P.settings.haptics) navigator.vibrate?.(10);
   renderHud();
 };
 
+let sealSounded = false; // bir hamlede foklar tek ses çıkarır
 board.onFx = f => {
   if (f.k === 'fish') { sfx.fish(run.fishSound++); renderGoal(); }
   else if (f.k === 'crack') sfx.crack();
@@ -273,6 +275,10 @@ board.onFx = f => {
   else if (f.k === 'push') sfx.crate();
   else if (f.k === 'jump') sfx.jump();
   else if (f.k === 'land') sfx.land();
+  else if (f.k === 'warp') sfx.warp();
+  else if (f.k === 'melt') sfx.melt();
+  else if (f.k === 'seal' && !sealSounded) { sealSounded = true; setTimeout(() => sfx.seal(), 60); }
+  else if (f.k === 'skip') sfx.skip();
   else if (f.k === 'bump' || f.k === 'snow') sfx.bump();
 };
 
@@ -519,19 +525,21 @@ function collectCocoa(mult) {
   renderCocoa();
 }
 
+// Seviye tavanındaki yapı için açıklama: Bölge 2 açılmadıysa Lv4-5'in nerede açılacağını söyler.
+const capText = b => (bLevel(P, b.id) < b.costs.length ? "Lv4-5 Köy Lv8'de açılır" : 'En yüksek seviye');
 const dots = (lv, max) => `<span class="dots">${Array.from({ length: max }, (_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</span>`;
 const unlockNames = lv => BUILDINGS.filter(b => b.unlock === lv).map(b => b.name).join(', ');
 
 function renderVillage() {
-  $('zoneName').textContent = ZONE_NAME;
+  $('zoneName').textContent = zone(P).name;
   renderVlCard();
   $('buildList').innerHTML = BUILDINGS.map(b => {
-    const lv = bLevel(P, b.id), max = maxLevel(b), cost = nextCost(P, b);
+    const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
       return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
     }
     const ready = cost !== null && P.flakes >= cost;
-    const act = cost === null ? 'En yüksek seviye' : lv === 0 ? `Kur ${flakeIco}${cost}` : `Lv${lv + 1} ${flakeIco}${cost}`;
+    const act = cost === null ? capText(b) : lv === 0 ? `Kur ${flakeIco}${cost}` : `Lv${lv + 1} ${flakeIco}${cost}`;
     const buffNow = BUFF_TEXT[b.buff](b.values[Math.max(0, lv - 1)]);
     return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}"><b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span></button>`;
   }).join('');
@@ -547,7 +555,7 @@ function renderVlCard() {
   $('vlCard').innerHTML = `
     <div class="vl-top"><span class="vl-num">${vl}</span><div><b>Köy seviyesi ${vl}</b><small>Köy bonusu: tüm level coin'lerine +%${Math.round(villageBonusPct(P) * 100)}</small></div></div>
     <div class="progress"><div style="width:${prog * 100}%;height:100%;background:var(--blue)"></div></div>
-    <small>${next ? `Lv${next.lv} için ${next.need - tot} yapı seviyesi daha · ${next.visual}${extra}` : 'Buzul Koyu tamamlandı! Bölge 2 "Kuzey Işıkları" yakında.'}</small>`;
+    <small>${next ? `Lv${next.lv} için ${next.need - tot} yapı seviyesi daha · ${next.visual}${extra}` : 'Köy tamamen kuruldu! Bütün yapılar en yüksek seviyede.'}</small>`;
 }
 
 // ---------- yapı paneli: önce önizle, beğenirsen al ----------
@@ -572,13 +580,13 @@ function closeSheet() {
 
 function renderSheet() {
   const b = building(sheet.id), st = P.village[b.id];
-  const lv = bLevel(P, b.id), max = maxLevel(b), cost = nextCost(P, b);
+  const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
   village.preview = st && sheet.draft ? { id: b.id, ...sheet.draft } : null;
 
   const buffLine = lv
-    ? `<b>${BUFF_TEXT[b.buff](b.values[lv - 1])}</b><small>${lv < max ? `Lv${lv + 1}: ${BUFF_TEXT[b.buff](b.values[lv])}` : 'En yüksek seviye'}</small>`
+    ? `<b>${BUFF_TEXT[b.buff](b.values[lv - 1])}</b><small>${lv < max ? `Lv${lv + 1}: ${BUFF_TEXT[b.buff](b.values[lv])}` : capText(b)}</small>`
     : `<b>Kurulunca: ${BUFF_TEXT[b.buff](b.values[0])}</b><small>Her seviye görünümü güzelleştirir ve buff'ı büyütür</small>`;
-  const upLabel = cost === null ? 'En yüksek seviye' : lv === 0 ? `Kur · ${flakeIco}${cost}` : `Lv${lv + 1}'e yükselt · ${flakeIco}${cost}`;
+  const upLabel = cost === null ? capText(b) : lv === 0 ? `Kur · ${flakeIco}${cost}` : `Lv${lv + 1}'e yükselt · ${flakeIco}${cost}`;
 
   let looks = '<p class="sheet-note">Kurduktan sonra stil ve renk seçebilirsin.</p>';
   let action = '';
@@ -710,7 +718,7 @@ function renderNextCard() {
   const s = suggestion(P);
   const card = $('nextCard');
   if (!s) {
-    card.innerHTML = `${flakeIco}<span class="nc-text"><b>Buzul Koyu tamamlandı!</b><small>Bölge 2 yakında</small></span>`;
+    card.innerHTML = `${flakeIco}<span class="nc-text"><b>Köy tamamen kuruldu!</b><small>Yeni bölgeler yakında</small></span>`;
     return;
   }
   const what = s.lv === 0 ? `${s.b.name} kur` : `${s.b.name} Lv${s.lv + 1}'e yükselt`;

@@ -3,15 +3,17 @@
 
 export const T = {
   ICE: 0, ROCK: 1, SNOW: 2, WATER: 3, CRACK: 4, LEVER: 5, GATE: 6, UP: 7, RIGHT: 8, DOWN: 9, LEFT: 10, BRIDGE: 11,
-  RAMP_UP: 12, RAMP_RIGHT: 13, RAMP_DOWN: 14, RAMP_LEFT: 15,
+  RAMP_UP: 12, RAMP_RIGHT: 13, RAMP_DOWN: 14, RAMP_LEFT: 15, HOLE: 16, MELT: 17,
 };
 export const DX = [0, 1, 0, -1];
 export const DY = [-1, 0, 1, 0];
 const ARROW_CH = { '^': T.UP, '>': T.RIGHT, v: T.DOWN, '<': T.LEFT };
 const RAMP_CH = { 8: T.RAMP_UP, 6: T.RAMP_RIGHT, 2: T.RAMP_DOWN, 4: T.RAMP_LEFT }; // sayısal tuş takımı yönleri
+const ORDER_CH = { x: 1, y: 2, z: 3, w: 4 }; // sıralı balıklar (c çatlak buz olduğu için harf çakışmasın)
 const isArrow = t => t >= T.UP && t <= T.LEFT;
 export const isRamp = t => t >= T.RAMP_UP && t <= T.RAMP_LEFT;
-const walkable = t => t === T.ICE || t === T.SNOW || t === T.CRACK || t === T.BRIDGE || isArrow(t);
+const walkable = t => t === T.ICE || t === T.SNOW || t === T.MELT || t === T.CRACK || t === T.BRIDGE || isArrow(t);
+const stops = t => t === T.SNOW || t === T.MELT;
 export const RAMP_FLIGHT = 2; // rampadan sonra uçulan hücre sayısı; iniş bir sonrakine
 
 export function rng(seed) {
@@ -25,13 +27,15 @@ export function rng(seed) {
 }
 
 // ---------- level okuma ----------
-// Karakterler: . buz  # kaya  s kar  ~ su  c çatlak  L kol  G kapalı kapı  g açık kapı
-//              ^ > v < ok  8 6 2 4 rampa (yukarı, sağ, aşağı, sol)  P Pofi  f balık  F kar üstünde balık  B kasa
+// Karakterler: . buz  # kaya  s kar  m eriyen kar  ~ su  c çatlak  L kol  G kapalı kapı  g açık kapı
+//              ^ > v < ok  8 6 2 4 rampa (yukarı, sağ, aşağı, sol)  O buz deliği (ikişer eşleşir)
+//              P Pofi  f balık  F kar üstünde balık  x y z w sıralı balık (1-4)  B kasa  S yatay fok  Z dikey fok
 export function parseLevel(def) {
   const h = def.rows.length, w = def.rows[0].length, size = w * h;
   const t = new Uint8Array(size);
   const fishIdx = new Int8Array(size).fill(-1), dynIdx = new Int8Array(size).fill(-1), gateIdx = new Int8Array(size).fill(-1);
-  const fishCells = [], dynCells = [], gateCells = [], crates = [];
+  const holePair = new Int16Array(size).fill(-1);
+  const fishCells = [], fishOrder = [], dynCells = [], gateCells = [], crates = [], holes = [], seals = [];
   let p = -1, gates = 0;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -39,27 +43,36 @@ export function parseLevel(def) {
       let tile = T.ICE;
       if (ch === '#') tile = T.ROCK;
       else if (ch === 's' || ch === 'F') tile = T.SNOW;
-      else if (ch === '~' || ch === 'c') { tile = ch === '~' ? T.WATER : T.CRACK; dynIdx[i] = dynCells.length; dynCells.push(i); }
+      else if (ch === '~' || ch === 'c' || ch === 'm') {
+        tile = ch === '~' ? T.WATER : ch === 'c' ? T.CRACK : T.MELT;
+        dynIdx[i] = dynCells.length;
+        dynCells.push(i);
+      }
       else if (ch === 'L') tile = T.LEVER;
       else if (ch === 'G' || ch === 'g') { tile = T.GATE; if (ch === 'g') gates |= 1 << gateCells.length; gateIdx[i] = gateCells.length; gateCells.push(i); }
+      else if (ch === 'O') { tile = T.HOLE; holes.push(i); }
       else if (ARROW_CH[ch] !== undefined) tile = ARROW_CH[ch];
       else if (RAMP_CH[ch] !== undefined) tile = RAMP_CH[ch];
       if (ch === 'P') p = i;
-      if (ch === 'f' || ch === 'F') { fishIdx[i] = fishCells.length; fishCells.push(i); }
+      if (ch === 'f' || ch === 'F' || ORDER_CH[ch]) { fishIdx[i] = fishCells.length; fishCells.push(i); fishOrder.push(ORDER_CH[ch] || 0); }
       if (ch === 'B') crates.push(i);
+      if (ch === 'S') seals.push(i * 4 + 1); // sağa doğru başlar
+      if (ch === 'Z') seals.push(i * 4 + 2); // aşağı doğru başlar
       t[i] = tile;
     }
   }
-  const L = { w, h, t, fishCells, dynCells, gateCells, fishIdx, dynIdx, gateIdx, def };
-  const S = { p, fish: 0, gates, dyn: new Array(dynCells.length).fill(0), crates: crates.sort((a, b) => a - b) };
+  for (let k = 0; k + 1 < holes.length; k += 2) { holePair[holes[k]] = holes[k + 1]; holePair[holes[k + 1]] = holes[k]; }
+  const L = { w, h, t, fishCells, fishOrder, dynCells, gateCells, fishIdx, dynIdx, gateIdx, holePair, def };
+  const S = { p, fish: 0, gates, dyn: new Array(dynCells.length).fill(0), crates: crates.sort((a, b) => a - b), seals };
   return { L, S };
 }
 
-// Kırılabilir/doldurulabilir hücre durumu: su 0=su 1=köprü · çatlak 0=sağlam 1=kırık(su) 2=köprü
+// Değişebilen hücreler: su 0=su 1=köprü · çatlak 0=sağlam 1=kırık(su) 2=köprü · eriyen kar 0=kar 1=erimiş(buz)
 export function tileOf(L, S, c) {
   const b = L.t[c];
   if (b === T.WATER) return S.dyn[L.dynIdx[c]] ? T.BRIDGE : T.WATER;
   if (b === T.CRACK) { const v = S.dyn[L.dynIdx[c]]; return v === 0 ? T.CRACK : v === 1 ? T.WATER : T.BRIDGE; }
+  if (b === T.MELT) return S.dyn[L.dynIdx[c]] ? T.ICE : T.MELT;
   if (b === T.GATE) return (S.gates >> L.gateIdx[c]) & 1 ? T.ICE : T.GATE;
   return b;
 }
@@ -71,28 +84,49 @@ export function neighbor(L, c, d) {
 
 export const won = (L, S) => S.fish === (1 << L.fishCells.length) - 1;
 
-// Pofi bu hücreye inebilir mi? (kasa yok, üzerinde durulabilen zemin)
-const landable = (L, n, c) => c >= 0 && !n.crates.includes(c) && walkable(tileOf(L, n, c));
+const sealAt = (n, c) => n.seals.some(s => s >> 2 === c);
+
+// Pofi bu hücreye inebilir mi? (kasa/fok yok, üzerinde durulabilen zemin)
+const landable = (L, n, c) => c >= 0 && !n.crates.includes(c) && !sealAt(n, c) && walkable(tileOf(L, n, c));
+
+// Sıralı balık ancak kendinden önceki sıralı balıkların hepsi alındıysa alınır.
+function canTake(L, n, fi) {
+  const ord = L.fishOrder[fi];
+  if (!ord) return true;
+  return L.fishOrder.every((o, j) => !o || o >= ord || (n.fish >> j) & 1);
+}
 
 // ---------- tek hamle ----------
-// Dönüş: null (hiçbir şey değişmedi) veya { state, pPath, jumps, crate, fx }
+// Dönüş: null (hiçbir şey değişmedi) veya { state, pPath, jumps, warps, crate, seals, fx }
 // fx zamanları "adım" cinsinden (Pofi'nin hamle başından itibaren geçtiği hücre sayısı).
-// jumps: pPath içinde rampadan inişe kadar havada geçen aralıklar ({ from, to } indeksleri).
+// jumps: rampadan inişe kadar havada geçen aralıklar ({ from, to } pPath indeksleri).
+// warps: buz deliğinden çıkılan pPath indeksleri (bir önceki indeks giriş deliği).
 export function simulate(L, S, dir) {
-  const n = { p: S.p, fish: S.fish, gates: S.gates, dyn: S.dyn.slice(), crates: S.crates.slice() };
+  const n = { p: S.p, fish: S.fish, gates: S.gates, dyn: S.dyn.slice(), crates: S.crates.slice(), seals: S.seals.slice() };
   const fx = [];
   const pPath = [S.p];
-  const jumps = [];
+  const jumps = [], warps = [];
   const seen = new Set();
   let cur = S.p, d = dir, crate = null, lever = false;
 
-  // Pofi bir hücreye vardığında: balığı al; karda dur; okta dön.
+  // Pofi bir hücreye vardığında: balığı al (sıralıysa sırası gelmişse); karda dur; okta dön.
   const arrive = t => {
     const fi = L.fishIdx[cur];
-    if (fi >= 0 && !((n.fish >> fi) & 1)) { n.fish |= 1 << fi; fx.push({ k: 'fish', cell: cur, at: pPath.length - 1 }); }
-    if (t === T.SNOW) { fx.push({ k: 'snow', at: pPath.length - 1 }); return true; }
+    if (fi >= 0 && !((n.fish >> fi) & 1)) {
+      if (canTake(L, n, fi)) { n.fish |= 1 << fi; fx.push({ k: 'fish', cell: cur, at: pPath.length - 1, ordered: L.fishOrder[fi] > 0 }); }
+      else fx.push({ k: 'skip', cell: cur, at: pPath.length - 1 });
+    }
+    if (stops(t)) { fx.push({ k: 'snow', at: pPath.length - 1 }); return true; }
     if (isArrow(t)) { d = t - T.UP; fx.push({ k: 'arrow', cell: cur, at: pPath.length - 1 }); }
     return false;
+  };
+
+  // Pofi'nin ayrıldığı hücre: çatlak buz kırılır, üzerinde durulmuş eriyen kar erir.
+  const leave = () => {
+    const di = L.dynIdx[cur];
+    if (di < 0 || n.dyn[di] !== 0) return;
+    if (L.t[cur] === T.CRACK) { n.dyn[di] = 1; fx.push({ k: 'crack', cell: cur, at: pPath.length - 0.5 }); }
+    else if (L.t[cur] === T.MELT) { n.dyn[di] = 1; fx.push({ k: 'melt', cell: cur, at: pPath.length - 0.5 }); }
   };
 
   for (;;) {
@@ -103,16 +137,24 @@ export function simulate(L, S, dir) {
     if (nx < 0) { fx.push({ k: 'bump', at: pPath.length - 1 }); break; }
     const ci = n.crates.indexOf(nx);
     if (ci >= 0) { crate = pushCrate(L, n, ci, d, cur, pPath.length - 1, fx); break; }
+    if (sealAt(n, nx)) { fx.push({ k: 'bump', at: pPath.length - 1 }, { k: 'sealhit', at: pPath.length - 1 }); break; }
     const t = tileOf(L, n, nx);
     if (t === T.LEVER) { lever = true; break; }
+    if (t === T.HOLE) {
+      // Buz deliği: eşinden aynı yönde çıkar; çıkış doluysa delik duvar gibi davranır.
+      const ex = L.holePair[nx];
+      if (ex < 0 || n.crates.includes(ex) || sealAt(n, ex)) { fx.push({ k: 'bump', at: pPath.length - 1 }); break; }
+      leave();
+      pPath.push(nx, ex);
+      cur = ex;
+      warps.push(pPath.length - 1);
+      fx.push({ k: 'warp', cell: nx, to: ex, at: pPath.length - 1.5 });
+      continue;
+    }
     // Rampa: kendi yönünde girilirse fırlatır, karşıdan gelinirse dik yüzü kaya gibi durdurur, yandan buz gibi geçilir.
     const ramp = isRamp(t) ? t - T.RAMP_UP : -1;
     if (ramp === (d + 2) % 4 || (ramp < 0 && !walkable(t))) { fx.push({ k: 'bump', at: pPath.length - 1 }); break; }
-    // Çatlak buz, Pofi ayrılınca kırılır.
-    if (L.t[cur] === T.CRACK && n.dyn[L.dynIdx[cur]] === 0) {
-      n.dyn[L.dynIdx[cur]] = 1;
-      fx.push({ k: 'crack', cell: cur, at: pPath.length - 0.5 });
-    }
+    leave();
     cur = nx;
     pPath.push(cur);
 
@@ -137,25 +179,52 @@ export function simulate(L, S, dir) {
 
   if (lever) {
     let mask = 0;
-    L.gateCells.forEach((g, i) => { if (g !== n.p && !n.crates.includes(g)) mask |= 1 << i; });
+    L.gateCells.forEach((g, i) => { if (g !== n.p && !n.crates.includes(g) && !sealAt(n, g)) mask |= 1 << i; });
     n.gates ^= mask;
     fx.push({ k: 'lever', at: pPath.length - 1 });
   }
 
   const moved = pPath.length > 1 || (crate && crate.moved) || lever;
   if (!moved) return null;
-  return { state: n, pPath, jumps, crate: crate && crate.moved ? crate : null, fx, dir };
+  const end = Math.max(pPath.length - 1, crate && crate.moved ? crate.at0 + crate.path.length - 1 : 0);
+  const seals = moveSeals(L, n, fx, end);
+  return { state: n, pPath, jumps, warps, crate: crate && crate.moved ? crate : null, seals, fx, dir };
+}
+
+// Foklar her geçerli hamleden sonra kendi hatlarında 1 adım ilerler; önü kapalıysa döner.
+const sealWalk = t => t === T.ICE || t === T.SNOW || t === T.MELT || t === T.CRACK || t === T.BRIDGE || isArrow(t);
+function moveSeals(L, n, fx, at) {
+  const moves = [];
+  n.seals = n.seals.map((s, i) => {
+    const from = s >> 2;
+    let d = s & 3;
+    for (let tries = 0; tries < 2; tries++) {
+      const nx = neighbor(L, from, d);
+      const free = nx >= 0 && nx !== n.p && !n.crates.includes(nx)
+        && !n.seals.some((o, j) => j !== i && o >> 2 === nx) && sealWalk(tileOf(L, n, nx));
+      if (free) {
+        moves.push({ from, to: nx, d });
+        fx.push({ k: 'seal', at });
+        return nx * 4 + d;
+      }
+      d = (d + 2) % 4;
+    }
+    moves.push({ from, to: from, d });
+    return from * 4 + d;
+  });
+  return moves;
 }
 
 function pushCrate(L, n, ci, dir, penguinAt, at0, fx) {
   let c = n.crates[ci], d = dir;
-  const path = [c], seen = new Set();
+  const path = [c], warps = [], seen = new Set();
   for (;;) {
     const key = c * 4 + d;
     if (seen.has(key)) break;
     seen.add(key);
     const nx = neighbor(L, c, d);
     if (nx < 0 || nx === penguinAt || n.crates.includes(nx)) break;
+    if (sealAt(n, nx)) { fx.push({ k: 'sealhit', at: at0 }); break; }
     const t = tileOf(L, n, nx);
     if (t === T.WATER) {
       const di = L.dynIdx[nx];
@@ -163,23 +232,32 @@ function pushCrate(L, n, ci, dir, penguinAt, at0, fx) {
       n.crates.splice(ci, 1);
       path.push(nx);
       fx.push({ k: 'sink', cell: nx, at: at0 + path.length - 1 });
-      return { moved: true, sunk: true, path, at0 };
+      return { moved: true, sunk: true, path, warps, at0 };
+    }
+    if (t === T.HOLE) {
+      const ex = L.holePair[nx];
+      if (ex < 0 || ex === penguinAt || n.crates.includes(ex) || sealAt(n, ex)) break;
+      path.push(nx, ex);
+      warps.push(path.length - 1);
+      fx.push({ k: 'warp', cell: nx, to: ex, at: at0 + path.length - 1.5 });
+      c = ex;
+      continue;
     }
     if (!walkable(t)) break;
     c = nx;
     path.push(c);
-    if (t === T.SNOW) break;
+    if (stops(t)) break;
     if (isArrow(t)) d = t - T.UP;
   }
   if (path.length === 1) return { moved: false };
   n.crates[ci] = c;
   n.crates.sort((a, b) => a - b);
   fx.push({ k: 'push', at: at0 });
-  return { moved: true, sunk: false, path, at0 };
+  return { moved: true, sunk: false, path, warps, at0 };
 }
 
 // ---------- çözücü ----------
-const stateKey = s => `${s.p}|${s.fish}|${s.gates}|${s.dyn.join('')}|${s.crates.join(',')}`;
+const stateKey = s => `${s.p}|${s.fish}|${s.gates}|${s.dyn.join('')}|${s.crates.join(',')}|${s.seals.join(',')}`;
 
 // En kısa çözümün yön dizisi; çözüm yoksa veya durum sınırı aşılırsa null.
 export function solve(L, S0, maxStates = 120000) {
@@ -209,13 +287,15 @@ export function solve(L, S0, maxStates = 120000) {
 
 // Çözümü oynatıp hangi mekaniklerin kullanıldığını say.
 export function usage(L, S0, moves) {
-  const u = { push: 0, sink: 0, crack: 0, lever: 0, arrow: 0, snow: 0, jump: 0 };
+  const u = { push: 0, sink: 0, crack: 0, lever: 0, arrow: 0, snow: 0, jump: 0, warp: 0, melt: 0, seal: 0, order: 0 };
   let s = S0;
   for (const d of moves) {
     const r = simulate(L, s, d);
     for (const f of r.fx) {
-      if (u[f.k] !== undefined) u[f.k]++;
+      if (u[f.k] !== undefined && f.k !== 'seal') u[f.k]++;
       if (f.k === 'sink') u.push++; // batan kasa da itilmiş sayılır
+      if (f.k === 'sealhit') u.seal++; // fok önünü kesti
+      if (f.k === 'fish' && f.ordered) u.order++;
     }
     s = r.state;
   }
@@ -234,10 +314,18 @@ const STAGES = [
   { from: 49, mech: ['snow', 'arrow'], req: 'arrow' },
   // Rampa su ile birlikte gelir: uçulacak engel olsun, "fazla uçup adaya düşme" riski doğsun.
   { from: 61, mech: ['snow', 'ramp', 'water'], req: 'jump' },
+  { from: 76, mech: ['snow', 'hole'], req: 'warp' },
+  // Eriyen kar tek fren kaynağıdır; kalıcı kar olmadan planlama zorunlu olur.
+  { from: 91, mech: ['melt'], req: 'melt' },
+  { from: 106, mech: ['snow', 'seal'], req: 'seal' },
+  { from: 121, mech: ['snow', 'order'], req: 'order' },
 ];
-const MIX_FROM = 76; // bu levelden sonra mekanikler karışık gelir
-const MIX = ['crate', 'water', 'crack', 'lever', 'arrow', 'ramp'];
-const REQ_OF = { crate: 'push', water: 'sink', crack: 'crack', lever: 'lever', arrow: 'arrow', snow: 'snow', ramp: 'jump' };
+const MIX_FROM = 136; // bu levelden sonra mekanikler karışık gelir
+const MIX = ['crate', 'water', 'crack', 'lever', 'arrow', 'ramp', 'hole', 'melt', 'seal', 'order'];
+const REQ_OF = {
+  crate: 'push', water: 'sink', crack: 'crack', lever: 'lever', arrow: 'arrow', snow: 'snow', ramp: 'jump',
+  hole: 'warp', melt: 'melt', seal: 'seal', order: 'order',
+};
 
 export function levelSpec(n, r = rng(n * 31 + 7)) {
   // Yeni mekaniğin ilk 2 leveli her zaman kolay.
@@ -248,7 +336,8 @@ export function levelSpec(n, r = rng(n * 31 + 7)) {
   else if (n <= 10) [w, h] = [5, 6];
   else if (n <= 30) [w, h] = [6, 7];
   else if (n <= 60) [w, h] = [6, 8];
-  else [w, h] = [7, 9];
+  else if (n < MIX_FROM) [w, h] = [7, 9];
+  else [w, h] = [7, 10];
 
   let lo, hi;
   if (n === 1) [lo, hi] = [1, 1];
@@ -277,7 +366,8 @@ export function levelSpec(n, r = rng(n * 31 + 7)) {
     if (mech.includes('water') && !mech.includes('crate')) mech.push('crate');
     req = REQ_OF[mech[1]];
   }
-  const fish = n <= 2 ? 1 : n <= 10 ? 1 + Math.floor(r() * 2) : 1 + Math.floor(r() * 3);
+  let fish = n <= 2 ? 1 : n <= 10 ? 1 + Math.floor(r() * 2) : 1 + Math.floor(r() * 3);
+  if (mech.includes('order')) fish = Math.max(fish, 2);
   return { n, tier, w, h, lo, hi, mech, req, fish };
 }
 
@@ -309,13 +399,17 @@ function buildCandidate(spec, r) {
     put('L');
     for (let k = 0, m = 1 + Math.floor(r() * 3); k < m; k++) put(r() < 0.6 ? 'G' : 'g');
   }
+  if (mech.includes('hole')) { put('O'); put('O'); }
+  if (mech.includes('melt')) for (let k = 0, m = 2 + Math.floor(r() * 3); k < m; k++) put('m');
+  if (mech.includes('seal')) put(r() < 0.5 ? 'S' : 'Z');
   put('P');
-  for (let k = 0; k < spec.fish; k++) put('f');
+  for (let k = 0; k < spec.fish; k++) put(mech.includes('order') ? 'xyzw'[k] : 'f');
   if (mech.includes('crate')) for (let k = 0, m = 1 + Math.floor(r() * 2); k < m; k++) put('B');
   return g.map(row => row.join(''));
 }
 
-// Mekaniği etkisizleştiren dönüşümler: kasa → kaya, su → kaya, çatlak → buz, kol/kapı → kaya/buz, ok/kar/rampa → buz.
+// Mekaniği etkisizleştiren dönüşümler: kasa/su/delik → kaya, çatlak/ok/rampa → buz, kol/kapı → kaya/buz,
+// eriyen kar → kalıcı kar, fok → yok, sıralı balık → sırasız balık.
 const NEUTRAL = {
   jump: ch => ('8624'.includes(ch) ? '.' : ch),
   snow: ch => (ch === 's' ? '.' : ch === 'F' ? 'f' : ch),
@@ -324,20 +418,30 @@ const NEUTRAL = {
   crack: ch => (ch === 'c' ? '.' : ch),
   lever: ch => (ch === 'L' || ch === 'G' ? '#' : ch === 'g' ? '.' : ch),
   arrow: ch => ('^>v<'.includes(ch) ? '.' : ch),
+  warp: ch => (ch === 'O' ? '#' : ch),
+  melt: ch => (ch === 'm' ? 's' : ch),
+  seal: ch => (ch === 'S' || ch === 'Z' ? '.' : ch),
+  order: ch => (ORDER_CH[ch] ? 'f' : ch),
+};
+
+// Katı test zor tutarsa ikinci kademe: eriyen kar en azından fren olarak gerekli olsun (kaldırınca çözüm değişsin).
+const NEUTRAL_WEAK = {
+  melt: ch => (ch === 'm' ? '.' : ch),
 };
 
 // Mekanik gerçekten bulmacanın parçası mı? Kaldırınca çözülemiyorsa ya da en kısa çözüm değişiyorsa evet.
-function essential(req, rows, m) {
-  const alt = rows.map(r => [...r].map(NEUTRAL[req]).join(''));
+function essential(fn, rows, m) {
+  const alt = rows.map(r => [...r].map(fn).join(''));
   const { L, S } = parseLevel({ rows: alt });
   const sol = solve(L, S, 60000);
   return !sol || sol.length !== m;
 }
 
 // Belirli bir level için çözülebilir, bandında ve yeni mekaniği gerçekten gerektiren bir tahta üret.
+// Öncelik: katı testi geçen bant içi aday → katı testi geçen en yakın → zayıf testi geçen en yakın → herhangi.
 export function generateLevel(n, { seed = n, maxAttempts = 6000 } = {}) {
   const spec = levelSpec(n, rng(seed * 31 + 7));
-  let best = null, loose = null;
+  let best = null, weak = null, loose = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const r = rng(seed * 100003 + attempt * 7717 + 1);
     const rows = buildCandidate(spec, r);
@@ -348,12 +452,18 @@ export function generateLevel(n, { seed = n, maxAttempts = 6000 } = {}) {
     const m = sol.length;
     const dist = m < spec.lo ? spec.lo - m : m > spec.hi ? m - spec.hi : 0;
     if (!loose || dist < loose.dist) loose = { dist, rows, sol };
-    if (spec.req && (!usage(L, S, sol)[spec.req] || !essential(spec.req, rows, m))) continue;
+    if (spec.req) {
+      if (!usage(L, S, sol)[spec.req]) continue;
+      if (!essential(NEUTRAL[spec.req], rows, m)) {
+        if (NEUTRAL_WEAK[spec.req] && (!weak || dist < weak.dist) && essential(NEUTRAL_WEAK[spec.req], rows, m)) weak = { dist, rows, sol };
+        continue;
+      }
+    }
     if (dist === 0) return finalize(spec, rows, sol);
     // Bant tutmazsa en yakın geçerli adayı yedekte tut.
     if (!best || dist < best.dist) best = { dist, rows, sol };
   }
-  const pick = best || loose;
+  const pick = best || weak || loose;
   if (!pick) throw new Error('Level üretilemedi: ' + n);
   return finalize(spec, pick.rows, pick.sol);
 }

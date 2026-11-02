@@ -132,6 +132,25 @@ export const sfx = {
     tone(140, { type: 'triangle', dur: 0.14, vol: 0.2, slideTo: 80 });
     noise({ dur: 0.12, vol: 0.12, type: 'lowpass', freq: 900 });
   },
+  warp() {
+    if (!ready()) return;
+    tone(900, { dur: 0.18, vol: 0.12, slideTo: 220 });
+    tone(330, { dur: 0.22, vol: 0.12, slideTo: 1200, when: 0.16 });
+    bell(1567.98, 0.3, 0.05);
+  },
+  melt() {
+    if (!ready()) return;
+    [0, 0.08, 0.17].forEach((w, i) => tone(1300 - i * 180, { dur: 0.08, vol: 0.07, slideTo: 2000 - i * 200, when: w }));
+  },
+  seal() {
+    if (!ready()) return;
+    tone(330, { type: 'square', dur: 0.07, vol: 0.05, slideTo: 260 });
+    tone(300, { type: 'square', dur: 0.09, vol: 0.05, slideTo: 220, when: 0.1 });
+  },
+  skip() {
+    if (!ready()) return;
+    tone(240, { type: 'triangle', dur: 0.12, vol: 0.1, slideTo: 180 });
+  },
   crate() {
     if (!ready()) return;
     tone(210, { type: 'triangle', dur: 0.1, vol: 0.2, slideTo: 150 });
