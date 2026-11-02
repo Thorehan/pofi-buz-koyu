@@ -65,8 +65,16 @@ export function drawPofi(ctx, x, y, size, o = {}) {
     ctx.fill();
   }
   ctx.fillStyle = '#1b1b24';
+  ctx.strokeStyle = '#1b1b24';
   for (const ex of [-1, 1]) {
-    if (o.blink) {
+    if (o.happy) {
+      // ^ ^ mutlu gözler
+      ctx.lineWidth = s * 0.025;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(fx + ex * s * 0.1, -s * 0.58, s * 0.04, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+    } else if (o.blink) {
       ctx.fillRect(fx + ex * s * 0.1 - s * 0.04, -s * 0.6, s * 0.08, s * 0.018);
     } else {
       circle(ctx, fx + ex * s * 0.1 + face * s * 0.02, -s * 0.595, s * 0.04);
@@ -88,14 +96,7 @@ export function drawPofi(ctx, x, y, size, o = {}) {
 
   // atkı
   if (outfit.scarf && outfit.scarf !== 'none') {
-    if (outfit.scarf === 'aurora') {
-      const g = ctx.createLinearGradient(-s * 0.3, 0, s * 0.3, 0);
-      g.addColorStop(0, '#3cdc9a');
-      g.addColorStop(0.5, '#4fb3ff');
-      g.addColorStop(1, '#8f5bd6');
-      ctx.fillStyle = g;
-    } else if (outfit.scarf === 'flakes') ctx.fillStyle = '#9fd3ff';
-    else ctx.fillStyle = SCARF[outfit.scarf];
+    ctx.fillStyle = scarfFill(ctx, outfit.scarf, s);
     roundRect(ctx, -s * 0.3, -s * 0.43, s * 0.6, s * 0.09, s * 0.04);
     ctx.fill();
     roundRect(ctx, -face * s * 0.12 + s * 0.08 - s * 0.05, -s * 0.38, s * 0.1, s * 0.2, s * 0.03);
@@ -110,8 +111,165 @@ export function drawPofi(ctx, x, y, size, o = {}) {
     }
   }
 
-  // şapka
-  const hat = outfit.hat;
+  drawHat(ctx, outfit.hat, s);
+  ctx.restore();
+}
+
+function scarfFill(ctx, scarf, s) {
+  if (scarf === 'aurora') {
+    const g = ctx.createLinearGradient(-s * 0.3, 0, s * 0.3, 0);
+    g.addColorStop(0, '#3cdc9a');
+    g.addColorStop(0.5, '#4fb3ff');
+    g.addColorStop(1, '#8f5bd6');
+    return g;
+  }
+  return scarf === 'flakes' ? '#9fd3ff' : SCARF[scarf];
+}
+
+// Göbek üstü kayan Pofi. dir: 0 yukarı (sırtı görünür), 1 sağ, 2 aşağı (yüzü görünür), 3 sol.
+// (x, y) zemindeki orta nokta. t: sallanma için zaman.
+export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
+  const s = size, outfit = o.outfit || {}, t = o.t || 0;
+  ctx.save();
+  ctx.translate(x, y);
+  if (dir === 1 || dir === 3) {
+    if (dir === 3) ctx.scale(-1, 1);
+    const flap = Math.sin(t * 18) * 0.08;
+    // ayaklar arkada
+    ctx.fillStyle = '#ff9f43';
+    ellipse(ctx, -s * 0.46, -s * 0.1, s * 0.09, s * 0.04, -0.3);
+    ctx.fill();
+    ellipse(ctx, -s * 0.44, -s * 0.05, s * 0.09, s * 0.04, 0.2);
+    ctx.fill();
+    // gövde yatay, karın altta
+    ctx.fillStyle = '#22314f';
+    ellipse(ctx, -s * 0.02, -s * 0.18, s * 0.42, s * 0.18);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ellipse(ctx, 0, -s * 0.09, s * 0.36, s * 0.09);
+    ctx.fill();
+    // kanat geriye uzanmış
+    ctx.fillStyle = '#22314f';
+    ellipse(ctx, -s * 0.12, -s * 0.27, s * 0.22, s * 0.055, -0.18 + flap);
+    ctx.fill();
+    // atkı: boyunda bant, rüzgârda uçuşan uç
+    if (outfit.scarf && outfit.scarf !== 'none') {
+      ctx.fillStyle = scarfFill(ctx, outfit.scarf, s);
+      ellipse(ctx, s * 0.25, -s * 0.2, s * 0.06, s * 0.15);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(s * 0.22, -s * 0.3);
+      ctx.quadraticCurveTo(s * 0.05, -s * (0.42 + flap), -s * 0.12, -s * (0.36 - flap));
+      ctx.lineTo(-s * 0.1, -s * (0.31 - flap));
+      ctx.quadraticCurveTo(s * 0.05, -s * 0.34, s * 0.22, -s * 0.24);
+      ctx.fill();
+    }
+    // baş önde, yüz yönde
+    const hx = s * 0.36, hy = -s * 0.26;
+    ctx.fillStyle = '#22314f';
+    circle(ctx, hx, hy, s * 0.17);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    circle(ctx, hx + s * 0.06, hy + s * 0.02, s * 0.11);
+    ctx.fill();
+    circle(ctx, hx + s * 0.09, hy - s * 0.04, s * 0.05);
+    ctx.fill();
+    ctx.fillStyle = '#1b1b24';
+    circle(ctx, hx + s * 0.11, hy - s * 0.04, s * 0.028);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,140,160,.55)';
+    ellipse(ctx, hx + s * 0.05, hy + s * 0.06, s * 0.035, s * 0.022);
+    ctx.fill();
+    ctx.fillStyle = '#ff9f43';
+    ctx.beginPath();
+    ctx.moveTo(hx + s * 0.15, hy - s * 0.01);
+    ctx.lineTo(hx + s * 0.27, hy + s * 0.02);
+    ctx.lineTo(hx + s * 0.15, hy + s * 0.06);
+    ctx.closePath();
+    ctx.fill();
+    // şapka: kafanın üstünde, rüzgârla geriye yatmış
+    if (outfit.hat && outfit.hat !== 'none') {
+      ctx.save();
+      ctx.translate(hx - s * 0.03, hy - s * 0.01);
+      ctx.rotate(-0.45);
+      ctx.scale(0.55, 0.55);
+      ctx.translate(0, s * 0.6);
+      drawHat(ctx, outfit.hat, s);
+      ctx.restore();
+    }
+  } else {
+    // Dikey kayış: aşağı giderken yüzü, yukarı giderken sırtı görünür.
+    const toward = dir === 2;
+    const flap = Math.sin(t * 18) * 0.12;
+    ctx.fillStyle = '#22314f';
+    for (const side of [-1, 1]) {
+      ellipse(ctx, side * s * 0.3, -s * 0.22, s * 0.2, s * 0.05, side * (0.35 + flap));
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ff9f43';
+    for (const side of [-1, 1]) {
+      ellipse(ctx, side * s * 0.08, toward ? -s * 0.52 : -s * 0.04, s * 0.06, s * 0.04);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#22314f';
+    ellipse(ctx, 0, -s * 0.27, s * 0.24, s * 0.22);
+    ctx.fill();
+    if (outfit.scarf && outfit.scarf !== 'none') {
+      ctx.fillStyle = scarfFill(ctx, outfit.scarf, s);
+      roundRect(ctx, -s * 0.2, toward ? -s * 0.2 : -s * 0.4, s * 0.4, s * 0.07, s * 0.03);
+      ctx.fill();
+    }
+    const hy = toward ? -s * 0.12 : -s * 0.46;
+    ctx.fillStyle = '#22314f';
+    circle(ctx, 0, hy, s * 0.17);
+    ctx.fill();
+    if (toward) {
+      ctx.fillStyle = '#ffffff';
+      ellipse(ctx, 0, hy + s * 0.02, s * 0.13, s * 0.11);
+      ctx.fill();
+      ctx.fillStyle = '#1b1b24';
+      for (const ex of [-1, 1]) { circle(ctx, ex * s * 0.055, hy - s * 0.01, s * 0.028); ctx.fill(); }
+      ctx.fillStyle = '#ff9f43';
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.04, hy + s * 0.05);
+      ctx.lineTo(s * 0.04, hy + s * 0.05);
+      ctx.lineTo(0, hy + s * 0.12);
+      ctx.closePath();
+      ctx.fill();
+    }
+    if (outfit.hat && outfit.hat !== 'none') {
+      ctx.save();
+      ctx.translate(0, hy + (toward ? -s * 0.06 : 0));
+      ctx.scale(0.55, toward ? 0.4 : 0.55);
+      ctx.translate(0, s * 0.6);
+      drawHat(ctx, outfit.hat, s);
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+// Çarpınca başın etrafında dönen yıldızlar. k: 1 → 0 sönerek
+export function drawDizzy(ctx, x, y, r, t, k) {
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, k * 1.5);
+  ctx.fillStyle = '#ffd166';
+  for (let i = 0; i < 3; i++) {
+    const a = t * 7 + (i * Math.PI * 2) / 3;
+    const sx = x + Math.cos(a) * r, sy = y + Math.sin(a) * r * 0.35;
+    ctx.beginPath();
+    for (let p = 0; p < 10; p++) {
+      const rr = p % 2 ? r * 0.12 : r * 0.28, ang = -Math.PI / 2 + (p * Math.PI) / 5;
+      ctx.lineTo(sx + Math.cos(ang) * rr, sy + Math.sin(ang) * rr);
+    }
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// Şapka, ayakta duran Pofi'nin koordinatlarında çizilir (kafa merkezi ≈ (0, -0.6s)).
+// Yatma/uçma pozlarında çizim alanı kafaya göre dönüştürülüp aynı fonksiyon kullanılır.
+function drawHat(ctx, hat, s) {
   const top = -s * 0.8;
   if (hat === 'sealhood') {
     ctx.fillStyle = '#8f9bb0';
@@ -244,7 +402,6 @@ export function drawPofi(ctx, x, y, size, o = {}) {
       ctx.fill();
     }
   }
-  ctx.restore();
 }
 
 // Fok: (x, y) taban ortası; face: -1 sola, 1 sağa bakar.

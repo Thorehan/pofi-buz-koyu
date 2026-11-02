@@ -165,11 +165,10 @@ Pofi'ye bere, şapka ve atkı alınır (coin). Seçilen kıyafet **oyun içinde 
 
 ## 6. Reklam ve Monetizasyon
 
-Damla Bahçesi'nde doğrulanan model aynen geçerli:
+**Ara reklam yok.** Oyuncu reklamı yalnızca kendi seçtiğinde, ödül karşılığında izler (kullanıcı kararı, v0.3).
 - **Level sonu ibreli çarpan** (x2–x5, ödüllü reklam).
 - +5 hamle, ipucu, günlük ödül x2, pasif gelir x2, mağazada günlük 5 ücretsiz coin.
-- Ara reklam: level 12'den önce yok, en az 3 levelde bir ve en az 90 saniye arayla. Ödüllü reklamdan sonraki geçişte atlanır.
-- IAP: Reklamsız ($3.99), Başlangıç paketi ($1.99), ileride özel kıyafet paketleri.
+- IAP: **Reklamsız ödüller** ($3.99): reklam izlemeden x2 ödülleri ve çarpanı doğrudan alır. Başlangıç paketi ($1.99), ileride özel kıyafet paketleri.
 
 ## 7. Günlük Sistemler
 
@@ -215,3 +214,68 @@ Damla Bahçesi'nde doğrulanan model aynen geçerli:
 | CPI testi | Kasa→su→köprü zincirini ve köy kişiselleştirmesini öne çıkaran 3–5 kreatif |
 | Dikey dilim | Bölge 2, sezon kıyafetleri, haftalık etkinlik |
 | Soft launch | D1/D7, ARPDAU, RV/DAU ölçümü |
+
+## 12. v0.3 Yol Haritası: coin harcama, yaşayan köy, kaliteli görsel
+
+### 12.1 Sorun
+Coin hızlı birikiyor ama harcanacak yer az: stil, renk, kıyafet ve ipucu. Bunlar bir kez alınınca biter. Haftada yaklaşık 30 level (~2.400 coin, çarpanla daha fazla) ve kakao (günde ~1.000 coin) gelirken, harcama 2–3 haftada tükeniyor. Oyuncunun her zaman "biriktirip alacağım bir şey" görmesi gerekiyor.
+
+**İlke:** Kar tanesi (❄) **inşa ve seviye** için kalır. Coin ise **genişleme, iç mekân, süs ve ticaret** için harcanır. İkisi de sürekli bir hedefe akar.
+
+### 12.2 Kakao neden var? (hikâye)
+Pofi'nin köyü Kuzey Işıkları'nın en iyi göründüğü yerde. Işıkları izlemeye gelen yolcular üşür. Köyün geçimi, onlara satılan **sıcak kakao**dur. Kakao standı köyün dükkânıdır, coin'in hikâyedeki kaynağıdır.
+
+**Yeni akış (şu an görünmez bir sayaç, oyuncu anlamıyor):**
+1. Stant zamanla **fincan** üretir. Fincanlar standın tezgâhında görünür şekilde birikir (kapasite = kakao saati).
+2. Oyuncu "Sat" der. Pofi tezgâha yürür, tepsiyi alır ve **iskeledeki yolculara** taşır. Yolcular fincanı alır, coin'ler havaya sıçrayıp sayaca uçar.
+3. Fincan fiyatını artıran **tarifler** coin'le alınır: tarçın, marşmelov, karamel, kuzey ışığı köpüğü. Bunlar kendini zamanla geri ödeyen bir yatırım ve sürekli bir coin harcama yeri.
+4. Ödüllü reklam: "Yolcu otobüsü geldi": bir sonraki satış x2.
+
+### 12.3 Coin harcama yerleri
+| Sistem | Ne yapar | Fiyat aralığı | Neden sürekli |
+|---|---|---|---|
+| **İç mekân** | Yapıya (önce iglo) dokununca kart açılır, tekrar dokununca **içine girilir**. Odada 6 yuva: yatak, halı, lamba, raf, pencere, duvar süsü. Her yuvanın 3 kademesi var. Önce önizleme, sonra "Satın al ve yerleştir". | 150–1.500 | 6 yapı × 6 yuva × 3 kademe |
+| **Arazi / bölge** | Köy yana doğru genişler. Yeni bölge coin'le açılır, içindeki yapılar ❄ ile kurulur. | 2.000 → 5.000 → 10.000 → 20.000 | Her yeni bölge yeni yapı getirir |
+| **Süsler** | Fener, çit, kardan adam, çam, buz heykeli. Bölgedeki süs yuvalarına yerleştirilir. | 50–400 | Yuvalar bölgeyle artar |
+| **Köylüler** | Yeni penguen köylü davet edilir, bir eve yerleşir. Köyde dolaşır, kakao kuyruğuna girer. | 500–3.000 | Ev açıldıkça yeni köylü |
+| **Kakao tarifleri** | Fincan fiyatı +%20'şer artar | 300–4.000 | Yatırım, geri döner |
+
+**İşaret kuralı:** Bakiye yeten her yerde (köydeki yapının üstünde ve listedeki kartında) yeşil ok çıkar. ❄ için v0.3'te yapıldı. Coin harcama yerleri de aynı işareti kullanacak.
+
+### 12.4 Genişleyen köy
+- Köy ekranı **yatay kaydırılır**. Her bölge ekran genişliğinde bir paneldir, sırayla açılır:
+  1. Köy Meydanı (bugünkü 12 yapı)
+  2. Buz Limanı (iskele, yolcu teknesi, balıkhane)
+  3. Çam Ormanı (kızak kulübesi, oduncu, sıcak kaplıca)
+  4. Kuzey Tepesi (gözlemevi, ışık festivali alanı)
+  5. Donmuş Göl (paten pisti, buz balıkçılığı)
+- Bir bölgenin bütün yapıları kurulunca bir sonraki bölgenin kilidi coin'le açılabilir. Böylece içerik hep bir adım ileride durur, köy hiç "bitmez".
+- Yeni bölge = yeni yapılar + yeni buff'lar + yeni iç mekânlar. Köy seviyesi tavanı bölgeyle birlikte yükselir.
+
+### 12.5 Köy yaşamı (cihaz saatine göre)
+| Saat | Ne olur |
+|---|---|
+| 07–11 | Köylüler iskelede balık tutar, Pofi esner |
+| 11–17 | Kakao standının önünde kuyruk, çocuk penguenler kızakla kayar |
+| 17–21 | Ateş başında toplanma, fenerler yanar |
+| 21–07 | Kuzey ışıkları, iglo pencereleri sarı yanar, köylüler uyur (Zzz) |
+
+Köylüler yollar boyunca yürür. Dokununca bir cümle söyler, bazen günlük küçük bir iş verir ("3 balık topla" → ödül).
+
+### 12.6 Sıra (kullanıcı kararı: önce basit tasarım, sonra oyun içi, sonra görsel)
+| Adım | İçerik | Durum |
+|---|---|---|
+| **A · Hızlı düzeltmeler** | Ara reklam kaldırıldı · gardırop önizlemesi düzeltildi (dene → "Satın al ve giy") · geliştirilebilir yapıya yeşil ok · **Pofi animasyonları**: göbek üstü kayış (4 yön), kar tozu, çarpınca baş dönmesi yıldızları ve sallanma, rampada süpermen uçuşu, buz deliğinde dönme, kazanınca zıplayıp sevinme, boşta nefes alma | ✅ v0.3 |
+| **B1 · Kakao** | Fincan birikmesi, Pofi'nin yürüyüp satması, tarifler | Sırada |
+| **B2 · Genişleyen köy** | Yatay kaydırma, bölge paneli, arazi açma | |
+| **B3 · İç mekân** | İglo içi (6 yuva, 3 kademe, önizleme), sonra diğer yapılar | |
+| **B4 · Köy yaşamı** | Köylüler, saat rutini, köylü daveti | |
+| **B5 · Süsler** | Yerleştirilebilir süsler | |
+| **C · Görsel** | GPT görsel modeliyle (Batch) Pofi, yapılar, zemin ve köy panoraması | Test isteği gönderildi |
+
+### 12.7 Görsel bütçesi
+- **Toplam: 4 $** (oyun bitene kadar). **Test: en fazla 0,50 $.** Bütün üretim Batch modunda yapılır (yarı fiyat).
+- Maliyeti düşürmek için tek tek görsel yerine **atlas** (sprite sheet) istenir: bir istekte 4–9 parça.
+- Pofi animasyonları kodda kalır. Görsel, parçalar (gövde, kanat, baş, ayak) ve sabit pozlar olarak gelir, kod bunları oynatır.
+- Ücretli üretim için onay **görsel chat'te kullanıcıdan** alınır.
+

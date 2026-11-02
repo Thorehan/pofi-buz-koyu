@@ -434,6 +434,7 @@ html, body {
 .b-card b { font-size: 15px; }
 .b-card small { color: var(--ink-soft); font-size: 12px; line-height: 1.25; }
 .b-card.ready { border-color: var(--green); }
+.b-card .dot { top: -6px; right: -6px; width: 16px; height: 16px; border-width: 2px; }
 .b-card.locked { opacity: .55; }
 .b-card .dots { display: flex; gap: 3px; }
 .b-card .dots i { width: 9px; height: 9px; border-radius: 50%; background: #dde7f1; }

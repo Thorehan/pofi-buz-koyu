@@ -45,6 +45,29 @@ function flag(ctx, x, y, h, col, t) {
   ctx.fill();
 }
 
+// Yükseltilebilir yapının üstünde zıplayan yeşil ok.
+function upgradeMarker(ctx, x, y, u, t) {
+  const b = Math.abs(Math.sin(t * 4)) * u * 0.015;
+  const r = u * 0.024;
+  ctx.fillStyle = '#ffffff';
+  circle(ctx, x, y - b, r + 2);
+  ctx.fill();
+  ctx.fillStyle = '#3fae5a';
+  circle(ctx, x, y - b, r);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(x, y - b - r * 0.6);
+  ctx.lineTo(x + r * 0.55, y - b + r * 0.05);
+  ctx.lineTo(x + r * 0.2, y - b + r * 0.05);
+  ctx.lineTo(x + r * 0.2, y - b + r * 0.55);
+  ctx.lineTo(x - r * 0.2, y - b + r * 0.55);
+  ctx.lineTo(x - r * 0.2, y - b + r * 0.05);
+  ctx.lineTo(x - r * 0.55, y - b + r * 0.05);
+  ctx.closePath();
+  ctx.fill();
+}
+
 // Bölge 2 süsleri: Lv4-5 yapının arkasında kuzey ışığı halesi, çevresinde parıltılar; Lv5 tepede altın yıldız.
 function auroraHalo(ctx, u, t) {
   const g = ctx.createRadialGradient(0, -u * 0.08, 0, 0, -u * 0.08, u * 0.2);
@@ -652,7 +675,8 @@ export class VillageView {
   }
 
   // village: P.village, vl: köy seviyesi, plots: kurulabilir yapılar, ready: parası yetenler
-  draw(time, dt, { village, vl, plots, ready, outfit, colors }) {
+  // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors }) {
     if (!this.W) this.resize();
     const { ctx, W, H } = this;
     const u = Math.min(W, H);
@@ -750,6 +774,7 @@ export class VillageView {
         DRAW[id](ctx, u, { lv: Math.min(st.lv, 3), style: st.style, col, night, t: time });
         if (st.lv >= 4) sparkles(ctx, u, time + x, st.lv);
         ctx.restore();
+        if (upgradable.includes(id)) upgradeMarker(ctx, x, y - u * 0.17 * SCALE[st.lv], u, time);
       } else if (plots.includes(id)) {
         this.visible.add(id);
         this.plot(ctx, x, y, u, time, ready.includes(id), this.focus === id);

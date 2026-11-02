@@ -21,9 +21,6 @@ function defaults() {
     owned: { hat: ['none'], scarf: ['none'] },
     cocoaTs: Date.now(),
     cocoaBank: 0,
-    levelsSinceInter: 0,
-    lastInterTs: 0,
-    skipNextInter: false,
     settings: { haptics: true, sfx: true, ambient: true },
     freeCoinDay: '',
     freeCoinCount: 0,
@@ -48,6 +45,10 @@ function migrate(s) {
     if (typeof v === 'number') s.village[id] = { lv: 1, style: v, color: null };
   }
   delete s.zoneRewardClaimed;
+  // Ara reklam kaldırıldı (kullanıcı kararı); eski sayaçları temizle.
+  delete s.levelsSinceInter;
+  delete s.lastInterTs;
+  delete s.skipNextInter;
   return s;
 }
 

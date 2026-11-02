@@ -1,6 +1,6 @@
 // Oyun tahtası: çizim, kayma animasyonu, kaydırma/klavye girdisi.
 import { T, tileOf, isRamp } from './engine.js';
-import { roundRect, circle, ellipse, drawPofi, drawFish, drawSeal } from './draw.js';
+import { roundRect, circle, ellipse, drawPofi, drawPofiBelly, drawDizzy, drawFish, drawSeal } from './draw.js';
 
 export const STEP = 0.075; // saniye / hücre
 
@@ -307,6 +307,9 @@ export class BoardView {
     this.queued = -1;
     this.face = 1;
     this.squash = 0;
+    this.dizzy = 0;
+    this.cheer = 0;
+    this.spray = 0;
     this.leverOn = false;
     this.resize();
   }
@@ -365,8 +368,19 @@ export class BoardView {
     for (const p of this.parts) { p.vy += 600 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
     this.hintT = Math.max(0, this.hintT - dt);
     this.squash = Math.max(0, this.squash - dt * 5);
+    this.dizzy = Math.max(0, this.dizzy - dt);
+    this.cheer = Math.max(0, this.cheer - dt);
     const a = this.anim;
     if (!a) return;
+    // Karnı üstünde kayarken arkasından kar tozu savrulur.
+    if (this.slide && !this.slide.air) {
+      this.spray += dt;
+      while (this.spray > 0.03) {
+        this.spray -= 0.03;
+        const { x, y, dx, dy } = this.slide, s = this.s;
+        this.parts.push({ x: x - dx * s * 0.35 + (Math.random() - 0.5) * s * 0.2, y: y - dy * s * 0.35 - s * 0.05, vx: -dx * s * (1 + Math.random()) + (Math.random() - 0.5) * s, vy: -dy * s * (1 + Math.random()) - s * (0.8 + Math.random()), life: 0.35, col: '#ffffff', r: s * (0.025 + Math.random() * 0.03) });
+      }
+    }
     a.t += dt;
     const u = a.t / STEP;
     a.r.fx.forEach((f, i) => {
@@ -392,8 +406,12 @@ export class BoardView {
     else if (f.k === 'warp') { this.burst(f.cell, '#9fd3ff', 14, s * 2.4, 0.5, s); this.burst(f.to, '#9fd3ff', 14, s * 2.4, 0.5, s); }
     else if (f.k === 'melt') this.burst(f.cell, '#5aa0d8', 10, s * 1.6, 0.5, s * 0.5);
     else if (f.k === 'skip') this.burst(f.cell, '#c9d6e3', 6, s * 1.5, 0.35, s * 0.5);
-    else if (f.k === 'bump' || f.k === 'snow') this.squash = 1;
+    else if (f.k === 'bump') { this.squash = 1; this.dizzy = 1.1; }
+    else if (f.k === 'snow') this.squash = 1;
   }
+
+  // Bölüm bitince Pofi zıplayıp sevinir.
+  celebrate() { this.cheer = 1.6; }
 
   // Animasyon sırasında henüz "olmamış" değişiklikler önceki durumdan çizilir.
   visTile(c, u) {
@@ -470,7 +488,8 @@ export class BoardView {
     }
 
     // Pofi (rampadan uçarken yay çizerek yükselir, yerde gölgesi kalır)
-    let px, py, lean = 0, lift = 0, warpScale = 1;
+    let px, py, lean = 0, lift = 0, warpScale = 1, belly = -1, spin = 0;
+    this.slide = null;
     if (a) {
       const path = a.r.pPath, last = path.length - 1;
       [px, py] = this.lerpPath(path, Math.min(u, last));
@@ -480,7 +499,17 @@ export class BoardView {
       }
       // Buz deliği: girişte küçülerek kaybolur, çıkışta büyüyerek belirir.
       for (const w of a.r.warps) {
-        if (u > w - 1 && u < w) { const k = u - (w - 1); warpScale = k < 0.5 ? 1 - k * 2 : (k - 0.5) * 2; }
+        if (u > w - 1 && u < w) { const k = u - (w - 1); warpScale = k < 0.5 ? 1 - k * 2 : (k - 0.5) * 2; spin = k * Math.PI * 2; }
+      }
+      // Hareket ederken göbek üstü kayış; yön o anki parçadan okunur.
+      if (u < last - 0.05) {
+        const i = Math.min(Math.floor(u), last - 1);
+        const [x0, y0] = this.cellXY(path[i]), [x1, y1] = this.cellXY(path[i + 1]);
+        const adj = Math.abs(x1 - x0) + Math.abs(y1 - y0) < s * 1.5;
+        const dx = adj ? Math.sign(x1 - x0) : [0, 1, 0, -1][a.r.dir], dy = adj ? Math.sign(y1 - y0) : [-1, 0, 1, 0][a.r.dir];
+        belly = dx > 0 ? 1 : dx < 0 ? 3 : dy > 0 ? 2 : 0;
+        if (dx) this.face = dx;
+        this.slide = { x: px + s / 2, y: py + s * 0.9, dx, dy, air: lift > 0.05 };
       }
     } else {
       [px, py] = this.cellXY(this.S.p);
@@ -491,9 +520,31 @@ export class BoardView {
       ctx.fill();
     }
     const blink = (time % 3.4) < 0.12;
-    if (warpScale > 0.02) drawPofi(ctx, px + s / 2, py + s * 0.9 - lift * s * 0.95, s * 0.88 * (1 + lift * 0.22) * warpScale, {
-      face: this.face, lean: lean - lift * 0.15 * Math.sign(lean || 1), squash: this.squash, blink, outfit: this.outfit, wave: lift * 0.8,
-    });
+    const size = s * 0.88 * (1 + lift * 0.22) * warpScale;
+    const cx = px + s / 2;
+    let cy = py + s * 0.9 - lift * s * 0.95;
+    if (warpScale > 0.02 && belly >= 0) {
+      // Rampadan uçarken süpermen pozu: aynı göbek pozu, havada hafif yukarı bakar.
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(spin + (belly === 1 ? -lift * 0.25 : belly === 3 ? lift * 0.25 : 0));
+      drawPofiBelly(ctx, 0, 0, size, belly, { outfit: this.outfit, t: time });
+      ctx.restore();
+    } else if (warpScale > 0.02) {
+      // Sevinç zıplaması, çarpınca sallanma, boşta nefes alma.
+      const ch = this.cheer > 0 ? Math.abs(Math.sin((1.6 - this.cheer) * Math.PI * 2.5)) * Math.min(1, this.cheer * 2) : 0;
+      cy -= ch * s * 0.35;
+      const wobble = this.dizzy > 0 ? Math.sin(time * 16) * 0.12 * this.dizzy : 0;
+      const breathe = !a && !this.cheer ? Math.sin(time * 2.6) * 0.03 : 0;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(spin);
+      drawPofi(ctx, 0, 0, size, {
+        face: this.face, lean: lean + wobble, squash: Math.max(this.squash, breathe), blink: blink && !this.cheer, happy: this.cheer > 0, outfit: this.outfit, wave: this.cheer > 0 ? 1 : lift * 0.8,
+      });
+      ctx.restore();
+      if (this.dizzy > 0) drawDizzy(ctx, cx, cy - size * 0.95, size * 0.32, time, this.dizzy);
+    }
 
     for (const p of this.parts) {
       ctx.globalAlpha = Math.min(1, p.life * 2);

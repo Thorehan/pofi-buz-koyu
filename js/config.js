@@ -16,12 +16,9 @@ export const ECON = {
   starFlake: 1, // 3 yıldıza ek kar tanesi
 };
 
+// Ara reklam yok; yalnızca oyuncunun seçtiği ödüllü reklamlar.
 export const ADS = {
-  interstitialMinLevel: 12,
-  interstitialEveryLevels: 3,
-  interstitialCooldownSec: 90,
-  rewardedSec: 3,
-  interstitialSec: 2,
+  rewardedSec: 3, // simülasyon süresi
   noThanksDelayMs: 1500,
 };
 

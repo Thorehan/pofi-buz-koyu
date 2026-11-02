@@ -8,7 +8,7 @@ import {
 } from './meta.js';
 import { drawPofi, drawFish } from './draw.js';
 import { load, save, resetSave } from './save.js';
-import { showRewarded, maybeInterstitial, track } from './ads.js';
+import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE,
@@ -339,6 +339,7 @@ function win() {
   setTimeout(() => {
     board.burst(run.st.p, '#ffd166', 24, board.s * 5, 1, board.s * 4);
     board.burst(run.st.p, '#8fd0ff', 24, board.s * 5, 1, board.s * 4);
+    board.celebrate();
     sfx.win();
   }, 150);
   // Haftalık etkinlik puanı
@@ -413,9 +414,8 @@ function showResult(stars, base, flakes, notes) {
     countUp($('rwCoins'), base, total);
     const villageBtn = canAffordAny(P) ? '<button id="toVillage" class="btn secondary">Köye git<span class="dot"></span></button>' : '';
     $('claimArea').innerHTML = `<div style="display:flex;flex-direction:column;gap:12px"><button id="toNext" class="btn green big">Devam</button>${villageBtn}</div>`;
-    const leave = async then => {
+    const leave = then => {
       closeOverlay();
-      await maybeInterstitial(P, run.def.n);
       save(P);
       then();
     };
@@ -431,7 +431,7 @@ function showResult(stars, base, flakes, notes) {
     $('btnNoThanks').disabled = true;
     const ok = await showRewarded('level_end_multiplier');
     track('multiplier_result', { mult: m, watched: ok });
-    if (ok) { P.skipNextInter = true; sfx.reward(); }
+    if (ok) sfx.reward();
     claim(ok ? base * m : base);
   };
   $('btnNoThanks').onclick = () => { running = false; claim(base); };
@@ -552,7 +552,7 @@ function renderVillage() {
     const ready = cost !== null && P.flakes >= cost;
     const act = cost === null ? capText(b) : lv === 0 ? `Kur ${flakeIco}${cost}` : `Lv${lv + 1} ${flakeIco}${cost}`;
     const buffNow = BUFF_TEXT[b.buff](b.values[Math.max(0, lv - 1)]);
-    return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}"><b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span></button>`;
+    return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}"><b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span>${ready ? '<i class="dot"></i>' : ''}</button>`;
   }).join('');
   $('buildList').querySelectorAll('[data-b]').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.b); });
   renderCocoa();
@@ -806,8 +806,8 @@ function renderShop() {
     item(['hint', '×5'], 'İpucu paketi', `Tek tek almaktan ${ECON.hintCost * 5 - ECON.hintPack5Cost} coin ucuz`,
       `<button class="btn green" data-hints="5" data-cost="${ECON.hintPack5Cost}" ${P.coins < ECON.hintPack5Cost ? 'disabled' : ''}>${coinIco}${ECON.hintPack5Cost}</button>`),
     '<h3>Paketler</h3>',
-    item(['noads', 'AD'], 'Reklamsız', 'Ara reklamlar kalkar, ödüllü videolar isteğe bağlı kalır',
-      '<button class="btn secondary" data-iap="noads">$3.99</button>'),
+    item(['noads', 'VIP'], 'Reklamsız ödüller', 'Ödüllü reklam izlemeden x2 ödülleri ve çarpanı doğrudan al',
+      '<button class="btn secondary" data-iap="vip">$3.99</button>'),
     item(['starter', '★'], 'Başlangıç paketi', '1000 coin + 5 ipucu + taç',
       '<button class="btn secondary" data-iap="starter">$1.99</button>'),
   ].join('');
@@ -1103,6 +1103,7 @@ function frame(now) {
     village.draw(t, dt, {
       village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS,
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
+      upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
   } else if (screen === 'visit' && visit) {
@@ -1114,7 +1115,8 @@ function frame(now) {
     const r = $('wardrobePofi').getBoundingClientRect();
     if (r.width) {
       const ctx = fitCanvas($('wardrobePofi'), r.width, r.height);
-      drawPofi(ctx, r.width / 2, r.height - 12, r.height * 0.8, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+      // Denenen (henüz alınmamış) parça burada görünür: önce dene, sonra satın al.
+      drawPofi(ctx, r.width / 2, r.height - 12, r.height * 0.8, { outfit: previewOutfit(), wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
     }
   }
   requestAnimationFrame(frame);
