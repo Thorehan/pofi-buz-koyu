@@ -867,6 +867,27 @@ export class BoardView {
       const ord = L.fishOrder[i];
       const waiting = ord && L.fishOrder.some((o, j) => o && o < ord && !((fishNow >> j) & 1));
       ctx.globalAlpha = waiting ? 0.5 : 1;
+      if (this.rare && this.rare.i === i) {
+        const cx = x + s / 2, cy = y + s / 2, k = 0.5 + 0.5 * Math.sin(time * 4);
+        const g = ctx.createRadialGradient(cx, cy, s * 0.1, cx, cy, s * 0.55);
+        g.addColorStop(0, `rgba(255,214,90,${0.7 + 0.25 * k})`);
+        g.addColorStop(1, 'rgba(255,230,120,0)');
+        ctx.fillStyle = g;
+        circle(ctx, cx, cy, s * 0.55);
+        ctx.fill();
+        const by = cy + Math.sin((time + i) * 3) * s * 0.03;
+        if (!objArt(ctx, `fish_${this.rare.f.id}`, cx, by, s * 0.86)) drawFish(ctx, cx, by, s * 0.75, time + i, this.rare.f.color, '#fff8dc');
+        // dönen küçük yıldızlar
+        ctx.fillStyle = '#fff3b0';
+        for (let j = 0; j < 3; j++) {
+          const an = time * 1.6 + j * 2.094, rr = s * 0.4;
+          circle(ctx, cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * 0.7, s * (0.035 + 0.02 * Math.sin(time * 5 + j)));
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        if (ord) orderBadge(ctx, x + s / 2, y + s / 2, s, ord);
+        return;
+      }
       if (!objArt(ctx, 'obj_fish', x + s / 2, y + s / 2 + Math.sin((time + i) * 3) * s * 0.03, s * 0.86)) drawFish(ctx, x + s / 2, y + s / 2, s * 0.75, time + i);
       ctx.globalAlpha = 1;
       if (ord) orderBadge(ctx, x + s / 2, y + s / 2, s, ord);

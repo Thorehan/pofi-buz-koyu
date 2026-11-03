@@ -376,6 +376,30 @@ export const BOOSTERS = [
   { id: 'whistle', name: 'Fok düdüğü', text: 'Foklar 3 hamle uyur', icon: '🎵', price: 100 },
 ];
 export const WHISTLE_MOVES = 3;
+
+// Balık albümü: bazı levellerde balıklardan biri nadir türdür (parıltılı). Level bitince albüme eklenir.
+// Aynısı tekrar gelirse coin verir; bir seti tamamlamak ödül verir. weight: setin çıkma ağırlığı.
+export const FISH_SETS = [
+  { id: 'buz', name: 'Buz Denizi', weight: 3, reward: { coins: 300, hints: 1 }, fish: [
+    { id: 'icescale', name: 'Buz Pullu', color: '#8fd0ff' }, { id: 'crystal', name: 'Kristal', color: '#bfeeff' },
+    { id: 'snowflake', name: 'Kar Tanesi', color: '#e9f4ff' }, { id: 'glacier', name: 'Buzul', color: '#5aa9e6' }] },
+  { id: 'gece', name: 'Kutup Gecesi', weight: 3, reward: { coins: 300, hints: 1 }, fish: [
+    { id: 'aurora', name: 'Kutup Işığı', color: '#7be0b0' }, { id: 'starry', name: 'Yıldızlı', color: '#4a6ab8' },
+    { id: 'midnight', name: 'Gece Yarısı', color: '#2c3f73' }, { id: 'glow', name: 'Işıltılı', color: '#e8f56a' }] },
+  { id: 'liman', name: 'Liman', weight: 3, reward: { coins: 400, hints: 2 }, fish: [
+    { id: 'sailor', name: 'Denizci', color: '#3a7bd5' }, { id: 'anchor', name: 'Çapa', color: '#7a8a9f' },
+    { id: 'striped', name: 'Çizgili', color: '#ff6b6b' }, { id: 'brass', name: 'Pirinç', color: '#c99a3c' }] },
+  { id: 'tatli', name: 'Tatlı Sular', weight: 2, reward: { coins: 500, hints: 2, flakes: 5 }, fish: [
+    { id: 'cocoa', name: 'Kakao', color: '#8b5a3c' }, { id: 'candy', name: 'Şeker', color: '#ff8fc8' },
+    { id: 'marshmallow', name: 'Lokum', color: '#fff0f5' }, { id: 'caramel', name: 'Karamel', color: '#e0a050' }] },
+  { id: 'hazine', name: 'Hazine', weight: 2, reward: { coins: 600, hints: 3, flakes: 8 }, fish: [
+    { id: 'gold', name: 'Altın', color: '#ffcf33' }, { id: 'silver', name: 'Gümüş', color: '#c0c8d0' },
+    { id: 'ruby', name: 'Yakut', color: '#e0115f' }, { id: 'emerald', name: 'Zümrüt', color: '#2ecc71' }] },
+  { id: 'efsane', name: 'Efsaneler', weight: 1, reward: { coins: 1000, hints: 5, flakes: 15 }, fish: [
+    { id: 'dragon', name: 'Ejder', color: '#e85d2a' }, { id: 'ghost', name: 'Hayalet', color: '#e8eef8' },
+    { id: 'rainbow', name: 'Gökkuşağı', color: '#b388ff' }, { id: 'king', name: 'Kral', color: '#3d7bd9' }] },
+];
+export const ALBUM = { chance: 0.15, from: 12, dupCoins: 40, missingBias: 3 };
 export const MASTER_REWARD = { coins: 1000, hints: 3, flakes: 10 }; // ilk bitirişte, rozetle birlikte
 
 // Başarımlar: her birinin kademeleri var; kademe ödülü ACH_REWARD[kademe]. stat, main.js'te hesaplanır.

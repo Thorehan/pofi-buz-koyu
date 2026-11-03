@@ -33,6 +33,8 @@ function defaults() {
     quests: null, // { day, list: [{ type, need, have, claimed }], chest }
     mapSeen: 0,
     boosters: { pick: 2, shovel: 2, whistle: 1 }, // başlangıç hediyesi
+    album: {}, // tür id -> kaç kez yakalandı
+    albumSets: {}, // ödülü verilmiş setler
     masters: {}, // { bölgeIndeksi: en iyi yıldız } — usta levelleri // haritada en son gösterilen level (Pofi'nin yeni levele zıplaması için)
     hintLadder: null, // { day, n } — bugün coin'le alınan tek ipucu sayısı (fiyat merdiveni)
     villageName: null, // köy ekranına ilk girişte sorulur; ilk isim ücretsiz, değiştirmek VILLAGE_RENAME_PRICE

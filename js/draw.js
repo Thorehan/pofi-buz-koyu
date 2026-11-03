@@ -497,11 +497,11 @@ export function drawSeal(ctx, x, y, size, face = 1, t = 0) {
 }
 
 // Balık (tahtada ve arayüzde).
-export function drawFish(ctx, x, y, size, t = 0) {
+export function drawFish(ctx, x, y, size, t = 0, color = '#ff8c42', belly = '#ffd3b0') {
   ctx.save();
   ctx.translate(x, y + Math.sin(t * 4) * size * 0.05);
   ctx.rotate(Math.sin(t * 3) * 0.12);
-  ctx.fillStyle = '#ff8c42';
+  ctx.fillStyle = color;
   ellipse(ctx, 0, 0, size * 0.32, size * 0.18);
   ctx.fill();
   ctx.beginPath();
@@ -510,7 +510,7 @@ export function drawFish(ctx, x, y, size, t = 0) {
   ctx.lineTo(size * 0.48, size * 0.16);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = '#ffd3b0';
+  ctx.fillStyle = belly;
   ellipse(ctx, -size * 0.05, size * 0.05, size * 0.16, size * 0.07);
   ctx.fill();
   ctx.fillStyle = '#1b1b24';

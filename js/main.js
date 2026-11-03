@@ -17,7 +17,7 @@ import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
-  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, WHISTLE_MOVES,
+  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, WHISTLE_MOVES, FISH_SETS, ALBUM,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -234,6 +234,8 @@ function startLevel(n, daily = false, evk = null, master = null) {
     event: ev ? evk : null, reverse: !!ev?.rule?.reverse, fromMap: playFromMap || master !== null, master,
   };
   playFromMap = false;
+  run.rare = rollRare();
+  board.rare = run.rare;
   showScreen('game');
   board.dark = !!ev?.rule?.dark;
   board.outfit = P.outfit;
@@ -329,7 +331,14 @@ board.onMove = dir => {
 
 let sealSounded = false; // bir hamlede foklar tek ses çıkarır
 board.onFx = f => {
-  if (f.k === 'fish') { sfx.fish(run.fishSound++); renderGoal(); }
+  if (f.k === 'fish') {
+    sfx.fish(run.fishSound++);
+    renderGoal();
+    if (run.rare && f.cell === run.L.fishCells[run.rare.i]) {
+      board.burst(f.cell, '#ffe066', 16, board.s * 3.5, 0.8, board.s * 2, 'star');
+      toast(`✨ ${run.rare.f.name} balığı! Level bitince albüme girer`, 2200);
+    }
+  }
   else if (f.k === 'crack') sfx.crack();
   else if (f.k === 'sink') sfx.splash();
   else if (f.k === 'lever') sfx.lever();
@@ -448,6 +457,7 @@ function win() {
   taskProgress('levels', 1);
   taskProgress('fish', run.L.fishCells.length);
   if (stars === 3) taskProgress('stars', 1);
+  const caught = run.rare ? albumAdd(run.rare.f) : null;
   P.flakes += flakes;
   persist();
   setTimeout(() => {
@@ -471,6 +481,7 @@ function win() {
     !run.replay && stars === 3 && '3 yıldız +1 ❄',
     !run.replay && lucky && 'Şanslı ağ +1 ❄',
     run.replay && (run.gained ? `Tekrar · yeni yıldız +${run.gained}` : 'Tekrar · yeni yıldız yok'),
+    caught && caught.text,
     run.masterFirst && `🏰 ${MAP_REGIONS[run.master].name} rozeti · +${MASTER_REWARD.coins} coin, +${MASTER_REWARD.hints} ipucu, +${MASTER_REWARD.flakes} ❄`,
     `${ev.token} +${evPts} jeton`,
   ].filter(Boolean).join(' · ');
@@ -2014,6 +2025,63 @@ function showMasterPopup(i) {
 }
 
 // Rozetler: Görevler ekranında 6 bölge madalyası
+// ---------- balık albümü ----------
+const ALL_FISH = FISH_SETS.flatMap(set => set.fish.map(f => ({ ...f, set })));
+const albumCount = () => ALL_FISH.filter(f => P.album[f.id]).length;
+
+// Level başında: balıklı levellerde ALBUM.chance olasılıkla balıklardan biri nadir tür olur.
+// Tür, set ağırlığına göre seçilir; albümde olmayan türler ALBUM.missingBias kat daha sık çıkar.
+function rollRare() {
+  const n = run.L.fishCells.length;
+  if (!n || run.def.n < ALBUM.from || Math.random() >= ALBUM.chance) return null;
+  const w = ALL_FISH.map(f => f.set.weight * (P.album[f.id] ? 1 : ALBUM.missingBias));
+  let r = Math.random() * w.reduce((a, b) => a + b, 0), k = 0;
+  while (r >= w[k]) r -= w[k++];
+  return { i: Math.floor(Math.random() * n), f: ALL_FISH[k] };
+}
+
+function albumAdd(f) {
+  const dup = !!P.album[f.id];
+  P.album[f.id] = (P.album[f.id] || 0) + 1;
+  track('album_fish', { id: f.id, dup });
+  if (dup) { P.coins += ALBUM.dupCoins; return { text: `🐟 ${f.name} (zaten var) +${ALBUM.dupCoins} coin` }; }
+  let text = `🐟 Yeni balık: ${f.name} · albüm ${albumCount()}/${ALL_FISH.length}`;
+  const set = f.set;
+  if (!P.albumSets[set.id] && set.fish.every(x => P.album[x.id])) {
+    P.albumSets[set.id] = true;
+    giveReward(set.reward);
+    text += ` · ${set.name} seti tamam! ${rewardHtml(set.reward)}`;
+    track('album_set', { id: set.id });
+  }
+  return { text };
+}
+
+function drawAlbumFish(cv, f) {
+  const ctx = fitCanvas(cv, 48, 48), im = art(`fish_${f.id}`);
+  if (!P.album[f.id]) {
+    // yakalanmamış: gölge silüet
+    ctx.globalAlpha = 0.18;
+    if (im) { ctx.filter = 'brightness(0)'; ctx.drawImage(im, 0, 0, 48, 48); ctx.filter = 'none'; }
+    else drawFish(ctx, 24, 25, 44, 0, '#1d3557', '#1d3557');
+    ctx.globalAlpha = 1;
+    return;
+  }
+  if (im) ctx.drawImage(im, 0, 0, 48, 48);
+  else drawFish(ctx, 24, 25, 44, 0, f.color, '#fff8dc');
+}
+
+function renderAlbum() {
+  $('albumBox').innerHTML = `<h3>Balık albümü <small>${albumCount()}/${ALL_FISH.length}</small></h3>
+    <p class="album-tip">Bazı levellerde parıltılı nadir bir balık çıkar. Topla, level bitince albüme girer.</p>
+    ${FISH_SETS.map(set => {
+      const got = set.fish.filter(f => P.album[f.id]).length;
+      return `<div class="album-set${P.albumSets[set.id] ? ' done' : ''}"><div class="as-head"><b>${set.name}</b><small>${P.albumSets[set.id] ? 'Tamamlandı ✓' : `${got}/4 · ödül ${rewardHtml(set.reward)}`}</small></div>
+        <div class="as-row">${set.fish.map(f => `<div class="as-fish${P.album[f.id] ? '' : ' off'}"><canvas data-fish="${f.id}"></canvas><span>${P.album[f.id] ? f.name : '?'}</span>${P.album[f.id] > 1 ? `<i>×${P.album[f.id]}</i>` : ''}</div>`).join('')}</div></div>`;
+    }).join('')}`;
+  $('albumBox').querySelectorAll('[data-fish]').forEach(cv => drawAlbumFish(cv, ALL_FISH.find(f => f.id === cv.dataset.fish)));
+}
+onArtLoad(id => { if (id.startsWith('fish_') && !$('screenAch').classList.contains('hidden')) renderAlbum(); });
+
 function renderBadges() {
   $('badgeBox').innerHTML = MAP_REGIONS.map((r, i) => `<div class="bdg${P.masters[i] ? '' : ' off'}"><canvas data-bdg="${i}"></canvas><span>${r.name}</span></div>`).join('');
   $('badgeBox').querySelectorAll('[data-bdg]').forEach(cv => {
@@ -2138,6 +2206,7 @@ const achTotal = () => ACHIEVEMENTS.reduce((n, a) => n + a.tiers.length, 0);
 function renderAch() {
   renderQuests();
   renderBadges();
+  renderAlbum();
   const ready = achClaimable();
   $('achSummary').innerHTML = `${achDone()}/${achTotal()} kademe · ${ready} ödül hazır${ready > 1 ? ' <button id="achAll" class="btn green">Hepsini al</button>' : ''}`;
   if ($('achAll')) $('achAll').onclick = () => {

@@ -786,3 +786,20 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 @keyframes pulse { 50% { transform: scale(1.05); } }
 @keyframes sheetUp { from { transform: translateY(100%); } }
 .si-icon.boost { background: #8f5bd6; font-size: 22px; }
+.album-box { background: #fff; border-radius: 18px; padding: 10px 12px 12px; border: 2px solid #e1ecf7; flex: none; display: flex; flex-direction: column; gap: 8px; }
+.album-box h3 { margin: 0; display: flex; align-items: baseline; gap: 6px; }
+.album-box h3 small { color: var(--ink-soft); font-size: 13px; }
+.album-tip { margin: 0; font-size: 12px; color: var(--ink-soft); }
+.album-set { background: #f4f8fc; border-radius: 14px; padding: 8px; }
+.album-set.done { background: #fff6dc; }
+.as-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 13px; }
+.as-head small { color: var(--ink-soft); font-size: 11.5px; display: flex; align-items: center; gap: 4px; }
+
+.as-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.as-fish { position: relative; display: flex; flex-direction: column; align-items: center; font-size: 10.5px; color: var(--ink); text-align: center; line-height: 1.1; }
+.as-fish.off span { color: var(--ink-soft); }
+.as-fish canvas { width: 48px; height: 48px; }
+.as-fish i { position: absolute; top: 0; right: 4px; font-style: normal; font-size: 10px; font-weight: 700; background: #ffd166; border-radius: 8px; padding: 0 4px; }
+.as-head .rw { display: inline-flex; align-items: center; gap: 2px; font-weight: 600; }
+.as-head .rw .ico { width: 13px; height: 13px; }
+.as-head .rw .ico.hint { width: 10px; height: 10px; margin: 0 1px; }
