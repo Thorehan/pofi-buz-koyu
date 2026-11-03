@@ -30,6 +30,10 @@ const AT = {
   // Buz Limanı: ikinci panel (x 1-2). Tekne denizde, temeli yok.
   cafe: [1.22, 0.63], market: [1.47, 0.6], bell: [1.76, 0.53], ferry: [1.64, 0.94],
 };
+// İskele yassı bir güverte: tabanına (denizdeki ucuna) göre sıralanırsa üstünde yürüyen penguen altında kalır.
+// Bu yüzden görselin üst kenarına göre sıralanır (stil × seviye için ölçülen yükseklik / 512).
+const PIER_TOP = [[0.496, 0.666, 0.803], [0.572, 0.674, 0.746], [0.57, 0.846, 0.84]];
+const flatTop = (st, u) => (PIER_TOP[st.style] || PIER_TOP[0])[Math.min(st.lv, 3) - 1] * 0.3 * u * 0.9;
 // Temeli olmayan (suyun üstündeki ya da asılı) yapılar ve ana yola patikası olmayanlar.
 const NO_PAD = new Set(['lights', 'lighthouse', 'pier', 'ferry']);
 const NO_SPUR = new Set(['lights', 'lighthouse', 'ferry']);
@@ -53,7 +57,19 @@ const STAND = [0.29, 0.715];
 const SALE_SPEED = 0.24; // kesir/saniye
 const TRAVELERS = [
   { hat: 'earmuffs', scarf: 'green' }, { hat: 'north', scarf: 'blue' }, { hat: 'beanieRed', scarf: 'yellow' },
+  { hat: 'beanieBlue', scarf: 'striped' }, { hat: 'tophat', scarf: 'red' }, { hat: 'none', scarf: 'aurora' },
 ];
+// Müşteriler denizden yüzerek gelir (sol alttaki deniz), iskeleye ya da kıyıya çıkar, kakaoyu alınca
+// sevinir, bir süre köyde gezip birbirleriyle sohbet eder, sonra yüzerek gider.
+// swim: denizdeki varış noktası, land: karaya çıktıkları yer (iskele varsa güvertenin sol ön ucu).
+const SEA = pier => (pier ? { swim: [0.055, 0.985], land: [0.105, 0.948] } : { swim: [0.075, 0.845], land: [0.13, 0.815] });
+const YUM = ['Leziz!', 'Mmm, sıcacık!', 'Bayıldım!', 'Tam kıvamında!', 'Bir tane daha!', 'Harika kakao!'];
+const CHAT = [
+  ['Ne güzel köy!', 'Değil mi? 😊'], ['Kakao harikaydı!', 'Bence de!'], ['Fener çok tatlı!', 'Gece de yanıyor!'],
+  ['Balığa çıkalım mı?', 'Önce yüzelim!'], ['Hava buz gibi!', 'Tam penguen havası!'], ['🐟?', '🐟!'],
+  ['Pofi çok çalışkan.', 'Kakao ustası!'], ['Yarın yine gelelim.', 'Kesinlikle!'],
+];
+const pick = a => a[Math.floor(Math.random() * a.length)];
 const travelerSpots = pier => (pier
   ? [[0.11, 0.935], [0.165, 0.955], [0.22, 0.935]]
   : [[0.175, promenadeY(0.175) + 0.004], [0.145, promenadeY(0.145) + 0.022], [0.12, promenadeY(0.12) + 0.002]]);
@@ -972,8 +988,7 @@ export class VillageView {
       s.tray = false;
       s.served = true;
       s.wait = 0.8;
-      this.travCup = true;
-      this.travLeave = 0;
+      this.serveCustomers();
       this.coinBurst(tx, ty, s.coins);
       s.done?.();
     } else if (act === 'end') {
@@ -984,6 +999,130 @@ export class VillageView {
       return;
     }
     s.i++;
+  }
+
+  // ---------- kakao müşterileri ----------
+  // Bekleyen fincan varken en fazla 3 müşteri gelir (toplam 6). Durum: swim → land → toSpot → wait →
+  // (servis) enjoy → stroll (sohbet edebilir) → leave → swimOut.
+  stepCustomers(dt, cups, pier, land) {
+    this.cust = this.cust || [];
+    this.custT = (this.custT || 0) - dt;
+    const spots = travelerSpots(pier), sea = SEA(pier), py = promenadeY;
+    const waiting = this.cust.filter(c => ['swim', 'land', 'toSpot', 'wait'].includes(c.st));
+    if (cups >= 1 && waiting.length < spots.length && this.cust.length < 6 && this.custT <= 0) {
+      const used = new Set(waiting.map(c => c.spot));
+      const spot = spots.findIndex((_, i) => !used.has(i));
+      const n = (this.custN = (this.custN || 0) + 1);
+      this.cust.push({ id: n, outfit: TRAVELERS[n % TRAVELERS.length], x: -0.06, y: sea.swim[1] + 0.01, st: 'swim', spot, face: 1, route: [sea.swim], t: 0, say: null });
+      this.custT = 1.8 + Math.random() * 1.5;
+    }
+    const go = (c, speed) => {
+      const [tx, ty] = c.route[0], dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy), st = speed * dt;
+      if (Math.abs(dx) > 0.002) c.face = Math.sign(dx);
+      if (d > st) { c.x += (dx / d) * st; c.y += (dy / d) * st; return false; }
+      c.x = tx; c.y = ty; c.route.shift();
+      return !c.route.length;
+    };
+    const wr = walkRange(land);
+    for (const c of this.cust) {
+      c.t += dt;
+      if (c.chatCd) c.chatCd = Math.max(0, c.chatCd - dt);
+      if (c.say && c.say.until < this.clock) c.say = null;
+      if (c.st === 'swim' && go(c, 0.09)) { c.st = 'land'; c.route = [sea.land]; c.hop = 0; }
+      else if (c.st === 'land') { c.hop += dt * 3; if (go(c, 0.12)) { c.st = 'toSpot'; c.route = [spots[c.spot]]; this.puff(c.x, c.y, '#bfe3ff', 8); } }
+      else if (c.st === 'toSpot' && go(c, 0.06)) { c.st = 'wait'; c.face = 1; c.idle = 0; }
+      else if (c.st === 'wait') {
+        // fincan kalmadıysa bir süre bekleyip geri yüzer
+        c.idle = cups >= 1 ? 0 : c.idle + dt;
+        if (c.idle > 20) { c.st = 'leave'; c.route = [sea.land, sea.swim, [-0.08, sea.swim[1] + 0.01]]; }
+      }
+      else if (c.st === 'enjoy') {
+        c.timer -= dt;
+        if (c.timer <= 0) {
+          c.st = 'stroll';
+          c.timer = 14 + Math.random() * 10;
+          c.route = [[c.x, py(c.x) + 0.006 * (c.id % 3)]];
+        }
+      } else if (c.st === 'stroll') {
+        c.timer -= dt;
+        if (c.route.length) { go(c, 0.05); continue; }
+        if (c.timer <= 0) {
+          // eve dönüş: ana yolun deniz ucuna, karaya çıktığı yere, sonra denize
+          const ex = pier ? 0.17 : 0.16;
+          c.st = 'leave';
+          c.route = [[ex, py(ex)], sea.land, sea.swim, [-0.08, sea.swim[1] + 0.01]];
+          continue;
+        }
+        // sohbet: yakındaki başka bir gezgine rastlarsa durup konuşurlar
+        const mate = this.cust.find(o => o !== c && o.st === 'stroll' && !o.route.length && Math.abs(o.x - c.x) < 0.07 && !o.chatCd && !c.chatCd);
+        if (mate && Math.random() < dt * 0.6) {
+          const line = pick(CHAT);
+          for (const [a, b, k] of [[c, mate, 0], [mate, c, 1]]) {
+            a.st = 'chat'; a.face = Math.sign(b.x - a.x) || 1; a.chatT = 3.6; a.chatCd = 9;
+            a.say = { text: line[k], at: this.clock + k * 1.6, until: this.clock + k * 1.6 + 1.9 };
+          }
+          continue;
+        }
+        if (c.tx === undefined || Math.abs(c.tx - c.x) < 0.01) { c.tx = wr[0] + Math.random() * (wr[1] - wr[0]); c.wait = 0.6 + Math.random() * 1.8; }
+        if (c.wait > 0) { c.wait -= dt; continue; }
+        c.x += Math.sign(c.tx - c.x) * dt * 0.05;
+        c.y = py(c.x) + 0.006 * (c.id % 3);
+        c.face = Math.sign(c.tx - c.x);
+      } else if (c.st === 'chat') {
+        c.chatT -= dt;
+        if (c.chatT <= 0) { c.st = 'stroll'; c.tx = undefined; }
+      } else if (c.st === 'leave') {
+        const before = c.route.length;
+        const done = go(c, c.route.length <= 2 ? 0.09 : 0.06);
+        if (before === 3 && c.route.length === 2) this.puff(c.x, c.y, '#bfe3ff', 8); // suya atlarken
+        if (done) c.gone = true;
+      }
+    }
+    this.cust = this.cust.filter(c => !c.gone);
+  }
+
+  // Satıştaki servis: bekleyen müşteriler kakaoyu alır, sırayla "Leziz!" der, kalpler uçar.
+  serveCustomers() {
+    (this.cust || []).filter(c => c.st === 'wait').forEach((c, i) => {
+      c.st = 'enjoy';
+      c.cup = true;
+      // balonlar sırayla (yan yana duranların balonları üst üste binmesin)
+      c.timer = 1.6 + i * 1.1;
+      c.say = { text: pick(YUM), at: this.clock + i * 1.05, until: this.clock + i * 1.05 + 1.15 };
+      setTimeout(() => this.hearts(c.x, c.y), i * 1050);
+    });
+  }
+
+  // Dünya koordinatında küçük efektler (kesir konum)
+  puff(fx, fy, col, n) {
+    for (let k = 0; k < n; k++) {
+      const a = -Math.PI * Math.random(), v = 20 + Math.random() * 40;
+      this.parts.push({ x: fx * this.W, y: fy * this.H, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.5, max: 0.5, col, r: 2.5, g: 60 });
+    }
+  }
+  hearts(fx, fy) {
+    for (let k = 0; k < 4; k++) {
+      this.parts.push({ x: fx * this.W + (Math.random() - 0.5) * 14, y: fy * this.H - 26, vx: (Math.random() - 0.5) * 16, vy: -22 - Math.random() * 16, life: 1.3, max: 1.3, col: '#ff6b8b', r: 4, g: -4, shape: 'heart' });
+    }
+  }
+
+  // Müşterinin konuşma balonu (dünya koordinatı)
+  bubble(ctx, x, y, u, text) {
+    ctx.font = `600 ${Math.round(u * 0.038)}px Fredoka, sans-serif`;
+    const w = ctx.measureText(text).width + u * 0.05, h = u * 0.07, by = y - h;
+    const bx = Math.max(this.sx + 4, Math.min(this.sx + this.W - w - 4, x - w / 2));
+    ctx.fillStyle = 'rgba(255,255,255,.96)';
+    roundRect(ctx, bx, by, w, h, h / 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x - u * 0.012, by + h);
+    ctx.lineTo(x, by + h + u * 0.02);
+    ctx.lineTo(x + u * 0.012, by + h);
+    ctx.fill();
+    ctx.fillStyle = '#1d3557';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, bx + w / 2, by + h / 2 + 1);
   }
 
   // Köylünün bu saatteki yeri: [x, y, yön, iş] ya da null (ana yolda gezinir).
@@ -1168,6 +1307,7 @@ export class VillageView {
   draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
+    this.clock = time;
     const { ctx, W, H } = this;
     const u = Math.min(W, H);
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -1288,7 +1428,7 @@ export class VillageView {
         const col = st.color ? colors.find(c => c.id === st.color)?.hex : null;
         if (upgradable.includes(id)) markers.push([x, id === 'lights' ? y : y - u * 0.17 * SCALE[st.lv]]);
         if (homeReady.includes(id)) markers.push([x - u * (upgradable.includes(id) ? 0.06 : 0), y - u * 0.17 * SCALE[st.lv], 'home']);
-        items.push([id === 'lights' ? -1 : y, () => {
+        items.push([id === 'lights' ? -1 : id === 'pier' ? y - flatTop(st, u) : y, () => {
           if (this.focus === id) {
             ctx.fillStyle = 'rgba(255,209,102,.35)';
             ellipse(ctx, x, y + u * 0.01, u * 0.15, u * 0.035);
@@ -1329,9 +1469,15 @@ export class VillageView {
       const moving = sale ? sale.wait <= 0 : w.wait <= 0;
       const face = moving ? (sale ? sale.face : w.face) : 0;
       items.push([y, () => {
-        const bob = moving ? Math.abs(Math.sin(time * 8)) * u * 0.01 : 0;
+        const festive = !!sale && moving;
+        const bob = festive ? Math.abs(Math.sin(time * 11)) * u * 0.022 : moving ? Math.abs(Math.sin(time * 8)) * u * 0.01 : 0;
+        if (festive && (this.spark = (this.spark || 0) + dt) > 0.12) {
+          this.spark = 0;
+          const shape = Math.random() < 0.35 ? 'note' : 'star';
+          this.parts.push({ x: wx * W - (face || 1) * u * 0.03, y: y - u * 0.05, vx: -(face || 1) * 10 + (Math.random() - 0.5) * 12, vy: -18 - Math.random() * 14, life: 0.8, max: 0.8, g: -6, r: shape === 'note' ? 3.2 : 3, col: shape === 'note' ? '#8f5bd6' : '#ffd166', shape });
+        }
         drawPofi(ctx, wx * W, y - bob, u * w.size, {
-          face, lean: moving ? Math.sin(time * 8) * 0.08 : 0,
+          face, lean: festive ? Math.sin(time * 11) * 0.14 : moving ? Math.sin(time * 8) * 0.08 : 0, squash: festive ? Math.max(0, Math.cos(time * 22)) * 0.12 : 0,
           outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, wave: !moving && !w.outfit && !sale ? Math.sin(time * 6) * 0.4 : 0,
         });
         if (sale?.tray) tray(ctx, wx * W + (face || 1) * u * w.size * 0.32, y - bob - u * w.size * 0.42, u * w.size * 0.42, time);
@@ -1343,25 +1489,45 @@ export class VillageView {
       const lv = Math.min(village.cocoa.lv, 3);
       const showCups = cocoa.cups >= 1 && !(this.sale && (this.sale.tray || this.sale.served));
       if (showCups) markers.push([STAND[0] * W + u * 0.08, AT.cocoa[1] * H - u * [0.15, 0.2, 0.24][lv - 1], 'cups']);
-      const waiting = cocoa.cups >= 1 || (this.sale && !this.sale.served);
-      if (waiting && this.travLeave == null) this.travCup = false;
-      if (this.travLeave != null) {
-        this.travLeave += dt / 2.6;
-        if (this.travLeave >= 1) this.travLeave = null;
-      }
-      if (waiting || this.travLeave != null) {
-        const k = this.travLeave ?? 0;
-        travelerSpots(!!village.pier).forEach(([fx, fy], i) => {
-          const x = (fx - k * 0.3) * W, y = fy * H;
-          items.push([y, () => {
-            ctx.globalAlpha = 1 - k;
-            const bob = k ? Math.abs(Math.sin(time * 8 + i)) * u * 0.008 : 0;
-            drawPofi(ctx, x, y - bob, u * 0.085, { face: k ? -1 : 0, outfit: TRAVELERS[i], blink: ((time + i) % 3.1) < 0.12, lean: k ? Math.sin(time * 8 + i) * 0.08 : 0 });
-            if (this.travCup) mug(ctx, x + u * 0.03, y - bob - u * 0.035, u * 0.016, time + i);
+      this.stepCustomers(dt, cocoa.cups, !!village.pier, land);
+      const bubbles = [];
+      for (const c of this.cust) {
+        const size = u * 0.085, x = c.x * W, y = c.y * H;
+        const swimming = c.st === 'swim' || (c.st === 'leave' && c.route.length <= 1 && c.x < (village.pier ? 0.08 : 0.11));
+        const moving = c.route?.length > 0 || (c.st === 'stroll' && !(c.wait > 0));
+        items.push([y, () => {
+          if (swimming) {
+            // yüzerken yalnızca baş ve omuzlar görünür, çevresinde halka dalgalar
+            const wl = y - size * 0.32;
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x - size, wl - size * 1.2, size * 2, size * 1.2);
+            ctx.clip();
+            drawPofi(ctx, x, y + Math.sin(time * 4 + c.id) * u * 0.004, size, { face: c.face, outfit: c.outfit, blink: ((time + c.id) % 3.1) < 0.12, lean: Math.sin(time * 4 + c.id) * 0.12 });
+            ctx.restore();
+            ctx.strokeStyle = 'rgba(255,255,255,.8)';
+            ctx.lineWidth = 1.5;
+            for (let k = 0; k < 2; k++) {
+              const p = (time * 0.8 + k * 0.5 + c.id * 0.3) % 1;
+              ctx.globalAlpha = 1 - p;
+              ellipse(ctx, x, wl, size * (0.3 + p * 0.35), size * (0.08 + p * 0.06));
+              ctx.stroke();
+            }
             ctx.globalAlpha = 1;
-          }]);
-        });
+          } else {
+            const hop = c.st === 'land' ? Math.abs(Math.sin(c.hop * Math.PI)) * u * 0.03 : 0;
+            const bob = moving ? Math.abs(Math.sin(time * 8 + c.id)) * u * 0.008 : 0;
+            const happy = c.st === 'enjoy' || c.st === 'chat';
+            drawPofi(ctx, x, y - bob - hop, size, {
+              face: moving || c.st === 'chat' ? c.face : 0, outfit: c.outfit, blink: ((time + c.id) % 3.1) < 0.12,
+              lean: moving ? Math.sin(time * 8 + c.id) * 0.08 : 0, happy: c.st === 'enjoy', wave: happy ? Math.max(0, Math.sin(time * 5 + c.id)) * 0.5 : 0,
+            });
+            if (c.cup) mug(ctx, x + (c.face || 1) * u * 0.03, y - bob - hop - u * 0.035, u * 0.016, time + c.id);
+          }
+          if (c.say && this.clock >= c.say.at) bubbles.push([x, y - size * 1.05, c.say.text]);
+        }]);
       }
+      this.custBubbles = bubbles;
       this.cocoaInfo = cocoa;
     }
     if (vl >= 10) for (const [fx, fy] of [[0.58, 0.71], [0.9, 0.86]]) items.push([fy * H, () => iceSculpture(ctx, fx * W, fy * H, u, time)]);
@@ -1424,6 +1590,7 @@ export class VillageView {
     }
     this.drawCoinFx(ctx, W, H, u, dt);
     this.drawSpeech(ctx, u, time);
+    for (const [x, y, text] of this.custBubbles || []) this.bubble(ctx, x, y, u, text);
     if (vl >= 12) this.lanterns(ctx, W, H, u, time);
     if (night > 0) {
       ctx.fillStyle = `rgba(20,24,60,${night * 0.25})`;
@@ -1440,14 +1607,31 @@ export class VillageView {
     ctx.translate(W / 2, H / 2);
     ctx.scale(this.cam.z, this.cam.z);
     ctx.translate(-this.cam.x, -this.cam.y);
-    ctx.fillStyle = '#fff6a8';
     for (const p of this.parts) {
-      p.vy += 120 * dt;
+      p.vy += (p.g ?? 120) * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      ctx.globalAlpha = Math.min(1, p.life);
-      circle(ctx, p.x, p.y, 3);
-      ctx.fill();
+      ctx.globalAlpha = Math.min(1, p.max ? (p.life / p.max) * 1.5 : p.life);
+      ctx.fillStyle = p.col || '#fff6a8';
+      const r = p.r || 3;
+      if (p.shape === 'heart') {
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y + r * 0.8);
+        ctx.bezierCurveTo(p.x - r * 1.6, p.y - r * 0.4, p.x - r * 0.8, p.y - r * 1.8, p.x, p.y - r * 0.7);
+        ctx.bezierCurveTo(p.x + r * 0.8, p.y - r * 1.8, p.x + r * 1.6, p.y - r * 0.4, p.x, p.y + r * 0.8);
+        ctx.fill();
+      } else if (p.shape === 'star') {
+        ctx.beginPath();
+        for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4, rr = k % 2 ? r * 0.4 : r; ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr); }
+        ctx.fill();
+      } else if (p.shape === 'note') {
+        ctx.font = `${Math.round(r * 3.2)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('♪', p.x, p.y);
+      } else {
+        circle(ctx, p.x, p.y, r);
+        ctx.fill();
+      }
     }
     ctx.restore();
     ctx.globalAlpha = 1;

@@ -224,7 +224,8 @@ export const sfx = {
   },
 };
 
-// ---------- ortam: hafif kutup rüzgârı + ara sıra buz çınlaması ----------
+// ---------- ortam: sürekli rüzgâr yok (kullanıcı rahatsız edici buldu); yalnızca ara sıra çok kısık bir rüzgâr çanı ----------
+const CHIME = [1568, 1760, 2093, 2349, 2637, 3136]; // pentatonik, yüksek ve yumuşak
 export function setAmbient(on) {
   ambientWanted = on;
   syncAmbient();
@@ -234,45 +235,27 @@ function syncAmbient() {
   if (!ctx) return;
   const want = ambientWanted && ambientOn && ctx.state === 'running';
   if (want && !ambientNodes) {
-    const src = ctx.createBufferSource();
-    src.buffer = noiseBuf;
-    src.loop = true;
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 500;
-    bp.Q.value = 0.5;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 900;
-    const g = ctx.createGain();
-    g.gain.value = 0.04;
-    const lfo = ctx.createOscillator(), lfoGain = ctx.createGain();
-    lfo.frequency.value = 0.09;
-    lfoGain.gain.value = 0.025;
-    lfo.connect(lfoGain).connect(g.gain);
-    src.connect(bp).connect(lp).connect(g).connect(ambBus);
-    src.start();
-    lfo.start();
-    ambientNodes = { src, lfo };
+    ambientNodes = { on: true };
     scheduleDrop();
   }
   const t = ctx.currentTime;
   ambBus.gain.cancelScheduledValues(t);
   ambBus.gain.setTargetAtTime(want ? 1 : 0, t, 0.4);
   if (!want && ambientNodes) {
-    const n = ambientNodes;
     ambientNodes = null;
     clearTimeout(dropTimer);
-    setTimeout(() => { n.src.stop(); n.lfo.stop(); }, 1500);
   }
 }
 
+// 7-14 saniyede bir 2-3 notalık hafif çan
 function scheduleDrop() {
   dropTimer = setTimeout(() => {
     if (!ambientNodes) return;
-    const f = 2400 + Math.random() * 1400;
-    tone(f, { dur: 0.5, vol: 0.02, dest: ambBus });
-    tone(f * 2.76, { dur: 0.2, vol: 0.008, dest: ambBus });
+    const n = 2 + Math.floor(Math.random() * 2);
+    for (let i = 0; i < n; i++) {
+      const f = CHIME[Math.floor(Math.random() * CHIME.length)];
+      tone(f, { dur: 1.2, vol: 0.012, attack: 0.02, when: i * (0.18 + Math.random() * 0.2), dest: ambBus });
+    }
     scheduleDrop();
-  }, 2500 + Math.random() * 4000);
+  }, 7000 + Math.random() * 7000);
 }

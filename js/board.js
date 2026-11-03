@@ -645,17 +645,39 @@ export class BoardView {
     return [this.ox + (c % this.L.w) * this.s, this.oy + Math.floor(c / this.L.w) * this.s];
   }
 
-  burst(c, color, n, speed, life = 0.6, up = 0) {
+  burst(c, color, n, speed, life = 0.6, up = 0, shape = null) {
     const [x, y] = this.cellXY(c);
     for (let k = 0; k < n; k++) {
       const a = Math.random() * Math.PI * 2, v = speed * (0.4 + Math.random() * 0.8);
-      this.parts.push({ x: x + this.s / 2, y: y + this.s / 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v - up, life: life * (0.6 + Math.random() * 0.6), col: color, r: this.s * (0.04 + Math.random() * 0.04) });
+      this.parts.push({ x: x + this.s / 2, y: y + this.s / 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v - up, life: life * (0.6 + Math.random() * 0.6), col: color, r: this.s * (0.04 + Math.random() * 0.04) * (shape === 'star' ? 1.8 : 1), shape });
+    }
+  }
+
+  // Kar tozu bulutu: Pofi'nin durduğu yerde, çarptığı yöne doğru (hafif, yukarı süzülür).
+  puff(c, dir) {
+    const [x, y] = this.cellXY(c), s = this.s;
+    const cx = x + s / 2 + [0, 1, 0, -1][dir] * s * 0.45, cy = y + s * 0.75 + [-1, 0, 1, 0][dir] * s * 0.3;
+    for (let k = 0; k < 10; k++) {
+      const a = Math.random() * Math.PI * 2, v = s * (0.5 + Math.random());
+      this.parts.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.5 - s * 0.6, life: 0.45, col: 'rgba(255,255,255,.95)', r: s * (0.05 + Math.random() * 0.05), g: 80 });
+    }
+  }
+
+  // Bölüm sonu konfeti yağmuru: tahtanın üstünden renkli kâğıtlar dökülür.
+  confetti() {
+    const cols = ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff', '#a46bff', '#ff9f43'];
+    for (let k = 0; k < 70; k++) {
+      this.parts.push({
+        x: this.ox + Math.random() * this.s * this.L.w, y: this.oy - 20 - Math.random() * this.s * 2,
+        vx: (Math.random() - 0.5) * this.s * 1.5, vy: Math.random() * this.s, life: 1.6 + Math.random() * 1.2,
+        col: cols[k % cols.length], r: this.s * (0.06 + Math.random() * 0.04), g: this.s * 3, shape: 'rect', rot: Math.random() * 6, spin: (Math.random() - 0.5) * 12,
+      });
     }
   }
 
   update(dt) {
     this.parts = this.parts.filter(p => (p.life -= dt) > 0);
-    for (const p of this.parts) { p.vy += 600 * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+    for (const p of this.parts) { p.vy += (p.g ?? 600) * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.spin) { p.rot += p.spin * dt; p.vx *= 1 - dt; } }
     this.hintT = Math.max(0, this.hintT - dt);
     this.squash = Math.max(0, this.squash - dt * 5);
     this.brace = Math.max(0, this.brace - dt * 2.2);
@@ -688,7 +710,7 @@ export class BoardView {
 
   fx(f) {
     const s = this.s;
-    if (f.k === 'fish') this.burst(f.cell, '#ffd166', 14, s * 3, 0.5, s * 2);
+    if (f.k === 'fish') { this.burst(f.cell, '#ffd166', 10, s * 3, 0.5, s * 2); this.burst(f.cell, '#fff3b0', 6, s * 2, 0.7, s * 2.5, 'star'); }
     else if (f.k === 'crack') this.burst(f.cell, '#bfe3ff', 12, s * 2.5, 0.5, s);
     else if (f.k === 'sink') this.burst(f.cell, '#8fd0ff', 18, s * 3.5, 0.7, s * 3);
     else if (f.k === 'lever') this.leverOn = !this.leverOn;
@@ -696,7 +718,7 @@ export class BoardView {
     else if (f.k === 'warp') { this.burst(f.cell, '#9fd3ff', 14, s * 2.4, 0.5, s); this.burst(f.to, '#9fd3ff', 14, s * 2.4, 0.5, s); }
     else if (f.k === 'melt') this.burst(f.cell, '#5aa0d8', 10, s * 1.6, 0.5, s * 0.5);
     else if (f.k === 'skip') this.burst(f.cell, '#c9d6e3', 6, s * 1.5, 0.35, s * 0.5);
-    else if (f.k === 'bump') { this.squash = 1; this.brace = 1; }
+    else if (f.k === 'bump') { this.squash = 1; this.brace = 1; if (this.anim) this.puff(this.anim.r.pPath[Math.min(this.anim.r.pPath.length - 1, Math.round(f.at))], this.anim.r.dir % 4); }
     else if (f.k === 'snow') this.squash = 1;
     else if (f.k === 'rock') this.burst(f.cell, f.broke ? '#b9a58f' : '#d6c5b0', f.broke ? 18 : 8, s * 2.5, 0.5, s);
     else if (f.k === 'icicle') this.burst(f.cell, '#cdeeff', 12, s * 2, 0.5, s * 0.5);
@@ -706,7 +728,7 @@ export class BoardView {
   }
 
   // Bölüm bitince Pofi zıplayıp sevinir.
-  celebrate() { this.cheer = 1.6; }
+  celebrate() { this.cheer = 1.6; this.confetti(); }
 
   // Animasyon sırasında henüz "olmamış" değişiklikler önceki durumdan çizilir.
   visTile(c, u) {
@@ -745,6 +767,20 @@ export class BoardView {
         cracked: L.t[c] === T.FRAGILE && (crackAt ? this.prev : this.S).dyn[L.dynIdx[c]] === 1,
         wind: (a ? this.prev : this.S).wind,
       });
+    }
+
+    // buz parıltısı: her buz karosu birkaç saniyede bir kısa süre ışıldar
+    for (let c = 0; c < L.w * L.h; c++) {
+      const ph = (time * 0.45 + ((c * 0.618) % 1) * 9) % 9;
+      if (ph > 0.5 || this.visTile(c, u) !== T.ICE) continue;
+      const [x, y] = this.cellXY(c), k = Math.sin((ph / 0.5) * Math.PI), r = s * 0.12 * k;
+      const gx = x + s * (0.25 + ((c * 0.37) % 0.5)), gy = y + s * (0.25 + ((c * 0.71) % 0.4));
+      ctx.fillStyle = `rgba(255,255,255,${0.9 * k})`;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy - r); ctx.lineTo(gx + r * 0.25, gy - r * 0.25); ctx.lineTo(gx + r, gy); ctx.lineTo(gx + r * 0.25, gy + r * 0.25);
+      ctx.lineTo(gx, gy + r); ctx.lineTo(gx - r * 0.25, gy + r * 0.25); ctx.lineTo(gx - r, gy); ctx.lineTo(gx - r * 0.25, gy - r * 0.25);
+      ctx.closePath();
+      ctx.fill();
     }
 
     // sallar: Pofi'yi taşırken onunla birlikte kayar
@@ -890,8 +926,21 @@ export class BoardView {
     for (const p of this.parts) {
       ctx.globalAlpha = Math.min(1, p.life * 2);
       ctx.fillStyle = p.col;
-      circle(ctx, p.x, p.y, p.r);
-      ctx.fill();
+      if (p.shape === 'rect') {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.scale(1, Math.cos(p.rot * 1.7)); // dönerken ince görünür
+        ctx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
+        ctx.restore();
+      } else if (p.shape === 'star') {
+        ctx.beginPath();
+        for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4 + p.life * 3, rr = k % 2 ? p.r * 0.35 : p.r; ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr); }
+        ctx.fill();
+      } else {
+        circle(ctx, p.x, p.y, p.r);
+        ctx.fill();
+      }
     }
     ctx.globalAlpha = 1;
 
