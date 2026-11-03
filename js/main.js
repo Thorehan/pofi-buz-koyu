@@ -524,7 +524,7 @@ function showResult(stars, base, flakes, notes) {
     ${head}
     <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= stars ? ' on' : ''}">★</span>`).join('')}</div>
     <p>${run.moves} hamle · en iyi çözüm ${run.def.min}</p>
-    ${stars < 3 && !run.daily ? `<div class="rs-retry"><span>3 yıldız için en fazla <b>${run.def.min}</b> hamle</span><button id="rsRetry" class="btn link">Tekrar dene</button></div>` : ''}
+    ${stars < 3 && !run.daily ? `<div class="rs-retry"><span>3 yıldız için en fazla <b>${run.def.min}</b> hamle</span><button id="rsRetry" class="btn secondary">↻ Tekrar dene</button></div>` : ''}
     ${resultProgress()}
     <div class="reward-row">
       <span class="pill big">${coinIco}<b id="rwCoins">${base}</b></span>
@@ -565,13 +565,21 @@ function showResult(stars, base, flakes, notes) {
     sfx.coin();
     countUp($('rwCoins'), base, total);
     const villageBtn = canAffordAny(P) ? '<button id="toVillage" class="btn secondary">Köye git<span class="dot"></span></button>' : '';
-    $('claimArea').innerHTML = `<div style="display:flex;flex-direction:column;gap:12px"><button id="toNext" class="btn green big">Devam</button>${villageBtn}</div>`;
+    const retry = stars < 3 && !run.daily ? `<button id="rsRetry2" class="btn secondary">↻ Tekrar oyna · ${3 - stars} yıldız daha kazan</button>` : '';
+    $('claimArea').innerHTML = `<div style="display:flex;flex-direction:column;gap:12px"><button id="toNext" class="btn green big">Devam</button>${retry}${villageBtn}</div>`;
     const leave = then => {
       closeOverlay();
       save(P);
       then();
     };
-    $('toNext').onclick = () => leave(() => (run.event !== null ? showScreen('event') : run.daily ? showScreen('home') : run.fromMap ? showScreen('map') : startLevel(P.level)));
+    $('toNext').onclick = () => leave(() => {
+      if (run.event !== null) return showScreen('event');
+      if (run.daily) return showScreen('home');
+      // eski leveli tekrar oynadıysa haritada kalır; ilk kez bitirdiyse sıradaki levelin penceresi kendiliğinden açılır
+      mapNext = !run.replay && run.master === null;
+      showScreen('map');
+    });
+    if ($('rsRetry2')) $('rsRetry2').onclick = () => leave(restartRun);
     if (villageBtn) $('toVillage').onclick = () => leave(() => showScreen('village'));
   };
 
@@ -1195,7 +1203,8 @@ function renderWardrobe() {
   document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === wardrobeCat));
   const items = WARDROBE[wardrobeCat];
   const owned = P.owned[wardrobeCat];
-  $('wardrobeList').innerHTML = items.map(it => {
+  const sorted = [...items.filter(it => owned.includes(it.id)), ...items.filter(it => !owned.includes(it.id))];
+  $('wardrobeList').innerHTML = sorted.map(it => {
     const on = P.outfit[wardrobeCat] === it.id, have = owned.includes(it.id), sel = wardrobeDraft === it.id;
     const label = on ? 'Giyili' : have ? 'Sahip' : it.reward ? `Köy Lv${it.reward}` : it.event ? 'Etkinlik' : `${coinIco}${discounted(P, it.price)}`;
     return `<button class="w-item${on ? ' on' : ''}${sel ? ' sel' : ''}${have ? '' : ' locked'}" data-w="${it.id}"><canvas></canvas><span>${it.name}</span><span class="price">${label}</span></button>`;
@@ -1696,12 +1705,18 @@ const regionOf = n => [...MAP_REGIONS].reverse().find(r => n >= r.from);
 let mapNodes = [];
 
 let mapHop = null; // { from, to, t0 } Pofi'nin bir önceki levelden yenisine zıplaması
+let mapNext = false; // level sonu Devam: harita açılınca (zıplama bitince) sıradaki levelin penceresi açılır
 
 function openMap() {
   renderMapHead();
   const sc = $('mapScroll'), cur = Math.min(P.level, mapMax());
   // yeni açılan levele zıplama (yalnızca birkaç level ilerlendiyse; ilk açılışta ya da çok ilerideyse doğrudan)
-  if (P.mapSeen && P.mapSeen < cur && cur - P.mapSeen <= 3) mapHop = { from: P.mapSeen, to: cur, t0: performance.now() + 450 };
+  if (P.mapSeen && P.mapSeen < cur && (cur - P.mapSeen <= 3 || mapNext)) mapHop = { from: Math.max(P.mapSeen, cur - 3), to: cur, t0: performance.now() + 450 };
+  if (mapNext) {
+    mapNext = false;
+    const wait = mapHop ? 450 + (mapHop.to - mapHop.from) * 550 + 250 : 500;
+    setTimeout(() => { if (screen === 'map' && $('overlay').classList.contains('hidden')) showLevelPopup(cur); }, wait);
+  }
   if (P.mapSeen !== cur) { P.mapSeen = cur; persist(); }
   requestAnimationFrame(() => {
     $('mapSpacer').style.height = `${Math.max(0, mapH() - sc.clientHeight)}px`;
@@ -1885,6 +1900,19 @@ function drawMap(t) {
         ctx.stroke();
       }
     }
+    if (!locked && !cur && st > 0 && st < 3) {
+      // eksik yıldız: tekrar oynanabilir olduğunu gösteren küçük rozet
+      ctx.fillStyle = '#ff8c42';
+      ctx.beginPath();
+      ctx.arc(x + R * 0.78, y - R * 0.78, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 12px Fredoka, sans-serif';
+      ctx.fillText('↻', x + R * 0.78, y - R * 0.78 + 1);
+    }
     if (INTRO[n] && n > 1) {
       ctx.font = '700 10px Fredoka, sans-serif';
       const label = 'YENİ: ' + INTRO[n].title, tw = ctx.measureText(label).width + 12, lx = x > W / 2 ? x - R - 6 - tw : x + R + 6;
@@ -1912,13 +1940,64 @@ function drawMap(t) {
       if (Math.abs(sc.scrollTop - want) > 2) sc.scrollTop += (want - sc.scrollTop) * 0.12;
     }
   }
-  if (max < 1000 && nHi === max) {
-    ctx.fillStyle = '#5a6f8c';
-    ctx.font = '600 14px Fredoka, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Devamı ilerledikçe açılır…', W / 2, nodeY(max) - 70);
-  }
+  if (max < 1000) drawBlizzard(ctx, W, t, top, H, max);
   ctx.restore();
+}
+
+// Haritanın kilitli devamı: P.level+4'ten sonra leveller kar tipisine gömülür, en üstte tipi tamamen kapatır.
+// Yolun soluk izi tipinin içinde sürer; tipi bulutları rüzgârla kayar, kar tanesi yağar.
+function drawBlizzard(ctx, W, t, top, H, max) {
+  const fogEnd = nodeY(max) - 30, fogStart = nodeY(Math.min(max, P.level + 4)) + 20;
+  if (fogStart < top - 40) return; // ekranda değil
+  const FOG = '236,244,252';
+  const g = ctx.createLinearGradient(0, fogStart, 0, fogEnd);
+  g.addColorStop(0, `rgba(${FOG},0)`);
+  g.addColorStop(0.6, `rgba(${FOG},.78)`);
+  g.addColorStop(1, `rgba(${FOG},.96)`);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, fogEnd, W, fogStart - fogEnd);
+  ctx.fillStyle = `rgba(${FOG},.96)`;
+  ctx.fillRect(0, top - 10, W, fogEnd - top + 10);
+  // yolun izi tipinin içinde yukarı sürer
+  ctx.strokeStyle = 'rgba(90,111,140,.22)';
+  ctx.lineWidth = 6;
+  ctx.setLineDash([2, 14]);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (let n = max - 3; n <= max + 3; n++) { const x = nodeX(n, W), y = nodeY(n); n === max - 3 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // kayan tipi bulutları (sınır boyunca)
+  for (let i = 0; i < 12; i++) {
+    const cx = (((i / 11) * (W + 120) + t * (10 + (i % 3) * 6)) % (W + 120)) - 60;
+    const cy = fogEnd + 30 + Math.sin(i * 1.9) * 40 + Math.sin(t * 0.8 + i) * 6;
+    ctx.fillStyle = `rgba(255,255,255,${0.55 + (i % 3) * 0.12})`;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 52 + (i % 4) * 10, 26 + (i % 3) * 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // rüzgârla eğik yağan kar
+  const y0 = Math.max(top - 10, fogEnd - 160), y1 = fogStart, hh = Math.max(1, y1 - y0);
+  ctx.fillStyle = 'rgba(150,176,204,.75)';
+  for (let i = 0; i < 46; i++) {
+    const sp = 1 + (i % 4) * 0.35;
+    const y = y0 + ((i * 53.7 + t * 70 * sp) % hh), x = ((i * 97.3 + t * 45 * sp + (y - y0) * 0.35) % (W + 20)) - 10;
+    ctx.beginPath();
+    ctx.arc(x, y, 1.6 + (i % 3) * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // kısa açıklama
+  const ty = Math.max(fogEnd - 40, top + 60);
+  if (ty < top + H) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#4a6283';
+    ctx.font = '700 15px Fredoka, sans-serif';
+    ctx.fillText('❄ Tipinin ardında yeni leveller var', W / 2, ty);
+    ctx.font = '600 12px Fredoka, sans-serif';
+    ctx.fillStyle = '#6b7f9c';
+    ctx.fillText('Level bitirdikçe kar açılır', W / 2, ty + 20);
+  }
 }
 
 function mapTap(e) {

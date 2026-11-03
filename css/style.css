@@ -505,7 +505,7 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .star:nth-child(2) { font-size: 58px; }
 @keyframes star-drop { 0% { transform: translateY(-60px) scale(2) rotate(-40deg); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; } }
 .rs-retry { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 14px; color: var(--ink-soft); }
-.rs-retry .btn { padding: 4px 6px; font-size: 14px; }
+.rs-retry .btn { padding: 6px 12px; font-size: 14px; }
 .rs-chest { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); }
 .rs-chest .progress { flex: 1; margin: 0; background: #eef2f7; }
 .rs-chest .progress div { height: 100%; background: #f5a623; border-radius: inherit; transition: width .9s cubic-bezier(.3, .8, .4, 1); }
