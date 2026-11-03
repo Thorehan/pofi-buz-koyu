@@ -152,6 +152,11 @@ export const VILLAGE_LEVELS = [
   { lv: 12, need: 60, visual: 'Uçan fenerler', reward: { hat: 'icecrown', coins: 2000 } },
 ];
 
+// Köy ismi: ilk isim ücretsiz, sonradan değiştirmek coin ister.
+export const VILLAGE_RENAME_PRICE = 1000;
+export const VILLAGE_NAME_MAX = 18;
+export const VILLAGE_NAME_IDEAS = ['Buzlu Koy', 'Kar Tepesi', 'Pofi Köyü', 'Ayaz Limanı', 'Kuzey Yuvası', 'Fok Burnu', 'Kakao Koyu', 'Işıltı Köyü'];
+
 // Süsler (GDD 12.3): köydeki sabit süs yerlerine yerleştirilir. Her yerleştirme ayrı satın alınır
 // (değiştirilen süs geri verilmez), böylece sürekli bir coin harcama yeri olur.
 export const DECOR_ITEMS = [

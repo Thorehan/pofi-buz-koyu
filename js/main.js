@@ -16,6 +16,7 @@ import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
+  VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -83,6 +84,7 @@ function showScreen(name) {
     village.resize();
     renderVillage();
     if (P.vlClaimed < villageLevel(P)) setTimeout(celebrateVillage, 500);
+    else if (!P.villageName && !nameAsked) { nameAsked = true; setTimeout(() => { if (screen === 'village' && !overlayOpen()) showVillageName(); }, 400); }
   }
   if (name === 'wardrobe') renderWardrobe();
   if (name === 'shop') renderShop();
@@ -95,6 +97,7 @@ function showScreen(name) {
   }
 }
 let dailyPopupShown = false;
+let nameAsked = false;
 
 let toastTimer = 0;
 function toast(msg, ms = 1800) {
@@ -669,15 +672,56 @@ function renderVillage() {
   renderCocoa();
 }
 
+// ---------- köy ismi ----------
+// İlk isim ücretsiz ve köy ekranına ilk girişte sorulur; sonradan değiştirmek VILLAGE_RENAME_PRICE coin.
+const cleanName = s => String(s).replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, VILLAGE_NAME_MAX);
+
+function showVillageName() {
+  const first = !P.villageName, price = first ? 0 : VILLAGE_RENAME_PRICE;
+  const idea = VILLAGE_NAME_IDEAS[Math.floor(Math.random() * VILLAGE_NAME_IDEAS.length)];
+  openOverlay(`
+    <span class="new-tag">${first ? 'YENİ KÖY' : 'İSİM DEĞİŞTİR'}</span>
+    <h2>${first ? 'Köyüne bir isim ver' : 'Köyün yeni ismi'}</h2>
+    <p>${first ? 'İsim köy ekranında ve paylaştığın köy bağlantısında görünür. İlk isim ücretsiz.' : `İsmi değiştirmek ${coinIco}${price} coin.`}</p>
+    <label class="field light"><input id="vnInput" maxlength="${VILLAGE_NAME_MAX}" placeholder="${esc(idea)}" value="${esc(P.villageName || '')}" autocomplete="off"></label>
+    <small id="vnWhy" class="breakdown">2-${VILLAGE_NAME_MAX} karakter</small>
+    <button id="vnSave" class="btn green" ${P.coins < price ? 'disabled' : ''}>${first ? 'Kaydet' : P.coins < price ? `Yetersiz coin · ${coinIco}${price}` : `Değiştir · ${coinIco}${price}`}</button>
+    <button id="vnClose" class="btn link">${first ? 'Sonra' : 'Vazgeç'}</button>`);
+  const input = $('vnInput');
+  const check = () => {
+    const name = cleanName(input.value || (first ? idea : ''));
+    const ok = name.length >= 2 && name !== P.villageName && P.coins >= price;
+    $('vnSave').disabled = !ok;
+    return ok ? name : null;
+  };
+  input.oninput = check;
+  check();
+  $('vnClose').onclick = closeOverlay;
+  $('vnSave').onclick = () => {
+    const name = check();
+    if (!name) return;
+    P.coins -= price;
+    P.villageName = name;
+    persist();
+    closeOverlay();
+    sfx.reward();
+    track('village_name', { first, price });
+    toast(first ? `Köyünün adı artık ${name}` : `Köyün yeni adı: ${name}`);
+    renderVillage();
+    updateWallet();
+  };
+}
+
 function renderVlCard() {
   const vl = villageLevel(P), next = nextVillageLevel(P), tot = totalLevels(P);
   const cur = VILLAGE_LEVELS.find(v => v.lv === vl);
   const prog = next ? (tot - cur.need) / (next.need - cur.need) : 1;
   const extra = next && unlockNames(next.lv) ? ` · yeni: ${unlockNames(next.lv)}` : '';
   $('vlCard').innerHTML = `
-    <div class="vl-top"><span class="vl-num">${vl}</span><div><b>Köy seviyesi ${vl}</b><small>Köy bonusu: tüm level coin'lerine +%${Math.round(villageBonusPct(P) * 100)}</small></div></div>
+    <div class="vl-top"><span class="vl-num">${vl}</span><div><b class="vname">${P.villageName ? `${esc(P.villageName)} · ` : ''}Köy seviyesi ${vl}<button id="vnEdit" class="vn-edit" aria-label="Köy ismini değiştir">✎</button></b><small>Köy bonusu: tüm level coin'lerine +%${Math.round(villageBonusPct(P) * 100)}</small></div></div>
     <div class="progress"><div style="width:${prog * 100}%;height:100%;background:var(--blue)"></div></div>
     <small>${next ? `Lv${next.lv} için ${next.need - tot} yapı seviyesi daha · ${next.visual}${extra}` : 'Köy tamamen kuruldu! Bütün yapılar en yüksek seviyede.'}</small>`;
+  $('vnEdit').onclick = showVillageName;
 }
 
 // ---------- yapı paneli: önce önizle, beğenirsen al ----------
@@ -1424,9 +1468,9 @@ function openVisit(code) {
       gift = `Ziyaret hediyesi: +${VISIT_GIFT.coins} coin`;
     }
   } else gift = 'Bu senin köyün 🙂';
-  $('visitTag').textContent = `${v.name} · Köy Lv${vl}`;
+  $('visitTag').textContent = `${v.vname || v.name} · Köy Lv${vl}`;
   $('visitInfo').innerHTML = `
-    <div class="vl-top"><span class="vl-num">${vl}</span><div><b>${esc(v.name)} adlı oyuncunun köyü</b><small>${built} yapı · toplam ${levels} yapı seviyesi</small></div></div>
+    <div class="vl-top"><span class="vl-num">${vl}</span><div><b>${v.vname ? `${esc(v.vname)} · ${esc(v.name)} adlı oyuncunun köyü` : `${esc(v.name)} adlı oyuncunun köyü`}</b><small>${built} yapı · toplam ${levels} yapı seviyesi</small></div></div>
     ${gift ? `<small>${esc(gift)}</small>` : ''}`;
   track('village_visit', { level: vl });
 }

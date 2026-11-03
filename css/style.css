@@ -420,6 +420,10 @@ html, body {
 .vl-top div { display: flex; flex-direction: column; line-height: 1.2; }
 .vl-top small, .vl-card > small { color: var(--ink-soft); font-size: 13px; }
 .vl-card .progress { margin-top: 0; }
+.vname { display: flex; align-items: center; gap: 6px; }
+.vn-edit { border: 0; background: #eef4fb; color: var(--ink-soft); border-radius: 8px; width: 26px; height: 22px; font-size: 13px; line-height: 1; cursor: pointer; flex: none; }
+.field.light { margin: 4px 0; }
+.field.light input { background: #f3f6fb; color: var(--ink, #1d2b44); border-color: #dbe3ee; text-align: center; }
 
 /* yapı kartları */
 .build-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
