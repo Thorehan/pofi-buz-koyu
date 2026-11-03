@@ -69,6 +69,15 @@ export const INTRO = {
   91: { title: 'Eriyen kar', text: 'Eriyen kar seni bir kez durdurur; üzerinden ayrılınca erir ve buza döner. Frenini dikkatli kullan!', icon: 'melt' },
   106: { title: 'Fok', text: 'Fok her hamlenden sonra bir adım yürür ve önü kapanınca geri döner. Seni de kasaları da durdurur; zamanlamayı iyi ayarla.', icon: 'seal' },
   121: { title: 'Sıralı balıklar', text: 'Numaralı balıkları sırayla topla. Sırası gelmeyen balığın üstünden geçersin ama onu alamazsın.', icon: 'order' },
+  140: { title: 'Basınç plakası', text: 'Yeşil kapılar, plakanın üstünde bir şey durduğu sürece açıktır. Plakaya bir kasa it ya da üstünde dur.', icon: 'plate' },
+  165: { title: 'Döner tabla', text: 'Döner tablanın üstünden geçen Pofi ve kasalar saat yönünde çeyrek tur döner ve yeni yönde kaymaya devam eder.', icon: 'turn' },
+  195: { title: 'Kırılgan kaya', text: 'Açık renkli kaya ilk çarpmada çatlar, ikinci çarpmada kırılıp buza döner. Yol açmak için iki kez çarp!', icon: 'fragile' },
+  230: { title: 'Sarkıt', text: 'Sarkıtın altından geçtiğinde arkandan düşer ve orası kayaya dönüşür. O yoldan bir kez geçebilirsin.', icon: 'icicle' },
+  270: { title: 'Kar topu', text: 'Kar topunu itince kayar; durduğu yerde dağılıp kar yığını olur. Kendi frenini istediğin yere kur!', icon: 'ball' },
+  315: { title: 'Anahtar balık', text: 'Altın anahtar balığı al; tahtadaki bütün buz kilitleri açılır.', icon: 'key' },
+  365: { title: 'Buz salı', text: 'Sala bin: sal seni suyun üstünde karşı kıyıya taşır ve orada kalır. Dönüş yolunu iyi düşün.', icon: 'raft' },
+  430: { title: 'Rüzgâr bayrağı', text: 'Her hamlenden sonra rüzgâr seni bayrağın gösterdiği yöne bir kare iter, sonra bayrak çeyrek tur döner.', icon: 'wind' },
+  500: { title: 'Pipi geldi!', text: 'Pofi artık yalnız değil. Bir penguene dokunarak seç, sonra kaydır. İki penguen birbirine fren olabilir; balıkları hangisi alırsa sayılır.', icon: 'pipi' },
   61: { title: 'Rampa', text: 'Rampaya kendi yönünde girersen 2 kare uçarsın; su ve kaya altında kalır. Ama dikkat: uçtuğun balığı alamazsın ve fazla uçmak seni bir adaya hapsedebilir!', icon: 'ramp' },
 };
 

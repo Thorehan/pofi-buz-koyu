@@ -234,9 +234,12 @@ function startLevel(n, daily = false) {
 
 function drawIntroIcon(cv, kind) {
   const ctx = fitCanvas(cv, 84, 84);
-  const tile = { snow: T.SNOW, water: T.WATER, crack: T.CRACK, lever: T.LEVER, arrow: T.RIGHT, ramp: T.RAMP_RIGHT, hole: T.HOLE, melt: T.MELT }[kind] ?? T.ICE;
-  paintTile(ctx, tile, 0, 0, 84, 0, {});
-  if (['fish', 'crate', 'seal', 'order'].includes(kind)) paintTile(ctx, kind, 0, 0, 84, 0, {});
+  const tile = {
+    snow: T.SNOW, water: T.WATER, crack: T.CRACK, lever: T.LEVER, arrow: T.RIGHT, ramp: T.RAMP_RIGHT, hole: T.HOLE, melt: T.MELT,
+    plate: T.PLATE, turn: T.TURN, fragile: T.FRAGILE, icicle: T.ICICLE, wind: T.FLAG,
+  }[kind] ?? T.ICE;
+  paintTile(ctx, tile, 0, 0, 84, 0, { pressed: kind === 'plate' });
+  if (['fish', 'crate', 'seal', 'order', 'ball', 'raft', 'key', 'pipi'].includes(kind)) paintTile(ctx, kind, 0, 0, 84, 0, {});
 }
 
 function renderHud() {
@@ -299,7 +302,16 @@ board.onFx = f => {
   else if (f.k === 'seal' && !sealSounded) { sealSounded = true; setTimeout(() => sfx.seal(), 60); }
   else if (f.k === 'skip') sfx.skip();
   else if (f.k === 'bump' || f.k === 'snow') sfx.bump();
+  else if (f.k === 'rock') f.broke ? sfx.crack() : sfx.bump();
+  else if (f.k === 'icicle') sfx.crack();
+  else if (f.k === 'drift') sfx.land();
+  else if (f.k === 'key') sfx.fish(6);
+  else if (f.k === 'raft') sfx.splash();
+  else if (f.k === 'plate') sfx.lever();
+  else if (f.k === 'turn') sfx.rotate();
+  else if (f.k === 'gust') sfx.slide(1);
 };
+board.onSelect = () => sfx.ui();
 
 board.onSettled = () => {
   if (!run || run.finished) return;
@@ -524,6 +536,7 @@ function useHint() {
     track('booster_used', { type: 'hint', level: run.def.n });
     board.hintDir = sol[0];
     board.hintT = 2.6;
+    if (run.st.q >= 0) board.sel = sol[0] >= 4 ? 1 : 0;
     run.hintLock = true;
     sfx.fish(5);
     renderHud();

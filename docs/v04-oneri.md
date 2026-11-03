@@ -86,15 +86,15 @@ Mevcut 11 mekanik yerinde kalıyor; aralıkları zaten başta sık, sonra seyrek
 | 91 | Eriyen kar (bir kez durdurur) | var |
 | 106 | Fok (yolu keser) | var |
 | 121 | Sıralı balık | var |
-| **140** | **Basınç plakası:** üstünde kasa ya da Pofi varken kapı açık kalır | yeni |
-| **165** | **Döner tabla:** üstünden geçeni 90° çevirir | yeni |
-| **195** | **Kırılgan kaya:** ilk çarpmada çatlar, ikincide kırılıp buz olur | yeni |
-| **230** | **Sarkıt:** altından geçince düşer ve kayaya dönüşür (tek geçiş) | yeni |
-| **270** | **Kar topu:** itilince duvara kadar kayar; suya ya da deliğe düşerse kapatır | yeni |
-| **315** | **Anahtar balık ve buz kilidi:** anahtarı alınca kilitli buz kapısı açılır | yeni |
-| **365** | **Buz salı:** suyun üstünde Pofi'yi taşır, karşı kıyıda durur | yeni |
-| **430** | **Rüzgâr bayrağı:** her hamlede bir yön döner, rüzgâr Pofi'yi bir kare iter | yeni |
-| **500** | **Pipi (ikinci penguen):** iki penguen sırayla yönetilir; biri diğerine durak olur | yeni |
+| **140** | **Basınç plakası:** üstünde kasa ya da Pofi varken kapı açık kalır | yapıldı |
+| **165** | **Döner tabla:** üstünden geçeni 90° çevirir | yapıldı |
+| **195** | **Kırılgan kaya:** ilk çarpmada çatlar, ikincide kırılıp buz olur | yapıldı |
+| **230** | **Sarkıt:** altından geçince düşer ve kayaya dönüşür (tek geçiş) | yapıldı |
+| **270** | **Kar topu:** itilince kayar, durduğu yerde dağılıp kar yığını olur (yeni bir fren); suya düşerse köprü olur | yapıldı |
+| **315** | **Anahtar balık ve buz kilidi:** anahtarı alınca kilitli buz kapısı açılır | yapıldı |
+| **365** | **Buz salı:** suyun üstünde Pofi'yi taşır, karşı kıyıda durur | yapıldı |
+| **430** | **Rüzgâr bayrağı:** her hamlede bir yön döner, rüzgâr Pofi'yi bir kare iter | yapıldı |
+| **500** | **Pipi (ikinci penguen):** penguene dokunarak seçilir, sonra kaydırılır; biri diğerine fren olur | yapıldı |
 
 Sıra basitten karmaşığa. 500 sonrasında yeni mekanik yok; mekanik birleşimleri ve grid büyümesi zorluğu taşıyor.
 
