@@ -31,7 +31,8 @@ function defaults() {
     achClaimed: {}, // { başarımId: alınmış kademe sayısı }
     starChests: 0, // açılmış yıldız sandığı sayısı
     quests: null, // { day, list: [{ type, need, have, claimed }], chest }
-    mapSeen: 0, // haritada en son gösterilen level (Pofi'nin yeni levele zıplaması için)
+    mapSeen: 0,
+    masters: {}, // { bölgeIndeksi: en iyi yıldız } — usta levelleri // haritada en son gösterilen level (Pofi'nin yeni levele zıplaması için)
     hintLadder: null, // { day, n } — bugün coin'le alınan tek ipucu sayısı (fiyat merdiveni)
     villageName: null, // köy ekranına ilk girişte sorulur; ilk isim ücretsiz, değiştirmek VILLAGE_RENAME_PRICE
     task: null, // { day, type, need, have, giver, claimed } — köylünün günlük işi

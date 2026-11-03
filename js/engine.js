@@ -625,6 +625,8 @@ function essential(fn, rows, m) {
 // Oyuncunun henüz açmadığı mekanikler zorlanmaz.
 function applyRule(spec, rule, n) {
   if (!rule) return spec;
+  // tier: zorluk sınıfını zorlar (usta levelleri çok zor ve hamle sınırlı olur)
+  if (rule.tier && spec.tier !== rule.tier) { spec.tier = rule.tier; spec.lo += 2; spec.hi += 2; }
   let mech = spec.mech.slice();
   const forced = (rule.mech || []).filter(m => unlockOf(m) <= n);
   if (forced.length) {

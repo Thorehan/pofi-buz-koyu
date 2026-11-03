@@ -363,6 +363,13 @@ export const MAP_REGIONS = [
   { from: 651, name: 'Çam Ormanı', top: '#b7e2cc', bottom: '#e6f6ec', deco: ['pine', 'pine', 'bench'] },
   { from: 851, name: 'Kristal Zirve', top: '#d6c8f2', bottom: '#f1ecfb', deco: ['statue', 'aurora', 'snowballs'] },
 ];
+// Usta levelleri: her bölgenin son levelinden sonra haritada bir buz kalesi. Bölgenin mekaniklerinden karışık,
+// çok zor ve hamle sınırlı özel bir level. after: kalenin açıldığı level, n: zorluk (üretici bu levelin ayarlarını kullanır).
+export const MASTER_LEVELS = [
+  { after: 100, n: 112 }, { after: 250, n: 262 }, { after: 450, n: 462 }, { after: 650, n: 662 }, { after: 850, n: 862 }, { after: 1000, n: 1000 },
+];
+export const MASTER_REWARD = { coins: 1000, hints: 3, flakes: 10 }; // ilk bitirişte, rozetle birlikte
+
 // Başarımlar: her birinin kademeleri var; kademe ödülü ACH_REWARD[kademe]. stat, main.js'te hesaplanır.
 export const ACHIEVEMENTS = [
   { id: 'levels', name: 'Kâşif', icon: '🧭', stat: 'levels', text: n => `${n} level bitir`, tiers: [10, 50, 100, 250, 500, 1000] },
@@ -376,6 +383,7 @@ export const ACHIEVEMENTS = [
   { id: 'events', name: 'Şenlik ruhu', icon: '🎉', stat: 'events', text: n => `${n} haftalık etkinliğin ödül yolunu bitir`, tiers: [1, 4, 12, 26, 52] },
   { id: 'wardrobe', name: 'Moda ikonu', icon: '🎩', stat: 'outfits', text: n => `${n} kıyafete sahip ol`, tiers: [3, 8, 15, 25] },
   { id: 'villagers', name: 'Kalabalık köy', icon: '🐧', stat: 'villagers', text: n => `${n} köylü davet et`, tiers: [1, 3, 6] },
+  { id: 'masters', name: 'Usta', icon: '🏰', stat: 'masters', text: n => `${n} usta levelini bitir`, tiers: [1, 3, 6] },
 ];
 // Günlük görevler: her gün tarihe göre 3 görev seçilir (herkeste aynı gün aynı görevler). needs: o özellik açık değilse seçilmez.
 export const DAILY_QUESTS = [

@@ -12,12 +12,12 @@ import {
 } from './meta.js';
 import { drawRoom, drawItemIcon } from './interior.js';
 import { drawPofi, drawFish, roundRect } from './draw.js';
-import { loadArt, setArtEnabled, accentHue, onArtLoad } from './art.js';
+import { loadArt, setArtEnabled, accentHue, onArtLoad, art } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
-  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST,
+  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -213,10 +213,12 @@ function levelDef(n) {
   return n <= LEVELS.length ? LEVELS[n - 1] : generateLevel(n);
 }
 
-function startLevel(n, daily = false, evk = null) {
+function startLevel(n, daily = false, evk = null, master = null) {
   let def;
   const ev = evk !== null ? ensureEvent(P) : null;
-  if (ev) {
+  if (master !== null) {
+    def = masterDef(master);
+  } else if (ev) {
     def = eventLevelDef(ev, evk, P.event.base);
   } else if (daily) {
     const key = dateKey();
@@ -229,16 +231,21 @@ function startLevel(n, daily = false, evk = null) {
   const limit = def.limit ? def.limit + buff(P, 'hardMoves') : null;
   run = {
     def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintLock: false,
-    event: ev ? evk : null, reverse: !!ev?.rule?.reverse, fromMap: playFromMap,
+    event: ev ? evk : null, reverse: !!ev?.rule?.reverse, fromMap: playFromMap || master !== null, master,
   };
   playFromMap = false;
   showScreen('game');
   board.dark = !!ev?.rule?.dark;
   board.outfit = P.outfit;
   board.setLevel(L, S);
-  board.tutorialDir = !daily && !ev && def.n <= 2 ? solve(L, S)?.[0] ?? -1 : -1;
+  board.tutorialDir = !daily && !ev && master === null && def.n <= 2 ? solve(L, S)?.[0] ?? -1 : -1;
   renderHud();
   renderGoal();
+  if (master !== null) {
+    track('master_start', { region: master });
+    toast(`Usta leveli · ${run.limit} hamle hakkın var`, 2400);
+    return;
+  }
   if (ev) {
     track('event_level_start', { event: ev.id, k: evk });
     const tips = [ev.rule?.reverse && 'Kontroller ters: sağa kaydırırsan sola gider!', ev.rule?.dark && 'Karanlık: yalnızca penguenin çevresi görünür.', run.limit && `${run.limit} hamle hakkın var`].filter(Boolean);
@@ -268,7 +275,7 @@ function drawIntroIcon(cv, kind) {
 }
 
 function renderHud() {
-  $('hudLevel').textContent = run.event !== null ? `Etkinlik ${run.event + 1}/${EVENT_LEVELS}` : run.daily ? 'Günlük bulmaca' : `Level ${run.def.n}`;
+  $('hudLevel').textContent = run.master !== null ? `Usta · ${MAP_REGIONS[run.master].name}` : run.event !== null ? `Etkinlik ${run.event + 1}/${EVENT_LEVELS}` : run.daily ? 'Günlük bulmaca' : `Level ${run.def.n}`;
   const tl = run.daily ? '' : TIER_LABEL[run.def.tier];
   $('hudTier').textContent = tl;
   $('hudTier').className = `tier ${run.def.tier}${tl ? '' : ' hidden'}`;
@@ -400,6 +407,12 @@ function win() {
     P.ach.streak = Math.max(P.ach.streak || 0, P.dailyPuzzleStreak);
     raw = Math.round(dailyPuzzleCoins(P.dailyPuzzleStreak) * (1 + buff(P, 'puzzlePct')));
     track('daily_puzzle_complete', { streak: P.dailyPuzzleStreak, moves: run.moves });
+  } else if (run.master !== null) {
+    raw = ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
+    run.masterFirst = !P.masters[run.master];
+    P.masters[run.master] = Math.max(P.masters[run.master] || 0, stars);
+    if (run.masterFirst) giveReward(MASTER_REWARD);
+    track('master_complete', { region: run.master, stars, first: run.masterFirst });
   } else if (run.event !== null) {
     raw = ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
     track('event_level_complete', { k: run.event, moves: run.moves, stars });
@@ -454,6 +467,7 @@ function win() {
     !run.replay && stars === 3 && '3 yıldız +1 ❄',
     !run.replay && lucky && 'Şanslı ağ +1 ❄',
     run.replay && (run.gained ? `Tekrar · yeni yıldız +${run.gained}` : 'Tekrar · yeni yıldız yok'),
+    run.masterFirst && `🏰 ${MAP_REGIONS[run.master].name} rozeti · +${MASTER_REWARD.coins} coin, +${MASTER_REWARD.hints} ipucu, +${MASTER_REWARD.flakes} ❄`,
     `${ev.token} +${evPts} jeton`,
   ].filter(Boolean).join(' · ');
   setTimeout(() => showResult(stars, base, flakes, notes), 1100);
@@ -473,7 +487,7 @@ function multAt(zones, pos) {
 
 // Sonuç ekranında: yıldız sandığının dolması ve hazır başarım rozeti (normal levellerde).
 function resultProgress() {
-  if (run.daily || run.event !== null) return run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : '';
+  if (run.daily || run.event !== null || run.master !== null) return run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : '';
   const tot = totalStars(), base = P.starChests * STAR_CHEST.every, gain = run.starGain || 0;
   const ready = Math.floor(tot / STAR_CHEST.every) > P.starChests;
   const from = Math.max(0, Math.min(100, ((tot - gain - base) / STAR_CHEST.every) * 100)), to = ready ? 100 : ((tot - base) / STAR_CHEST.every) * 100;
@@ -1679,8 +1693,25 @@ function drawMap(t) {
       ctx.fillText(r.name, sx, sy);
     }
   }
-  // level düğmeleri
+  // usta kaleleri: bölgenin son levelinin yanında, yola noktalı bir patikayla bağlı
   mapNodes = [];
+  MASTER_LEVELS.forEach((m, i) => {
+    if (m.after < nLo - 2 || m.after > nHi + 2 || m.after > max) return;
+    const ax = nodeX(m.after, W), ay = nodeY(m.after), cx = ax > W / 2 ? W * 0.2 : W * 0.8, cy = ay + MAP.G * 0.2; // bölge tabelasının altında
+    const open = !!P.stars[m.after], best = P.masters[i] || 0;
+    ctx.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx.lineWidth = 5;
+    ctx.setLineDash([2, 9]);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(cx, cy + 14);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawCastle(ctx, cx, cy, i, open, best, t);
+    mapNodes.push([{ master: i }, cx, cy - 12, 34]);
+  });
+
+  // level düğmeleri
   for (let n = nLo; n <= nHi; n++) {
     const x = nodeX(n, W), y = nodeY(n), st = P.stars[n] || 0, cur = n === Math.min(P.level, max), locked = n > P.level;
     const R = cur ? MAP.R + 4 : MAP.R;
@@ -1759,10 +1790,125 @@ function mapTap(e) {
   const sc = $('mapScroll'), r = sc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top + sc.scrollTop;
   const hit = mapNodes.find(([, nx, ny, R]) => Math.hypot(x - nx, y - ny) < R + 12);
   if (!hit) return;
+  if (typeof hit[0] === 'object') { sfx.ui(); showMasterPopup(hit[0].master); return; }
   const n = hit[0];
   if (n > P.level) { toast(`Önce Level ${P.level}'i bitir`); return; }
   sfx.ui();
   showLevelPopup(n);
+}
+
+// ---------- usta levelleri ----------
+const masterCache = new Map();
+// data/masters.json önceden üretilir (tools/gen-masters.mjs); yoksa oyunda üretilir.
+let MASTERS = [];
+fetch('data/masters.json', { cache: 'no-cache' }).then(r => r.json()).then(j => { MASTERS = j; }).catch(() => { /* anlık üretilir */ });
+function masterDef(i) {
+  if (!masterCache.has(i)) {
+    const m = MASTER_LEVELS[i];
+    const d = MASTERS[i] || generateLevel(m.n, { seed: 770000 + i * 131, rule: { tier: 'veryhard', fish: 1 }, maxAttempts: 4000 });
+    masterCache.set(i, { ...d, n: 20000 + i });
+  }
+  return masterCache.get(i);
+}
+
+// Kale: görseli varsa map_castle, yoksa kodla çizilmiş buz kalesi; bitirildiyse bayrak ve yıldızlar.
+function drawCastle(ctx, x, y, i, open, best, t) {
+  const im = art('map_castle'), col = ['#4f8fc8', '#3d7bd9', '#8f5bd6', '#2a9d8f', '#3fae5a', '#b36bd6'][i];
+  ctx.save();
+  if (!open) ctx.globalAlpha = 0.55;
+  ctx.fillStyle = 'rgba(29,53,87,.18)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 22, 34, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (im) ctx.drawImage(im, x - 40, y + 22 - 236 * (80 / 256), 80, 80);
+  else {
+    ctx.fillStyle = '#e8f4fd';
+    ctx.strokeStyle = '#2a5d8f';
+    ctx.lineWidth = 2.5;
+    roundRect(ctx, x - 26, y - 14, 52, 36, 5);
+    ctx.fill();
+    ctx.stroke();
+    for (const dx of [-26, 14]) {
+      roundRect(ctx, x + dx, y - 30, 12, 52, 3);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.fillStyle = col;
+    roundRect(ctx, x - 7, y + 4, 14, 18, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#8e5a2b';
+    ctx.beginPath();
+    ctx.moveTo(x, y - 14);
+    ctx.lineTo(x, y - 40);
+    ctx.stroke();
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 40);
+    ctx.lineTo(x + 16 + Math.sin(t * 5) * 2, y - 35);
+    ctx.lineTo(x, y - 30);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  if (!open) {
+    ctx.font = '18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔒', x, y + 4);
+  } else if (best) {
+    for (let k = 0; k < 3; k++) {
+      starPath(ctx, x + (k - 1) * 15, y + 34, 7.5);
+      ctx.fillStyle = k < best ? '#ffd166' : 'rgba(255,255,255,.85)';
+      ctx.fill();
+      ctx.strokeStyle = k < best ? '#d99a12' : '#a9bcd0';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  } else {
+    ctx.fillStyle = '#ff8c42';
+    roundRect(ctx, x - 22, y + 26, 44, 16, 8);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 10px Fredoka, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('USTA', x, y + 34.5);
+  }
+  ctx.restore();
+}
+
+function showMasterPopup(i) {
+  const m = MASTER_LEVELS[i], reg = MAP_REGIONS[i], open = !!P.stars[m.after], best = P.masters[i] || 0;
+  openOverlay(`
+    <span class="new-tag">USTA LEVELİ</span>
+    <h2>${reg.name} Ustası</h2>
+    <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= best ? ' on' : ''}">★</span>`).join('')}</div>
+    <p>${open ? 'Bölgenin mekaniklerinden karışık, hamle sınırlı, çok zor bir bulmaca.' : `Level ${m.after}'i bitirince açılır.`}</p>
+    <small class="breakdown">${best ? 'Rozetin alındı · daha çok yıldız için tekrar oynayabilirsin' : `İlk bitirişte: rozet + ${rewardHtml(MASTER_REWARD)}`}</small>
+    ${open ? `<button id="msPlay" class="btn primary big">${best ? 'Tekrar oyna' : 'Meydan oku'}</button>` : ''}
+    <button id="msClose" class="btn link">Kapat</button>`);
+  $('msClose').onclick = closeOverlay;
+  if ($('msPlay')) $('msPlay').onclick = () => { closeOverlay(); startLevel(0, false, null, i); };
+}
+
+// Rozetler: Görevler ekranında 6 bölge madalyası
+function renderBadges() {
+  $('badgeBox').innerHTML = MAP_REGIONS.map((r, i) => `<div class="bdg${P.masters[i] ? '' : ' off'}"><canvas data-bdg="${i}"></canvas><span>${r.name}</span></div>`).join('');
+  $('badgeBox').querySelectorAll('[data-bdg]').forEach(cv => {
+    const i = +cv.dataset.bdg, ctx = fitCanvas(cv, 44, 44), im = art(`badge_master_${i + 1}`);
+    if (im) { ctx.drawImage(im, 0, 0, 44, 44); return; }
+    const col = ['#4f8fc8', '#3d7bd9', '#8f5bd6', '#2a9d8f', '#3fae5a', '#b36bd6'][i];
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.arc(22, 22, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(22, 22, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🏰', 22, 23);
+  });
 }
 
 function showLevelPopup(n) {
@@ -1853,6 +1999,7 @@ function achStat(stat) {
     case 'vl': return villageLevel(P);
     case 'outfits': return P.owned.hat.length + P.owned.scarf.length - 2;
     case 'villagers': return P.villagers.length;
+    case 'masters': return Object.keys(P.masters).length;
     default: return P.ach[stat] || 0;
   }
 }
@@ -1866,6 +2013,7 @@ const achTotal = () => ACHIEVEMENTS.reduce((n, a) => n + a.tiers.length, 0);
 
 function renderAch() {
   renderQuests();
+  renderBadges();
   const ready = achClaimable();
   $('achSummary').innerHTML = `${achDone()}/${achTotal()} kademe · ${ready} ödül hazır${ready > 1 ? ' <button id="achAll" class="btn green">Hepsini al</button>' : ''}`;
   if ($('achAll')) $('achAll').onclick = () => {
@@ -2203,7 +2351,7 @@ $('btnBack').onclick = () => {
   showScreen(back);
 };
 $('btnUndo').onclick = undo;
-const restartRun = () => { playFromMap = !!run.fromMap; startLevel(run.def.n, run.daily, run.event); };
+const restartRun = () => { playFromMap = !!run.fromMap; startLevel(run.def.n, run.daily, run.event, run.master); };
 $('btnRestart').onclick = () => { if (run && !overlayOpen()) { restartRun(); nudgeHint(); } };
 $('btnHint').onclick = useHint;
 $('btnCocoa').onclick = () => sellCocoa(1);
