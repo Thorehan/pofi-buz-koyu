@@ -27,6 +27,7 @@ function defaults() {
     villagers: [], // davet edilen köylüler (Bobo hariç)
     decor: {}, // { süsYeriId: süsId }
     decorOwned: [], // etkinlik dükkânından alınan hatıra süsleri
+    hintLadder: null, // { day, n } — bugün coin'le alınan tek ipucu sayısı (fiyat merdiveni)
     villageName: null, // köy ekranına ilk girişte sorulur; ilk isim ücretsiz, değiştirmek VILLAGE_RENAME_PRICE
     task: null, // { day, type, need, have, giver, claimed } — köylünün günlük işi
     settings: { haptics: true, sfx: true, ambient: true },

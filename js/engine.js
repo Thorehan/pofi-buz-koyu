@@ -296,14 +296,16 @@ function updatePlates(L, n, fx, at) {
   n.pg = pg;
 }
 
-// Foklar her geçerli hamleden sonra kendi hatlarında 1 adım ilerler; önü kapalıysa döner.
+// Foklar her geçerli hamleden sonra kendi hatlarında 1 adım ilerler; önü kapalıysa geri döner.
+// İki yön de kapalıysa (köşeye sıkıştıysa) dik yönleri dener ve o yönde yürümeye devam eder.
 const sealWalk = t => t === T.ICE || t === T.SNOW || t === T.MELT || t === T.CRACK || t === T.BRIDGE || isArrow(t) || t === T.PLATE || t === T.TURN;
 function moveSeals(L, n, fx, at) {
   const moves = [];
   n.seals = n.seals.map((s, i) => {
     const from = s >> 2;
-    let d = s & 3;
-    for (let tries = 0; tries < 2; tries++) {
+    const d0 = s & 3;
+    for (const turn of [0, 2, 1, 3]) {
+      const d = (d0 + turn) % 4;
       const nx = neighbor(L, from, d);
       const free = nx >= 0 && nx !== n.p && !occ(n, nx) && n.rafts.indexOf(nx) < 0
         && !n.seals.some((o, j) => j !== i && o >> 2 === nx) && sealWalk(tileOf(L, n, nx));
@@ -312,10 +314,9 @@ function moveSeals(L, n, fx, at) {
         fx.push({ k: 'seal', at });
         return nx * 4 + d;
       }
-      d = (d + 2) % 4;
     }
-    moves.push({ from, to: from, d });
-    return from * 4 + d;
+    moves.push({ from, to: from, d: d0 });
+    return from * 4 + d0;
   });
   return moves;
 }

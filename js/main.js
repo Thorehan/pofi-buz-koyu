@@ -85,6 +85,7 @@ function showScreen(name) {
   if (name !== 'village' && sheet) closeSheet();
   if (name !== 'village' && village.decorMode) exitDecor();
   if (name !== 'wardrobe') wardrobeDraft = null;
+  if (name !== 'game') $('hintBar').classList.add('hidden');
   if (name === 'village') {
     village.resize();
     renderVillage();
@@ -224,7 +225,7 @@ function startLevel(n, daily = false, evk = null) {
   // Kardan adam: hamle limitli levellerde ek hamle.
   const limit = def.limit ? def.limit + buff(P, 'hardMoves') : null;
   run = {
-    def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintBuys: 0, hintLock: false,
+    def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintLock: false,
     event: ev ? evk : null, reverse: !!ev?.rule?.reverse,
   };
   showScreen('game');
@@ -295,6 +296,7 @@ const flip = d => (d & 4) | (((d & 3) + 2) % 4);
 board.onMove = dir => {
   if (!run || run.finished || overlayOpen()) return;
   if (run.reverse) dir = flip(dir);
+  $('hintBar').classList.add('hidden');
   const r = simulate(run.L, run.st, dir);
   if (!r) { sfx.bump(); return; }
   run.history.push(run.st);
@@ -549,7 +551,22 @@ function fail() {
 
 // İpucu bir hamleyi gösterir; oyuncu hamle yapana (ya da geri alana) kadar düğme kilitli kalır,
 // böylece arka arkaya basıp ipucu harcanmaz.
-const hintPrice = () => ECON.hintBase * 2 ** run.hintBuys;
+// Tek ipucu fiyatı gün içinde her alımda ikiye katlanır (mağaza ve oyun içi aynı merdiven).
+// Oyun içinden almak hintGameMult kat pahalı; 5'li paket her zaman daha uygun.
+const ladderN = () => (P.hintLadder?.day === dateKey() ? P.hintLadder.n : 0);
+const hintPrice = (inGame = false) => Math.round(ECON.hintBase * 2 ** ladderN() * (inGame ? ECON.hintGameMult : 1));
+const packPrice = (inGame = false) => (inGame ? ECON.hintGamePack5 : ECON.hintPack5Cost);
+function buyHints(n, cost, where) {
+  if (P.coins < cost) return false;
+  P.coins -= cost;
+  P.hints += n;
+  if (n === 1) P.hintLadder = { day: dateKey(), n: ladderN() + 1 };
+  persist();
+  track('hint_buy', { n, cost, where });
+  sfx.coin();
+  updateWallet();
+  return true;
+}
 
 function useHint() {
   if (!run || run.finished || board.anim || run.hintLock) return;
@@ -562,39 +579,39 @@ function useHint() {
     run.hintsUsed++;
     persist();
     track('booster_used', { type: 'hint', level: run.def.n });
-    board.hintDir = run.reverse ? flip(sol[0]) : sol[0]; // ters kontrolde kaydırılacak yönü gösterir
-    board.hintT = 2.6;
+    // gölge penguen hamleyi önden gösterir; ok, ters kontrolde kaydırılacak yönü gösterir
+    board.showHint(run.reverse ? flip(sol[0]) : sol[0], simulate(run.L, run.st, sol[0]));
     if (run.st.q >= 0) board.sel = sol[0] >= 4 ? 1 : 0;
     run.hintLock = true;
     sfx.fish(5);
     renderHud();
     return;
   }
-  const price = hintPrice();
-  openOverlay(`
-    <h2>İpucu</h2>
-    <p>İpucun kalmadı. İpucu, bulunduğun yerden en kısa çözümün sıradaki hamlesini gösterir.</p>
-    <button id="hAd" class="btn primary big ad">+${ECON.hintAdAmount} ipucu</button>
-    <button id="hCoin" class="btn secondary">+1 ipucu · ${price} coin</button>
-    <small class="breakdown">Bu levelde her alımda fiyat iki katına çıkar.</small>
-    <button id="hClose" class="btn link">Vazgeç</button>`);
-  $('hCoin').disabled = P.coins < price;
-  $('hAd').onclick = async () => {
-    const ok = await showRewarded('free_hint');
-    closeOverlay();
-    if (ok) { P.hints += ECON.hintAdAmount; toast(`+${ECON.hintAdAmount} ipucu`); useHint(); }
+  showHintBar();
+}
+
+// İpucu kalmayınca: araç çubuğunun üstünde mini satın alma çubuğu (reklam +10, tek, 5'li).
+function showHintBar() {
+  const one = hintPrice(true), five = packPrice(true), bar = $('hintBar');
+  bar.innerHTML = `
+    <div class="hb-head"><b>İpucun kalmadı</b><button class="hb-x" aria-label="Kapat">×</button></div>
+    <div class="hb-row">
+      <button id="hbAd" class="btn primary ad">+${ECON.hintAdAmount}</button>
+      <button id="hbOne" class="btn secondary" ${P.coins < one ? 'disabled' : ''}>1 · ${coinIco}${one}</button>
+      <button id="hbFive" class="btn green" ${P.coins < five ? 'disabled' : ''}>5'li · ${coinIco}${five}</button>
+    </div>
+    <small>Tek ipucu her alımda ikiye katlanır · mağazada daha ucuz</small>`;
+  bar.classList.remove('hidden');
+  const done = n => { bar.classList.add('hidden'); toast(`+${n} ipucu`); useHint(); };
+  bar.querySelector('.hb-x').onclick = () => bar.classList.add('hidden');
+  $('hbAd').onclick = async () => {
+    if (!(await showRewarded('free_hint'))) return;
+    P.hints += ECON.hintAdAmount;
+    persist();
+    done(ECON.hintAdAmount);
   };
-  $('hCoin').onclick = () => {
-    if (P.coins < price) return;
-    P.coins -= price;
-    P.hints++;
-    run.hintBuys++;
-    track('hint_buy', { level: run.def.n, price });
-    closeOverlay();
-    updateWallet();
-    useHint();
-  };
-  $('hClose').onclick = closeOverlay;
+  $('hbOne').onclick = () => { if (buyHints(1, one, 'game')) done(1); };
+  $('hbFive').onclick = () => { if (buyHints(5, five, 'game')) done(5); };
 }
 
 // ---------- köy ----------
@@ -1362,8 +1379,8 @@ function renderShop() {
       `<button id="btnFreeCoin" class="btn primary ad" ${left <= 0 ? 'disabled' : ''}>+${ECON.freeCoinAmount}</button>`),
     '<h3>İpucu</h3>',
     item(['hint', '×1'], 'İpucu', 'Sıradaki doğru hamleyi gösterir',
-      `<button class="btn green" data-hints="1" data-cost="${ECON.hintBase}" ${P.coins < ECON.hintBase ? 'disabled' : ''}>${coinIco}${ECON.hintBase}</button>`),
-    item(['hint', '×5'], 'İpucu paketi', `Tek tek almaktan ${ECON.hintBase * 5 - ECON.hintPack5Cost} coin ucuz`,
+      `<button class="btn green" data-hints="1" data-cost="${hintPrice()}" ${P.coins < hintPrice() ? 'disabled' : ''}>${coinIco}${hintPrice()}</button>`),
+    item(['hint', '×5'], 'İpucu paketi', `Her zaman ${ECON.hintPack5Cost} coin · tek fiyat bugün aldıkça ikiye katlanır`,
       `<button class="btn green" data-hints="5" data-cost="${ECON.hintPack5Cost}" ${P.coins < ECON.hintPack5Cost ? 'disabled' : ''}>${coinIco}${ECON.hintPack5Cost}</button>`),
     '<h3>Paketler</h3>',
     item(['noads', 'VIP'], 'Reklamsız ödüller', 'Ödüllü reklam izlemeden x2 ödülleri ve çarpanı doğrudan al',
@@ -1386,12 +1403,7 @@ function renderShop() {
   $('shopList').querySelectorAll('[data-hints]').forEach(b => {
     b.onclick = () => {
       const cost = +b.dataset.cost, n = +b.dataset.hints;
-      if (P.coins < cost) return;
-      P.coins -= cost;
-      P.hints += n;
-      persist();
-      track('shop_purchase', { item: `hint_${n}`, cost });
-      sfx.coin();
+      if (!buyHints(n, cost, 'shop')) return;
       toast(`+${n} ipucu · toplam ${P.hints}`);
       renderShop();
     };

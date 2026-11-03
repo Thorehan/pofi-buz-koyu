@@ -537,7 +537,7 @@ export class BoardView {
     this.onSettled = null;
     this.active = false;
     this.hintDir = -1;
-    this.hintT = 0;
+    this.ghost = null; // ipucu gölgesi
     this.tutorialDir = -1;
     this.parts = [];
     this.outfit = {};
@@ -593,6 +593,7 @@ export class BoardView {
     this.anim = null;
     this.parts = [];
     this.hintDir = -1;
+    this.ghost = null;
     this.queued = -1;
     this.face = 1;
     this.squash = 0;
@@ -608,6 +609,7 @@ export class BoardView {
   setState(S) {
     this.S = S;
     this.anim = null;
+    this.clearHint(); // geri alınınca eski ipucu geçersiz
     this.queued = -1;
     this.leverOn = S.gates !== this.S0gates;
   }
@@ -620,7 +622,7 @@ export class BoardView {
     // Foklar Pofi ve kasa durduktan sonra 2 adımlık sürede yürür.
     const sealEnd = result.seals.some(m => m.from !== m.to) ? 2 : 0;
     this.anim = { t: 0, r: result, moveEnd: Math.max(pEnd, cEnd), end: Math.max(pEnd, cEnd) + sealEnd, fired: new Set() };
-    this.hintDir = -1;
+    this.clearHint(true);
     this.tutorialDir = -1;
     if (result.dir % 4 === 1) this.face = 1;
     if (result.dir % 4 === 3) this.face = -1;
@@ -663,6 +665,60 @@ export class BoardView {
     }
   }
 
+  // ---------- ipucu: gölge penguen ----------
+  // İpucu, yapılacak hamleyi yarı saydam bir "gölge" Pofi ile önden gösterir; oyuncu hamle yapana kadar
+  // tekrar eder. dir: oyuncunun kaydıracağı yön (ters kontrolde çevrilmiş), r: hamlenin simülasyonu.
+  showHint(dir, r) {
+    this.hintDir = dir;
+    this.ghost = { r, t: 0 };
+  }
+
+  // puff: gölge bulunduğu yerde kar tozu olup dağılır (hamle yapıldığında)
+  clearHint(puff = false) {
+    const g = this.ghost;
+    if (puff && g?.pos) {
+      for (let k = 0; k < 16; k++) {
+        const a = Math.random() * Math.PI * 2, v = this.s * (0.8 + Math.random() * 1.4);
+        this.parts.push({ x: g.pos[0], y: g.pos[1], vx: Math.cos(a) * v, vy: Math.sin(a) * v - this.s * 0.6, life: 0.5, col: k % 3 ? 'rgba(255,255,255,.95)' : '#bfe3ff', r: this.s * (0.05 + Math.random() * 0.06), g: 60 });
+      }
+    }
+    this.ghost = null;
+    this.hintDir = -1;
+  }
+
+  drawGhost(time) {
+    const { ctx, s } = this, g = this.ghost, path = g.r.pPath, last = path.length - 1;
+    const step = STEP * 2.2, travel = last * step, period = travel + 1.1;
+    const k = g.t % period;
+    // yolun izi: soluk noktalar
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    for (let i = 1; i <= last; i++) {
+      const [x, y] = this.cellXY(path[i]);
+      if (Math.abs(x - this.cellXY(path[i - 1])[0]) + Math.abs(y - this.cellXY(path[i - 1])[1]) > s * 1.5) continue;
+      circle(ctx, x + s / 2, y + s / 2, s * 0.06);
+      ctx.fill();
+    }
+    const u = Math.min(k / step, last);
+    const [px, py] = this.lerpPath(path, u);
+    const outfit = g.r.who ? PIPI_OUTFIT : this.outfit, size = s * (g.r.who ? 0.78 : 0.88);
+    g.pos = [px + s / 2, py + s / 2];
+    const fadeIn = Math.min(1, k / 0.25), fadeOut = k > period - 0.3 ? (period - k) / 0.3 : 1;
+    ctx.save();
+    ctx.globalAlpha = 0.62 * fadeIn * fadeOut;
+    if (k < travel) {
+      const i = Math.min(Math.floor(u), last - 1);
+      const [x0, y0] = this.cellXY(path[i]), [x1, y1] = this.cellXY(path[i + 1]);
+      const dx = Math.sign(x1 - x0), dy = Math.sign(y1 - y0);
+      const belly = dx > 0 ? 1 : dx < 0 ? 3 : dy > 0 ? 2 : 0;
+      ctx.translate(px + s / 2, py + s * 0.9);
+      drawPofiBelly(ctx, 0, 0, size, belly, { outfit, t: time });
+    } else {
+      ctx.translate(px + s / 2, py + s * 0.9);
+      drawPofi(ctx, 0, 0, size, { outfit, wave: Math.sin(time * 6) * 0.4 });
+    }
+    ctx.restore();
+  }
+
   // Bölüm sonu konfeti yağmuru: tahtanın üstünden renkli kâğıtlar dökülür.
   confetti() {
     const cols = ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff', '#a46bff', '#ff9f43'];
@@ -678,7 +734,7 @@ export class BoardView {
   update(dt) {
     this.parts = this.parts.filter(p => (p.life -= dt) > 0);
     for (const p of this.parts) { p.vy += (p.g ?? 600) * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.spin) { p.rot += p.spin * dt; p.vx *= 1 - dt; } }
-    this.hintT = Math.max(0, this.hintT - dt);
+    if (this.ghost && !this.anim) this.ghost.t += dt;
     this.squash = Math.max(0, this.squash - dt * 5);
     this.brace = Math.max(0, this.brace - dt * 2.2);
     this.cheer = Math.max(0, this.cheer - dt);
@@ -974,7 +1030,8 @@ export class BoardView {
       ctx.restore();
     }
 
-    if (!a && this.hintT > 0 && this.hintDir >= 0) this.arrow(this.hintDir, time, '#ffcc33');
+    if (!a && this.ghost) this.drawGhost(time);
+    if (!a && this.ghost && this.hintDir >= 0) this.arrow(this.hintDir, time, '#ffcc33');
     if (!a && this.tutorialDir >= 0) this.hand(this.tutorialDir, time);
   }
 

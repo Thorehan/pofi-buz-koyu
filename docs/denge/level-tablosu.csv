@@ -104,21 +104,21 @@
 103;5×7;35;orta;6;;9;1;12;eriyen kar;kar freni ×1, eritme ×1;;22;40
 104;5×7;35;kolay;4;;6;2;8;eriyen kar;kar freni ×2, eritme ×2;;81;35
 105;5×7;35;orta;6;;9;3;4;eriyen kar;kar freni ×1, eritme ×1;;68;40
-106;5×7;35;kolay;4;;6;2;4;kar, fok;fok ×1;Fok;369;35
-107;5×7;35;kolay;4;;6;3;6;kar, fok;fok ×1;;800;35
-108;5×7;35;kolay;6;;9;3;1;kar, fok;fok ×2;;582;35
-109;5×7;35;orta;7;;11;3;9;kar, fok;kar freni ×2, fok ×1;;65;40
-110;5×7;35;çok zor;6;9;9;2;4;kar, fok;kar freni ×1, fok ×1;;370;65
-111;5×7;35;kolay;7;;11;3;6;kar, fok;kar freni ×2, fok ×2;;1333;35
-112;5×7;35;kolay;6;;9;2;4;kar, fok;kar freni ×2, fok ×1;;233;35
-113;5×7;35;orta;8;;12;3;5;kar, fok;kar freni ×1, fok ×1;;1136;40
-114;5×7;35;kolay;6;;9;1;6;kar, fok;fok ×2;;84;35
+106;5×7;35;kolay;5;;8;2;5;kar, fok;kar freni ×1, fok ×1;Fok;1685;35
+107;5×7;35;kolay;4;;6;3;6;kar, fok;fok ×1;;3122;35
+108;5×7;35;kolay;6;;9;3;1;kar, fok;fok ×2;;3226;35
+109;5×7;35;orta;7;;11;3;9;kar, fok;kar freni ×2, fok ×1;;815;40
+110;5×7;35;çok zor;6;9;9;2;4;kar, fok;kar freni ×1, fok ×1;;3303;65
+111;5×7;35;kolay;7;;11;3;6;kar, fok;kar freni ×2, fok ×2;;5000;35
+112;5×7;35;kolay;6;;9;2;4;kar, fok;kar freni ×2, fok ×1;;3105;35
+113;5×7;35;orta;8;;12;3;5;kar, fok;kar freni ×1, fok ×1;;4479;40
+114;5×7;35;kolay;6;;9;1;6;kar, fok;fok ×2;;1000;35
 115;5×7;35;orta;6;;9;3;2;kar, fok;fok ×1;;607;40
-116;5×7;35;orta;4;;6;2;6;kar, fok;fok ×1;;534;40
-117;5×7;35;zor;5;8;8;1;8;kar, fok;kar freni ×1;;105;50
-118;5×7;35;kolay;7;;11;3;5;kar, fok;kar freni ×1, fok ×1;;754;35
+116;5×7;35;orta;4;;6;2;6;kar, fok;fok ×1;;1173;40
+117;5×7;35;zor;5;8;8;1;8;kar, fok;kar freni ×1;;1807;50
+118;5×7;35;kolay;7;;11;3;5;kar, fok;kar freni ×1, fok ×1;;5000;35
 119;5×7;35;orta;4;;6;1;10;kar, fok;;;69;40
-120;5×7;35;çok zor;6;9;9;1;7;kar, fok;;;221;65
+120;5×7;35;çok zor;6;9;9;1;7;kar, fok;;;1301;65
 121;5×7;35;kolay;5;;8;3;2;kar, sıralı balık;sıra ×3;Sıralı balıklar;20;35
 122;5×7;35;kolay;4;;6;3;6;kar, sıralı balık;sıra ×3;;29;35
 123;5×7;35;orta;8;;12;3;10;kar, sıralı balık;kar freni ×2, sıra ×3;;45;40
@@ -147,7 +147,7 @@
 146;6×7;42;orta;8;;12;2;6;kar, basınç plakası, kasa;itme ×1, plaka ×2;;170;40
 147;6×7;42;zor;6;9;9;1;9;kar, basınç plakası, kasa;itme ×1, plaka ×2;;62;50
 148;6×7;42;kolay;6;;9;2;9;kar, ok, fok, kol-kapı;kol ×1, ok ×1;;96;35
-149;6×7;42;orta;5;;8;3;2;kar, kasa, fok, buz deliği;itme ×1, fok ×1;;5002;40
+149;6×7;42;orta;5;;8;3;2;kar, kasa, fok, buz deliği;itme ×1, fok ×1;;5000;40
 150;6×7;42;çok zor;9;13;14;1;6;kar, kol-kapı, kasa;itme ×1, kol ×2, kar freni ×1;;80;65
 151;6×7;42;kolay;6;;9;2;2;kar, basınç plakası, sıralı balık, kasa;itme ×2, kar freni ×2, sıra ×2, plaka ×2;;972;35
 152;6×7;42;kolay;6;;9;3;5;kar, basınç plakası, sıralı balık, eriyen kar, kasa;sıra ×3, plaka ×1;;2193;35
@@ -155,11 +155,11 @@
 154;6×7;42;kolay;6;;9;2;1;kar, rampa, buz deliği;uçuş ×1;;51;35
 155;6×7;42;orta;6;;9;2;7;kar, buz deliği, kol-kapı, sıralı balık;kol ×1, kar freni ×1, ışınlanma ×2, sıra ×2;;110;40
 156;6×7;42;orta;4;;6;1;8;kar, ok, kol-kapı, rampa;kol ×2, ok ×1, kar freni ×1;;97;40
-157;6×7;42;zor;7;11;11;2;7;kar, eriyen kar, çatlak buz, fok;kar freni ×3, eritme ×2, fok ×2;;5002;50
+157;6×7;42;zor;7;11;11;2;7;kar, eriyen kar, çatlak buz, fok;kar freni ×3, eritme ×2, fok ×2;;5000;50
 158;6×7;42;kolay;5;;8;1;12;kar, kol-kapı, kasa;kol ×1;;153;35
 159;6×7;42;orta;6;;9;1;3;kar, basınç plakası, ok, kasa;ok ×1, kar freni ×1, plaka ×2;;42;40
 160;6×7;42;çok zor;6;9;9;1;5;kar, kasa, rampa, fok;itme ×2;;5000;65
-161;6×7;42;kolay;7;;11;2;10;kar, basınç plakası, sıralı balık, fok, kasa;sıra ×2, plaka ×4;;555;35
+161;6×7;42;kolay;7;;11;2;10;kar, basınç plakası, sıralı balık, fok, kasa;sıra ×2, plaka ×4;;1884;35
 162;6×7;42;kolay;5;;8;2;5;kar, basınç plakası, eriyen kar, kasa;itme ×1, plaka ×2;;1770;35
 163;6×7;42;orta;8;;12;1;6;kar, ok, kol-kapı, rampa;ok ×1, kar freni ×1, uçuş ×1;;24;40
 164;6×7;42;kolay;6;;9;3;8;kar, basınç plakası, kasa;itme ×1, plaka ×2;;70;35
@@ -177,7 +177,7 @@
 176;6×7;42;orta;5;;8;2;4;kar, kasa, basınç plakası;itme ×1, kar freni ×1;;52;40
 177;6×7;42;zor;7;11;11;2;5;kar, döner tabla, basınç plakası, sıralı balık, kasa;sıra ×2, dönüş ×5;;196;50
 178;6×7;42;kolay;7;;11;2;5;kar, sıralı balık, buz deliği, su, kasa;itme ×1, kar freni ×1, ışınlanma ×1, sıra ×2;;1300;35
-179;6×8;48;orta;8;;12;1;11;kar, kol-kapı, fok;kol ×2, kar freni ×1;;53;40
+179;6×8;48;orta;8;;12;1;11;kar, kol-kapı, fok;kol ×2, kar freni ×1;;107;40
 180;6×8;48;çok zor;8;11;12;2;11;kar, rampa, ok;kar freni ×2, uçuş ×1;;36;65
 181;6×8;48;kolay;4;;6;2;3;kar, eriyen kar, kol-kapı, sıralı balık;kar freni ×1, eritme ×1, sıra ×2;;798;35
 182;6×8;48;kolay;5;;8;2;5;kar, rampa, su, kasa;itme ×1, uçuş ×1;;349;35
@@ -188,7 +188,7 @@
 187;6×8;48;zor;9;14;14;2;9;kar, kol-kapı, döner tabla;kol ×1, kar freni ×3;;139;50
 188;6×8;48;kolay;4;;6;2;12;kar, ok, kol-kapı, kasa;ok ×1;;110;35
 189;6×8;48;orta;6;;9;2;5;kar, buz deliği, ok;ok ×1, ışınlanma ×1;;42;40
-190;6×8;48;çok zor;7;10;11;2;9;kar, çatlak buz, fok;kırma ×1, kar freni ×1;;828;65
+190;6×8;48;çok zor;7;10;11;2;9;kar, çatlak buz, fok;kırma ×1, kar freni ×1;;5003;65
 191;6×8;48;kolay;7;;11;2;4;kar, sıralı balık, rampa, döner tabla;kar freni ×2, sıra ×2;;38;35
 192;6×8;48;kolay;6;;9;1;10;kar, döner tabla, eriyen kar, kasa;kar freni ×2, eritme ×2, dönüş ×1;;82;35
 193;6×8;48;orta;4;;6;2;8;kar, döner tabla, basınç plakası, kasa;kar freni ×1, dönüş ×2;;515;40
@@ -208,12 +208,12 @@
 207;6×8;48;zor;7;11;11;3;7;kar, su, çatlak buz, kasa;itme ×1, köprü ×1;;156;50
 208;6×8;48;kolay;6;;9;3;7;kar, çatlak buz, basınç plakası, kasa;itme ×1, kırma ×1, kar freni ×1;;1547;35
 209;6×8;48;orta;6;;9;2;8;kar, ok, kol-kapı, rampa;ok ×1, kar freni ×1;;146;40
-210;6×8;48;çok zor;9;13;14;3;8;kar, basınç plakası, fok, kasa;itme ×1, kar freni ×1, fok ×1, plaka ×1;;5002;65
+210;6×8;48;çok zor;9;13;14;3;8;kar, basınç plakası, fok, kasa;itme ×1, kar freni ×1, fok ×1, plaka ×1;;5001;65
 211;6×8;48;kolay;5;;8;2;8;kar, çatlak buz, ok;kırma ×1, kar freni ×1;;309;35
-212;6×8;48;kolay;7;;11;3;7;kar, fok, sıralı balık, buz deliği;ışınlanma ×2, fok ×3, sıra ×3;;1046;35
+212;6×8;48;kolay;7;;11;3;7;kar, fok, sıralı balık, buz deliği;ışınlanma ×2, fok ×3, sıra ×3;;1434;35
 213;6×8;48;orta;6;;9;1;9;kar, kırılgan kaya, su, kasa;itme ×2, kaya kırma ×2;;402;40
 214;6×8;48;kolay;6;;9;2;9;kar, kırılgan kaya, su, kasa;kaya kırma ×2;;189;35
-215;6×8;48;orta;5;;8;2;5;kar, sıralı balık, fok, çatlak buz;kırma ×1, kar freni ×1, sıra ×2;;2963;40
+215;6×8;48;orta;5;;8;2;5;kar, sıralı balık, fok, çatlak buz;kırma ×1, kar freni ×1, sıra ×2;;5000;40
 216;6×8;48;orta;8;;12;3;13;kar, buz deliği, döner tabla;kar freni ×1, ışınlanma ×3;;61;40
 217;6×8;48;zor;8;12;12;3;8;kar, kırılgan kaya, çatlak buz;kırma ×1, kaya kırma ×3;;5003;50
 218;6×8;48;kolay;7;;11;2;6;kar, kırılgan kaya, kol-kapı;kar freni ×2, kaya kırma ×2;;1323;35
@@ -238,19 +238,19 @@
 237;6×8;48;zor;8;12;12;3;2;kar, sarkıt;kar freni ×1, sarkıt ×2;;422;50
 238;6×8;48;kolay;7;;11;2;9;kar, kırılgan kaya, su, döner tabla, kasa;kaya kırma ×2;;495;35
 239;6×8;48;orta;6;;9;2;10;kar, eriyen kar, döner tabla, su, kasa;itme ×1, kar freni ×2, eritme ×1;;799;40
-240;6×8;48;çok zor;9;13;14;1;11;kar, sarkıt, çatlak buz, fok;kırma ×1, kar freni ×2, fok ×1, sarkıt ×1;;1077;65
+240;6×8;48;çok zor;7;10;11;1;11;kar, sarkıt, çatlak buz, fok;kırma ×1, kar freni ×2, fok ×2, sarkıt ×1;;5001;65
 241;6×8;48;kolay;7;;11;3;7;kar, sarkıt, kol-kapı, buz deliği;ışınlanma ×3, sarkıt ×1;;32;35
 242;6×8;48;kolay;7;;11;2;12;kar, sarkıt, kol-kapı, buz deliği;kar freni ×1, ışınlanma ×1, sarkıt ×2;;169;35
 243;6×8;48;orta;7;;11;3;7;kar, eriyen kar, sarkıt, buz deliği;kar freni ×2, ışınlanma ×2, eritme ×2;;424;40
 244;6×8;48;kolay;7;;11;1;9;kar, sarkıt, eriyen kar;kar freni ×3, eritme ×1, sarkıt ×2;;242;35
-245;7×8;56;orta;4;;6;1;12;kar, kol-kapı, fok;kol ×1;;525;40
+245;7×8;56;orta;4;;6;1;12;kar, kol-kapı, fok;kol ×1;;5000;40
 246;7×8;56;orta;8;;12;2;6;kar, çatlak buz, ok;kırma ×1, ok ×3, kar freni ×2;;260;40
 247;7×8;56;zor;8;12;12;3;7;kar, sarkıt, kol-kapı;sarkıt ×2;;420;50
 248;7×8;56;kolay;5;;8;3;8;kar, sarkıt, su, kasa;sarkıt ×2;;67;35
 249;7×8;56;orta;4;;6;1;13;kar, döner tabla, basınç plakası, kasa;kar freni ×1, dönüş ×1;;52;40
 250;7×8;56;çok zor;9;13;14;2;9;kar, döner tabla, eriyen kar;kar freni ×4, eritme ×2, dönüş ×1;;70;65
 251;7×8;56;kolay;8;;12;3;7;kar, çatlak buz, rampa, kasa;kırma ×2, kar freni ×2, uçuş ×1;;1683;35
-252;7×8;56;kolay;6;;9;1;13;kar, su, fok, kasa;itme ×1, köprü ×1;;1133;35
+252;7×8;56;kolay;6;;9;1;11;kar, su, fok, kasa;itme ×1, köprü ×1, fok ×2;;5001;35
 253;7×8;56;orta;7;;11;2;5;kar, sarkıt, rampa;kar freni ×2, sarkıt ×2;;116;40
 254;7×8;56;kolay;7;;11;3;8;kar, kırılgan kaya, kasa;kar freni ×1, kaya kırma ×2;;5000;35
 255;7×8;56;orta;8;;12;3;7;kar, kasa, döner tabla, su;itme ×1, kar freni ×1, dönüş ×2;;160;40
@@ -279,7 +279,7 @@
 278;7×8;56;kolay;7;;11;1;10;kar, kırılgan kaya, eriyen kar, rampa;kar freni ×1, kaya kırma ×3;;616;35
 279;7×8;56;orta;8;;12;3;8;kar, kar topu, kırılgan kaya, rampa;itme ×1, kar freni ×3, kar yığını ×1;;2500;40
 280;7×8;56;çok zor;8;11;12;2;10;kar, rampa, sarkıt;uçuş ×1;;447;65
-281;7×8;56;kolay;6;;9;2;7;kar, kar topu, fok;itme ×1, kar freni ×2, kar yığını ×1;;346;35
+281;7×8;56;kolay;6;;9;2;7;kar, kar topu, fok;itme ×1, kar freni ×2, kar yığını ×1;;2269;35
 282;7×8;56;kolay;5;;8;3;9;kar, kar topu, kırılgan kaya, sarkıt;itme ×1, kar freni ×1, sarkıt ×2, kar yığını ×1;;5000;35
 283;7×8;56;orta;9;;14;3;5;kar, basınç plakası, kol-kapı, kasa;itme ×2, kar freni ×3, plaka ×2;;404;40
 284;7×8;56;kolay;6;;9;3;10;kar, döner tabla, eriyen kar;kar freni ×2, eritme ×1, dönüş ×2;;1153;35
@@ -293,7 +293,7 @@
 292;7×8;56;kolay;5;;8;3;7;kar, kar topu, kol-kapı, sıralı balık;itme ×1, kol ×1, kar freni ×2, sıra ×3, kar yığını ×1;;670;35
 293;7×8;56;orta;7;;11;2;10;kar, kasa, basınç plakası;itme ×1;;210;40
 294;7×8;56;kolay;6;;9;2;13;kar, sıralı balık, döner tabla;kar freni ×1, sıra ×2, dönüş ×1;;58;35
-295;7×8;56;orta;7;;11;2;7;kar, buz deliği, fok;kar freni ×1, ışınlanma ×1, fok ×1;;1016;40
+295;7×8;56;orta;7;;11;2;7;kar, buz deliği, fok;kar freni ×1, ışınlanma ×1, fok ×1;;3090;40
 296;7×8;56;orta;5;;8;1;10;kar, sarkıt, basınç plakası, kasa;plaka ×1, sarkıt ×2;;105;40
 297;7×8;56;zor;6;9;9;1;13;kar, kar topu, kasa;itme ×1, kar freni ×2, kar yığını ×1;;291;50
 298;7×8;56;kolay;5;;8;3;5;kar, buz deliği, kol-kapı, eriyen kar;kol ×1, ışınlanma ×1;;92;35
@@ -310,7 +310,7 @@
 309;7×8;56;orta;8;;12;3;13;kar, buz deliği, fok;ışınlanma ×1;;52;40
 310;7×8;56;çok zor;9;13;14;3;11;kar, kol-kapı, kar topu, döner tabla;itme ×1, kol ×1, kar freni ×2, dönüş ×1, kar yığını ×1;;340;65
 311;7×8;56;kolay;7;;11;1;9;kar, kar topu, eriyen kar, kol-kapı;itme ×1, kar freni ×3, eritme ×2, kar yığını ×1;;174;35
-312;7×8;56;kolay;5;;8;2;13;kar, fok, kasa;kar freni ×1, fok ×1;;433;35
+312;7×8;56;kolay;5;;8;2;13;kar, fok, kasa;kar freni ×1, fok ×1;;5000;35
 313;7×8;56;orta;9;;14;3;11;kar, ok, basınç plakası, çatlak buz, kasa;itme ×1, kırma ×3, ok ×1;;107;40
 314;7×8;56;kolay;5;;8;1;9;kar, kar topu, ok, çatlak buz;itme ×1, ok ×1, kar freni ×1, kar yığını ×1;;488;35
 315;7×8;56;kolay;6;;9;3;10;kar, anahtar-kilit;kar freni ×1, anahtar ×1;Anahtar balık;143;35
@@ -324,7 +324,7 @@
 323;7×8;56;orta;5;;8;2;7;kar, kırılgan kaya, anahtar-kilit, kasa;kar freni ×1, kaya kırma ×2;;3713;40
 324;7×8;56;kolay;6;;9;2;8;kar, basınç plakası, sıralı balık, çatlak buz, kasa;kırma ×1, kar freni ×1, sıra ×2, plaka ×2;;938;35
 325;7×8;56;orta;8;;12;3;8;kar, kol-kapı, sıralı balık;kol ×1, sıra ×3;;36;40
-326;7×8;56;orta;7;;11;2;15;kar, fok, kasa;itme ×1, fok ×2;;291;40
+326;7×8;56;orta;7;;11;2;15;kar, fok, kasa;itme ×2, fok ×1;;5000;40
 327;7×8;56;zor;9;14;14;3;6;kar, sıralı balık, kasa, kırılgan kaya;itme ×2, sıra ×3, kaya kırma ×2;;1512;50
 328;7×8;56;kolay;7;;11;2;5;kar, anahtar-kilit, eriyen kar;kar freni ×3, eritme ×2, anahtar ×1;;262;35
 329;7×8;56;orta;5;;8;3;12;kar, eriyen kar, fok;kar freni ×2, eritme ×1, fok ×1;;5000;40
@@ -347,7 +347,7 @@
 346;7×9;63;orta;8;;12;2;15;kar, kasa, kol-kapı;itme ×1, kar freni ×1;;1092;40
 347;7×9;63;zor;8;12;12;3;12;kar, kırılgan kaya, fok, sıralı balık;fok ×1, sıra ×3, kaya kırma ×2;;3198;50
 348;7×9;63;kolay;8;;12;1;10;kar, anahtar-kilit, sarkıt;sarkıt ×3, anahtar ×1;;147;35
-349;7×9;63;orta;7;;11;2;17;kar, kar topu, fok, basınç plakası, kasa;itme ×1, kar freni ×1, fok ×1, kar yığını ×1;;1288;40
+349;7×9;63;orta;7;;11;2;17;kar, kar topu, fok, basınç plakası, kasa;itme ×1, kar freni ×1, fok ×1, kar yığını ×1;;5001;40
 350;7×9;63;çok zor;7;10;11;1;14;kar, kar topu, kol-kapı;itme ×1, kar freni ×2, kar yığını ×1;;64;65
 351;7×9;63;kolay;5;;8;3;15;kar, sarkıt, kırılgan kaya, kasa;kaya kırma ×1, sarkıt ×2;;254;35
 352;7×9;63;kolay;5;;8;1;10;kar, anahtar-kilit, eriyen kar, kol-kapı;anahtar ×1;;315;35
@@ -361,7 +361,7 @@
 360;7×9;63;çok zor;8;11;12;1;13;kar, anahtar-kilit, çatlak buz, döner tabla;kırma ×1, kar freni ×1, anahtar ×1;;119;65
 361;7×9;63;kolay;5;;8;2;13;kar, anahtar-kilit, su, kasa;kar freni ×1, anahtar ×1;;253;35
 362;7×9;63;kolay;8;;12;2;17;kar, döner tabla, kar topu;kar freni ×1, dönüş ×2;;40;35
-363;7×9;63;orta;9;;14;3;6;kar, basınç plakası, fok, kasa;kar freni ×3, fok ×1, plaka ×2;;1109;40
+363;7×9;63;orta;9;;14;3;6;kar, basınç plakası, fok, kasa;kar freni ×3, fok ×1, plaka ×2;;5000;40
 364;7×9;63;kolay;8;;12;3;9;kar, anahtar-kilit, eriyen kar, kol-kapı;kar freni ×1, anahtar ×1;;571;35
 365;7×9;63;kolay;6;;9;3;13;kar, sal;kar freni ×1, sal ×1;Buz salı;75;35
 366;7×9;63;kolay;6;;9;1;12;kar, sal;kar freni ×2, sal ×1;;94;35
@@ -371,14 +371,14 @@
 370;7×9;63;çok zor;8;11;12;3;9;kar, sal;kar freni ×1, sal ×1;;422;65
 371;7×9;63;kolay;5;;8;2;19;kar, sal;sal ×1;;51;35
 372;7×9;63;kolay;8;;12;2;15;kar, sal;sal ×1;;77;35
-373;7×9;63;orta;7;;11;1;14;kar, sal, fok, buz deliği;kar freni ×2, fok ×1, sal ×1;;387;40
+373;7×9;63;orta;7;;11;1;14;kar, sal, fok, buz deliği;kar freni ×2, fok ×1, sal ×1;;4443;40
 374;7×9;63;kolay;7;;11;3;7;kar, basınç plakası, anahtar-kilit, ok, kasa;plaka ×2;;436;35
-375;7×9;63;orta;7;;11;3;7;kar, sal, fok, eriyen kar;kar freni ×3, eritme ×1, sal ×1;;4980;40
+375;7×9;63;orta;8;;12;3;7;kar, sal, fok, eriyen kar;kar freni ×2, eritme ×1, fok ×1, sal ×1;;5000;40
 376;7×9;63;orta;6;;9;2;20;kar, sal, kırılgan kaya;sal ×1;;436;40
 377;7×9;63;zor;7;11;11;3;12;kar, sal, kırılgan kaya;kar freni ×2, sal ×1;;368;50
 378;7×9;63;kolay;5;;8;2;4;kar, çatlak buz, buz deliği, kar topu;kırma ×1, kar freni ×1, ışınlanma ×1;;2237;35
 379;7×9;63;orta;7;;11;2;7;kar, sal, kar topu;kar freni ×2, sal ×1;;117;40
-380;7×9;63;çok zor;10;14;15;3;8;kar, sarkıt, fok, eriyen kar;kar freni ×2, sarkıt ×2;;1290;65
+380;7×9;63;çok zor;10;14;15;3;9;kar, sarkıt, fok, eriyen kar;kar freni ×2, eritme ×1, sarkıt ×1;;1109;65
 381;7×9;63;kolay;7;;11;3;11;kar, döner tabla, çatlak buz;kırma ×1, dönüş ×1;;834;35
 382;7×9;63;kolay;8;;12;2;13;kar, sarkıt, sıralı balık;sıra ×2, sarkıt ×2;;124;35
 383;7×9;63;orta;6;;9;3;11;kar, sal, buz deliği;kar freni ×1, ışınlanma ×1, sal ×1;;239;40
@@ -387,7 +387,7 @@
 386;7×9;63;orta;5;;8;3;4;kar, buz deliği, sıralı balık, sal;kar freni ×1, ışınlanma ×1, sıra ×3;;70;40
 387;7×9;63;zor;7;11;11;2;6;kar, anahtar-kilit, basınç plakası, çatlak buz, kasa;kırma ×2, kar freni ×3, anahtar ×1;;3813;50
 388;7×9;63;kolay;8;;12;2;9;kar, basınç plakası, su, kırılgan kaya, kasa;itme ×1, plaka ×2, kaya kırma ×1;;1733;35
-389;7×9;63;orta;9;;14;3;17;kar, fok, su, kasa;kar freni ×2, fok ×1;;1486;40
+389;7×9;63;orta;9;;14;3;17;kar, fok, su, kasa;kar freni ×2, fok ×1;;5000;40
 390;7×9;63;çok zor;8;11;12;3;11;kar, ok, su, kasa;itme ×1, ok ×1, kar freni ×1;;174;65
 391;7×9;63;kolay;5;;8;1;13;kar, sal, basınç plakası, su, kasa;kar freni ×2, sal ×1;;58;35
 392;7×9;63;kolay;6;;9;1;12;kar, sal, anahtar-kilit, buz deliği;kar freni ×1, sal ×1;;73;35
@@ -397,7 +397,7 @@
 396;7×9;63;orta;6;;9;3;11;kar, sal, buz deliği;ışınlanma ×1, sal ×1;;219;40
 397;7×9;63;zor;10;15;15;2;11;kar, sal, fok;kar freni ×2, sal ×1;;2228;50
 398;7×9;63;kolay;7;;11;3;10;kar, çatlak buz, basınç plakası, kasa;kırma ×2;;3639;35
-399;7×9;63;orta;6;;9;3;12;kar, fok, sarkıt, çatlak buz;kar freni ×1, fok ×1, sarkıt ×1;;5001;40
+399;7×9;63;orta;6;;9;3;12;kar, fok, sarkıt, çatlak buz;kar freni ×1, fok ×1, sarkıt ×1;;5000;40
 400;7×9;63;çok zor;8;11;12;3;9;kar, sal, sıralı balık;kar freni ×2, sıra ×3, sal ×1;;76;65
 401;7×9;63;kolay;6;;9;1;12;kar, sal, su, buz deliği, kasa;kar freni ×1, sal ×1;;302;35
 402;7×9;63;kolay;8;;12;3;11;kar, buz deliği, kasa, basınç plakası;ışınlanma ×1;;60;35
@@ -408,7 +408,7 @@
 407;7×9;63;zor;10;15;15;2;12;kar, çatlak buz, eriyen kar;kırma ×2, kar freni ×3, eritme ×2;;470;50
 408;7×9;63;kolay;7;;11;2;13;kar, sal, kırılgan kaya, çatlak buz;kırma ×1, kaya kırma ×1, sal ×1;;112;35
 409;7×9;63;orta;5;;8;1;13;kar, rampa, su, kasa;itme ×1, uçuş ×1;;118;40
-410;7×9;63;çok zor;10;14;15;3;11;kar, fok, basınç plakası, buz deliği, kasa;kar freni ×1, ışınlanma ×1, fok ×1;;1638;65
+410;7×9;63;çok zor;10;14;15;3;11;kar, fok, basınç plakası, buz deliği, kasa;kar freni ×1, ışınlanma ×1, fok ×1;;5000;65
 411;7×9;63;kolay;7;;11;1;13;kar, basınç plakası, eriyen kar, anahtar-kilit, kasa;kar freni ×3, eritme ×3, plaka ×2, anahtar ×1;;646;35
 412;7×9;63;kolay;8;;12;1;6;kar, çatlak buz, kol-kapı;kırma ×1;;321;35
 413;7×9;63;orta;7;;11;2;9;kar, döner tabla, sıralı balık, sarkıt;sıra ×2, dönüş ×1, sarkıt ×2;;211;40
@@ -438,9 +438,9 @@
 437;7×9;63;zor;8;12;12;2;15;kar, rüzgâr;rüzgâr ×7;;344;50
 438;7×9;63;kolay;6;;9;2;13;kar, rüzgâr, sarkıt;kar freni ×1, rüzgâr ×4;;1024;35
 439;7×9;63;orta;5;;8;1;11;kar, ok, su, anahtar-kilit, kasa;ok ×1, anahtar ×1;;151;40
-440;7×9;63;çok zor;7;10;11;1;10;kar, çatlak buz, kol-kapı, fok;kırma ×1, kar freni ×1;;905;65
+440;7×9;63;çok zor;9;13;14;1;12;kar, çatlak buz, kol-kapı, fok;kırma ×2, kol ×1;;5001;65
 441;7×9;63;kolay;8;;12;2;7;kar, rampa, sarkıt;kar freni ×1, uçuş ×1, sarkıt ×1;;474;35
-442;7×9;63;kolay;6;;9;2;9;kar, sal, fok;sal ×1;;938;35
+442;7×9;63;kolay;6;;9;2;9;kar, sal, fok;sal ×1;;5000;35
 443;7×9;63;orta;5;;8;2;9;kar, rüzgâr, eriyen kar, basınç plakası, kasa;itme ×1, kar freni ×2, eritme ×3, rüzgâr ×3;;5000;40
 444;7×9;63;kolay;6;;9;2;10;kar, rüzgâr, sal;rüzgâr ×3;;702;35
 445;7×9;63;orta;6;;9;3;12;kar, rüzgâr, sıralı balık;kar freni ×1, sıra ×3, rüzgâr ×5;;362;40
@@ -459,7 +459,7 @@
 458;7×10;70;kolay;7;;11;3;10;kar, buz deliği, sal;ışınlanma ×1;;57;35
 459;7×10;70;orta;8;;12;2;9;kar, rüzgâr, basınç plakası, kasa;kar freni ×4, rüzgâr ×8;;5000;40
 460;7×10;70;çok zor;7;10;11;2;14;kar, rüzgâr, sal;rüzgâr ×6;;366;65
-461;7×10;70;kolay;6;;9;1;15;kar, rüzgâr, fok;rüzgâr ×4;;195;35
+461;7×10;70;kolay;6;;9;1;15;kar, rüzgâr, fok;rüzgâr ×4;;5000;35
 462;7×10;70;kolay;6;;9;2;13;kar, basınç plakası, sıralı balık, kasa;kar freni ×1, sıra ×2, plaka ×4;;821;35
 463;7×10;70;orta;9;;14;4;21;kar, çatlak buz, eriyen kar, rampa;kırma ×1, kar freni ×3, eritme ×1;;1915;40
 464;7×10;70;kolay;6;;9;2;6;kar, ok, kar topu, rüzgâr;ok ×1, rüzgâr ×4;;1046;35
@@ -554,7 +554,7 @@
 553;7×10;70;orta;6;;9;1;13;kar, Pipi, basınç plakası, ok, kasa;itme ×1, ok ×1, kar freni ×1, Pipi hamlesi ×1;;5000;40
 554;7×10;70;kolay;9;;14;2;14;kar, basınç plakası, anahtar-kilit, kasa;itme ×1, kar freni ×1, plaka ×2;;528;35
 555;7×10;70;orta;10;;15;1;14;kar, sal, su, Pipi, kasa;itme ×1, kar freni ×1, sal ×1, Pipi hamlesi ×1;;5000;40
-556;7×10;70;orta;10;;15;4;7;kar, çatlak buz, fok;kırma ×1, fok ×2;;5000;40
+556;7×10;70;orta;10;;15;4;7;kar, çatlak buz, fok;kırma ×1, fok ×2;;5001;40
 557;7×10;70;zor;10;15;15;4;14;kar, Pipi, kar topu;kar freni ×1, Pipi hamlesi ×7;;5000;50
 558;7×10;70;kolay;7;;11;1;14;kar, Pipi, anahtar-kilit;kar freni ×2, anahtar ×1, Pipi hamlesi ×1;;5000;35
 559;7×10;70;orta;10;;15;2;12;kar, Pipi, buz deliği, çatlak buz;kırma ×3, ışınlanma ×1, Pipi hamlesi ×1;;5002;40
@@ -588,13 +588,13 @@
 587;7×10;70;zor;10;15;15;4;11;kar, anahtar-kilit, kar topu;kar freni ×2, anahtar ×1;;293;50
 588;7×10;70;kolay;6;;9;2;11;kar, Pipi, çatlak buz;kar freni ×1, Pipi hamlesi ×2;;5000;35
 589;7×10;70;orta;7;;11;3;16;kar, buz deliği, rampa;ışınlanma ×1;;99;40
-590;7×10;70;çok zor;10;14;15;2;7;kar, fok, sıralı balık;fok ×2, sıra ×2;;790;65
+590;7×10;70;çok zor;11;15;17;2;10;kar, fok, sıralı balık;kar freni ×1, fok ×3, sıra ×2;;3436;65
 591;7×10;70;kolay;9;;14;1;14;kar, kırılgan kaya, basınç plakası, kol-kapı, kasa;itme ×1, kol ×1, kaya kırma ×2;;936;35
 592;7×10;70;kolay;5;;8;1;18;kar, Pipi, kol-kapı, basınç plakası, kasa;kol ×1, Pipi hamlesi ×2;;5000;35
 593;7×10;70;orta;9;;14;3;5;kar, kasa, kol-kapı;itme ×3, kol ×1;;1106;40
-594;7×10;70;kolay;7;;11;1;10;kar, su, fok, basınç plakası, kasa;itme ×2, köprü ×1;;293;35
+594;7×10;70;kolay;7;;11;1;10;kar, su, fok, basınç plakası, kasa;itme ×2, köprü ×1;;5000;35
 595;7×10;70;orta;5;;8;3;7;kar, Pipi, kol-kapı;Pipi hamlesi ×4;;5000;40
-596;7×10;70;orta;8;;12;2;17;kar, fok, sıralı balık;fok ×1, sıra ×2;;1076;40
+596;7×10;70;orta;8;;12;2;17;kar, fok, sıralı balık;fok ×1, sıra ×2;;3404;40
 597;7×10;70;zor;6;9;9;1;13;kar, kasa, anahtar-kilit, rampa;itme ×2;;52;50
 598;7×10;70;kolay;6;;9;2;9;kar, Pipi, rampa;Pipi hamlesi ×1;;5001;35
 599;7×10;70;orta;8;;12;2;16;kar, Pipi, anahtar-kilit, kırılgan kaya;Pipi hamlesi ×4;;5001;40
@@ -603,10 +603,10 @@
 602;8×10;80;kolay;8;;12;2;18;kar, sarkıt, Pipi;sarkıt ×2, Pipi hamlesi ×1;;347;35
 603;8×10;80;orta;10;;15;4;16;kar, basınç plakası, döner tabla, kasa;itme ×1, plaka ×2;;92;40
 604;8×10;80;kolay;5;;8;1;15;kar, rüzgâr, ok, döner tabla;rüzgâr ×3;;215;35
-605;8×10;80;orta;8;;12;1;10;kar, fok, çatlak buz, kırılgan kaya;kırma ×3, kar freni ×1, fok ×1;;5000;40
+605;8×10;80;orta;8;;12;1;10;kar, fok, çatlak buz, kırılgan kaya;kırma ×3, kar freni ×1, fok ×1;;5001;40
 606;8×10;80;orta;7;;11;3;14;kar, çatlak buz, kasa, sarkıt;itme ×1, kırma ×4, sarkıt ×1;;3155;40
 607;8×10;80;zor;7;11;11;1;16;kar, rampa, kol-kapı;kar freni ×1, uçuş ×1;;49;50
-608;8×10;80;kolay;9;;14;2;13;kar, anahtar-kilit, fok, kırılgan kaya;kar freni ×3, kaya kırma ×1, anahtar ×1;;512;35
+608;8×10;80;kolay;9;;14;2;13;kar, anahtar-kilit, fok, kırılgan kaya;kar freni ×3, kaya kırma ×1, anahtar ×1;;5001;35
 609;8×10;80;orta;8;;12;3;11;kar, kol-kapı, rampa, çatlak buz;kırma ×2, kol ×2;;3396;40
 610;8×10;80;çok zor;8;11;12;4;9;kar, kol-kapı, rampa;kol ×2;;230;65
 611;8×10;80;kolay;8;;12;3;9;kar, döner tabla, kol-kapı, anahtar-kilit;kar freni ×1, dönüş ×4;;257;35
@@ -621,7 +621,7 @@
 620;8×10;80;çok zor;10;14;15;3;17;kar, rampa, buz deliği, su, kasa;itme ×1, uçuş ×1;;729;65
 621;8×10;80;kolay;8;;12;3;16;kar, su, anahtar-kilit, döner tabla, kasa;itme ×2, köprü ×1, kar freni ×2, dönüş ×1, anahtar ×1;;2650;35
 622;8×10;80;kolay;9;;14;3;11;kar, Pipi, kol-kapı, ok;kol ×1, Pipi hamlesi ×1;;5000;35
-623;8×10;80;orta;9;;14;3;13;kar, döner tabla, fok, sıralı balık;sıra ×3, dönüş ×2;;1937;40
+623;8×10;80;orta;9;;14;3;13;kar, döner tabla, fok, sıralı balık;sıra ×3, dönüş ×2;;5002;40
 624;8×10;80;kolay;5;;8;1;15;kar, sal, basınç plakası, kar topu, kasa;kar freni ×1, sal ×1;;466;35
 625;8×10;80;orta;5;;8;1;18;kar, ok, eriyen kar, çatlak buz;ok ×1, kar freni ×1;;2229;40
 626;8×10;80;orta;5;;8;1;7;kar, buz deliği, basınç plakası, kasa;kar freni ×1, ışınlanma ×1;;93;40
@@ -664,7 +664,7 @@
 663;8×10;80;orta;7;;11;2;14;kar, eriyen kar, su, kasa;kar freni ×3, eritme ×2;;3563;40
 664;8×10;80;kolay;8;;12;4;4;kar, basınç plakası, rampa, kasa;kar freni ×2, plaka ×2;;934;35
 665;8×10;80;orta;5;;8;1;16;kar, kırılgan kaya, sarkıt;kaya kırma ×2, sarkıt ×1;;5001;40
-666;8×10;80;orta;6;;9;1;14;kar, fok, kol-kapı, kar topu;kar freni ×1, fok ×1;;5000;40
+666;8×10;80;orta;6;;9;1;14;kar, fok, kol-kapı, kar topu;kar freni ×1, fok ×1;;5001;40
 667;8×10;80;zor;7;11;11;3;12;kar, rüzgâr, kasa;kar freni ×3, rüzgâr ×5;;4960;50
 668;8×10;80;kolay;8;;12;1;15;kar, Pipi, kasa, rampa;Pipi hamlesi ×4;;5001;35
 669;8×10;80;orta;9;;14;4;17;kar, fok, sıralı balık, buz deliği;kar freni ×1, fok ×1, sıra ×4;;455;40
@@ -680,17 +680,17 @@
 679;8×10;80;orta;7;;11;2;9;kar, eriyen kar, ok, kol-kapı;kar freni ×5, eritme ×3;;1048;40
 680;8×10;80;çok zor;9;13;14;4;10;kar, kar topu, kırılgan kaya, ok;itme ×1, kar freni ×1, kaya kırma ×1, kar yığını ×1;;648;65
 681;8×10;80;kolay;6;;9;1;14;kar, sarkıt, rampa;sarkıt ×1;;200;35
-682;8×10;80;kolay;8;;12;2;13;kar, çatlak buz, fok, basınç plakası, kasa;kırma ×3;;52;35
+682;8×10;80;kolay;7;;11;2;17;kar, çatlak buz, fok, basınç plakası, kasa;kırma ×3, fok ×1;;5000;35
 683;8×10;80;orta;10;;15;4;11;kar, eriyen kar, çatlak buz;kırma ×3, kar freni ×3, eritme ×2;;5000;40
 684;8×10;80;kolay;5;;8;2;17;kar, su, eriyen kar, kasa;itme ×1, köprü ×1, kar freni ×3, eritme ×2;;5000;35
 685;8×10;80;orta;10;;15;3;8;kar, ok, sarkıt;ok ×1, kar freni ×3, sarkıt ×3;;277;40
-686;8×10;80;orta;9;;14;3;9;kar, fok, rüzgâr;kar freni ×1, fok ×1, rüzgâr ×5;;5000;40
+686;8×10;80;orta;8;;12;3;16;kar, fok, rüzgâr;kar freni ×1, fok ×1, rüzgâr ×5;;5001;40
 687;8×10;80;zor;7;11;11;4;17;kar, kol-kapı, rampa, su, kasa;itme ×2, kol ×1;;694;50
 688;8×10;80;kolay;5;;8;1;18;kar, su, eriyen kar, döner tabla, kasa;itme ×1, köprü ×1, kar freni ×3, eritme ×2, dönüş ×1;;706;35
-689;8×10;80;orta;6;;9;1;14;kar, ok, buz deliği, fok;ok ×1, kar freni ×1;;96;40
+689;8×10;80;orta;6;;9;1;14;kar, ok, buz deliği, fok;ok ×1, kar freni ×1, ışınlanma ×1, fok ×1;;3215;40
 690;8×10;80;çok zor;7;10;11;2;21;kar, çatlak buz, fok, rampa;kırma ×1, kar freni ×1;;5000;65
 691;8×10;80;kolay;9;;14;4;11;kar, sal, buz deliği;kar freni ×3, ışınlanma ×2, sal ×1;;111;35
-692;8×10;80;kolay;7;;11;1;12;kar, döner tabla, fok;fok ×2, dönüş ×1;;1040;35
+692;8×10;80;kolay;7;;11;1;12;kar, döner tabla, fok;fok ×2, dönüş ×1;;3551;35
 693;8×10;80;orta;9;;14;3;13;kar, sarkıt, su, kasa;kar freni ×1, sarkıt ×2;;188;40
 694;8×10;80;kolay;9;;14;1;14;kar, anahtar-kilit, Pipi, su, kasa;kar freni ×1, anahtar ×1, Pipi hamlesi ×6;;5000;35
 695;8×10;80;orta;6;;9;2;15;kar, sarkıt, rampa, rüzgâr;kar freni ×1, sarkıt ×2, rüzgâr ×3;;5000;40
@@ -713,7 +713,7 @@
 712;8×10;80;kolay;9;;14;2;11;kar, rampa, döner tabla;kar freni ×1, uçuş ×1;;108;35
 713;8×10;80;orta;9;;14;2;19;kar, kol-kapı, kırılgan kaya;kol ×1, kar freni ×2, kaya kırma ×2;;4629;40
 714;8×10;80;kolay;8;;12;2;15;kar, döner tabla, sal;kar freni ×1, dönüş ×1;;48;35
-715;8×10;80;orta;7;;11;3;13;kar, fok, sal, kırılgan kaya;fok ×1, kaya kırma ×2;;5003;40
+715;8×10;80;orta;10;;15;3;22;kar, fok, sal, kırılgan kaya;fok ×2, kaya kırma ×2;;1158;40
 716;8×10;80;orta;6;;9;1;16;kar, anahtar-kilit, Pipi, sal;kar freni ×1, anahtar ×1;;5002;40
 717;8×10;80;zor;11;17;17;4;18;kar, sıralı balık, anahtar-kilit, su, kasa;itme ×2, kar freni ×1, sıra ×4;;288;50
 718;8×10;80;kolay;8;;12;2;11;kar, kol-kapı, sal, basınç plakası, kasa;kol ×1, kar freni ×2;;2388;35
@@ -730,7 +730,7 @@
 729;8×10;80;orta;8;;12;3;16;kar, ok, döner tabla, kırılgan kaya;ok ×4, kar freni ×2;;3553;40
 730;8×10;80;çok zor;9;13;14;2;20;kar, sal, su, buz deliği, kasa;kar freni ×1, sal ×1;;82;65
 731;8×10;80;kolay;6;;9;2;14;kar, anahtar-kilit, rampa;anahtar ×1;;157;35
-732;8×10;80;kolay;8;;12;3;11;kar, anahtar-kilit, fok, kol-kapı;kar freni ×1, fok ×1, anahtar ×1;;5002;35
+732;8×10;80;kolay;8;;12;3;11;kar, anahtar-kilit, fok, kol-kapı;kar freni ×1, fok ×1, anahtar ×1;;5001;35
 733;8×10;80;orta;10;;15;3;21;kar, rampa, sıralı balık, su, kasa;kar freni ×1, uçuş ×1, sıra ×3;;152;40
 734;8×10;80;kolay;5;;8;3;11;kar, Pipi, buz deliği;Pipi hamlesi ×4;;5002;35
 735;8×10;80;orta;8;;12;3;15;kar, sarkıt, çatlak buz;kırma ×1, kar freni ×1, sarkıt ×3;;1870;40
@@ -747,7 +747,7 @@
 746;8×10;80;orta;5;;8;1;15;kar, kar topu, rampa, kol-kapı;itme ×1, kar freni ×2, kar yığını ×1;;87;40
 747;8×10;80;zor;9;14;14;2;15;kar, sıralı balık, basınç plakası, kasa;kar freni ×1, sıra ×2;;106;50
 748;8×10;80;kolay;7;;11;3;14;kar, sal, çatlak buz;kırma ×1, sal ×1;;549;35
-749;8×10;80;orta;8;;12;2;13;kar, sıralı balık, kar topu, fok;itme ×1, kar freni ×4, fok ×1, sıra ×2, kar yığını ×1;;3224;40
+749;8×10;80;orta;8;;12;2;13;kar, sıralı balık, kar topu, fok;itme ×1, kar freni ×4, fok ×1, sıra ×2, kar yığını ×1;;5001;40
 750;8×10;80;çok zor;8;11;12;1;14;kar, rampa, buz deliği, kırılgan kaya;kar freni ×2, uçuş ×1, kaya kırma ×2;;1301;65
 751;8×10;80;kolay;8;;12;2;13;kar, kasa, sal, sıralı balık;itme ×1, kar freni ×1, sıra ×2;;187;35
 752;8×10;80;kolay;6;;9;3;16;kar, kar topu, anahtar-kilit;itme ×2, kar freni ×2, kar yığını ×2;;274;35
@@ -791,10 +791,10 @@
 790;8×10;80;çok zor;10;14;15;2;9;kar, sal, kasa;itme ×1, kar freni ×1, sal ×1;;5000;65
 791;8×10;80;kolay;8;;12;4;15;kar, Pipi, basınç plakası, sarkıt, kasa;plaka ×2, Pipi hamlesi ×4;;5000;35
 792;8×10;80;kolay;6;;9;1;17;kar, kar topu, sarkıt, sal;itme ×1, kar freni ×1, sarkıt ×2, kar yığını ×1;;176;35
-793;8×10;80;orta;5;;8;4;13;kar, çatlak buz, su, fok, kasa;kırma ×2;;5000;40
+793;8×10;80;orta;9;;14;4;8;kar, çatlak buz, su, fok, kasa;itme ×1, kırma ×2, fok ×1;;5002;40
 794;8×10;80;kolay;9;;14;1;16;kar, rüzgâr, Pipi, ok;ok ×2, rüzgâr ×7, Pipi hamlesi ×3;;5000;35
 795;8×10;80;orta;10;;15;3;20;kar, sıralı balık, rampa, su, kasa;kar freni ×2, sıra ×3;;97;40
-796;8×10;80;orta;10;;15;4;14;kar, fok, eriyen kar;kar freni ×4, eritme ×2, fok ×1;;5000;40
+796;8×10;80;orta;7;;11;4;12;kar, fok, eriyen kar;kar freni ×1, eritme ×1, fok ×1;;5000;40
 797;8×10;80;zor;8;12;12;3;9;kar, basınç plakası, kol-kapı, rampa, kasa;itme ×1, kar freni ×1, plaka ×1;;2045;50
 798;8×10;80;kolay;6;;9;4;9;kar, sıralı balık, sarkıt;sıra ×4, sarkıt ×1;;1447;35
 799;8×10;80;orta;8;;12;4;8;kar, su, kasa;itme ×1, köprü ×1, kar freni ×5;;5000;40
@@ -812,10 +812,10 @@
 811;8×11;88;kolay;6;;9;2;17;kar, sarkıt, eriyen kar;kar freni ×1, sarkıt ×1;;5000;35
 812;8×11;88;kolay;8;;12;3;20;kar, kırılgan kaya, çatlak buz;kırma ×2, kaya kırma ×2;;975;35
 813;8×11;88;orta;5;;8;1;21;kar, buz deliği, eriyen kar, rüzgâr;kar freni ×3, ışınlanma ×1, eritme ×1, rüzgâr ×4;;5000;40
-814;8×11;88;kolay;5;;8;1;10;kar, kırılgan kaya, kol-kapı, fok;fok ×1, kaya kırma ×2;;5001;35
+814;8×11;88;kolay;5;;8;1;10;kar, kırılgan kaya, kol-kapı, fok;fok ×1, kaya kırma ×2;;5000;35
 815;8×11;88;orta;10;;15;2;19;kar, döner tabla, sarkıt;kar freni ×2, dönüş ×3, sarkıt ×2;;720;40
-816;8×11;88;orta;10;;15;1;19;kar, fok, kırılgan kaya;kar freni ×1, fok ×1, kaya kırma ×2;;5000;40
-817;8×11;88;zor;6;9;9;1;9;kar, su, ok, fok, kasa;itme ×3, köprü ×2, fok ×1;;189;50
+816;8×11;88;orta;8;;12;1;13;kar, fok, kırılgan kaya;fok ×1, kaya kırma ×2;;5001;40
+817;8×11;88;zor;6;9;9;1;9;kar, su, ok, fok, kasa;itme ×3, köprü ×2, fok ×1;;1266;50
 818;8×11;88;kolay;9;;14;4;10;kar, buz deliği, kol-kapı, su, kasa;ışınlanma ×1;;99;35
 819;8×11;88;orta;8;;12;1;23;kar, su, kar topu, basınç plakası, kasa;itme ×2, köprü ×1, kar freni ×2, kar yığını ×1;;49;40
 820;8×11;88;çok zor;7;10;11;1;13;kar, kol-kapı, ok, sal;kol ×1, ok ×1, kar freni ×1, sal ×1;;203;65
@@ -834,7 +834,7 @@
 833;8×11;88;orta;9;;14;1;22;kar, su, eriyen kar, kar topu, kasa;itme ×1, köprü ×1, kar freni ×4, eritme ×1;;1734;40
 834;8×11;88;kolay;8;;12;3;10;kar, fok, basınç plakası, su, kasa;kar freni ×1, fok ×1;;5001;35
 835;8×11;88;orta;5;;8;1;7;kar, basınç plakası, çatlak buz, kasa;kar freni ×1, plaka ×2;;208;40
-836;8×11;88;orta;9;;14;3;11;kar, kol-kapı, fok;kol ×1, kar freni ×1;;457;40
+836;8×11;88;orta;9;;14;3;11;kar, kol-kapı, fok;kol ×1, kar freni ×1;;5000;40
 837;8×11;88;zor;10;15;15;3;14;kar, döner tabla, anahtar-kilit, buz deliği;ışınlanma ×3, dönüş ×2;;366;50
 838;8×11;88;kolay;8;;12;1;21;kar, anahtar-kilit, kol-kapı;kar freni ×1, anahtar ×1;;53;35
 839;8×11;88;orta;8;;12;3;18;kar, çatlak buz, döner tabla;kırma ×4, kar freni ×1;;2765;40
@@ -852,8 +852,8 @@
 851;8×11;88;kolay;6;;9;2;23;kar, ok, sarkıt;ok ×2, sarkıt ×2;;1018;35
 852;8×11;88;kolay;5;;8;2;14;kar, Pipi, kasa, basınç plakası;itme ×1, Pipi hamlesi ×1;;5000;35
 853;8×11;88;orta;8;;12;1;16;kar, rampa, eriyen kar, rüzgâr;kar freni ×1, uçuş ×1, eritme ×1, rüzgâr ×4;;1184;40
-854;8×11;88;kolay;9;;14;3;17;kar, basınç plakası, fok, kasa;kar freni ×2, fok ×1, plaka ×2;;1375;35
-855;8×11;88;orta;9;;14;4;11;kar, eriyen kar, fok;kar freni ×4, eritme ×2;;5001;40
+854;8×11;88;kolay;9;;14;3;17;kar, basınç plakası, fok, kasa;kar freni ×2, fok ×1, plaka ×2;;5000;35
+855;8×11;88;orta;9;;14;4;11;kar, eriyen kar, fok;kar freni ×4, eritme ×2;;5003;40
 856;8×11;88;orta;8;;12;3;20;kar, döner tabla, çatlak buz, eriyen kar;kırma ×2, kar freni ×1, dönüş ×1;;1494;40
 857;8×11;88;zor;8;12;12;1;9;kar, kol-kapı, rüzgâr, kar topu;itme ×1, kol ×1, kar freni ×1, kar yığını ×1, rüzgâr ×5;;5001;50
 858;8×11;88;kolay;6;;9;2;19;kar, sıralı balık, kar topu, çatlak buz;kırma ×2, kar freni ×2, sıra ×2;;5001;35
@@ -883,7 +883,7 @@
 882;8×11;88;kolay;7;;11;2;9;kar, anahtar-kilit, kasa, sıralı balık;kar freni ×1, sıra ×2, anahtar ×1;;5000;35
 883;8×11;88;orta;7;;11;4;13;kar, su, rüzgâr, kasa;itme ×1, köprü ×1, kar freni ×1, rüzgâr ×6;;5000;40
 884;8×11;88;kolay;7;;11;2;15;kar, çatlak buz, rampa, kol-kapı;kırma ×2, kol ×1;;2654;35
-885;8×11;88;orta;8;;12;4;16;kar, fok, Pipi, kasa;fok ×1, Pipi hamlesi ×5;;5000;40
+885;8×11;88;orta;8;;12;4;16;kar, fok, Pipi, kasa;fok ×3, Pipi hamlesi ×5;;5000;40
 886;8×11;88;orta;6;;9;3;18;kar, ok, döner tabla, eriyen kar;ok ×1, kar freni ×2, dönüş ×1;;667;40
 887;8×11;88;zor;9;14;14;2;11;kar, buz deliği, döner tabla, sal;kar freni ×1, ışınlanma ×3, dönüş ×2;;88;50
 888;8×11;88;kolay;6;;9;2;15;kar, döner tabla, sıralı balık, sarkıt;sıra ×2, dönüş ×1, sarkıt ×1;;538;35
@@ -904,7 +904,7 @@
 903;8×11;88;orta;8;;12;3;24;kar, Pipi, basınç plakası, anahtar-kilit, kasa;itme ×1, kar freni ×1, Pipi hamlesi ×2;;5002;40
 904;8×11;88;kolay;7;;11;4;14;kar, kol-kapı, buz deliği, kar topu;kol ×1;;4771;35
 905;8×11;88;orta;7;;11;3;13;kar, basınç plakası, rampa, kasa;kar freni ×1, plaka ×2;;180;40
-906;8×11;88;orta;9;;14;4;17;kar, fok, ok;ok ×1, kar freni ×1, fok ×1;;2134;40
+906;8×11;88;orta;9;;14;4;17;kar, fok, ok;ok ×1, kar freni ×1, fok ×1;;5000;40
 907;8×11;88;zor;11;17;17;3;11;kar, çatlak buz, döner tabla, kar topu;kırma ×1, kar freni ×1;;2859;50
 908;8×11;88;kolay;6;;9;2;8;kar, çatlak buz, sıralı balık;kırma ×4, kar freni ×1, sıra ×2;;1668;35
 909;8×11;88;orta;8;;12;4;14;kar, buz deliği, eriyen kar, rampa;kar freni ×1, ışınlanma ×1, eritme ×1;;1804;40
@@ -925,7 +925,7 @@
 924;8×11;88;kolay;9;;14;1;18;kar, anahtar-kilit, çatlak buz;kar freni ×2, anahtar ×1;;129;35
 925;8×11;88;orta;10;;15;4;11;kar, kol-kapı, çatlak buz, kırılgan kaya;kol ×1, kar freni ×1, kaya kırma ×2;;5000;40
 926;8×11;88;orta;6;;9;4;12;kar, su, kasa;itme ×1, köprü ×1;;1363;40
-927;8×11;88;zor;11;17;17;4;13;kar, fok, rampa, eriyen kar;kar freni ×1, uçuş ×1, eritme ×1, fok ×3;;5001;50
+927;8×11;88;zor;10;15;15;4;16;kar, fok, rampa, eriyen kar;kar freni ×3, eritme ×3, fok ×2;;5001;50
 928;8×11;88;kolay;5;;8;2;6;kar, rampa, Pipi;uçuş ×1, Pipi hamlesi ×2;;5001;35
 929;8×11;88;orta;5;;8;1;20;kar, kar topu, döner tabla;itme ×1, kar freni ×2, kar yığını ×1;;393;40
 930;8×11;88;çok zor;9;13;14;1;18;kar, anahtar-kilit, Pipi, sal;kar freni ×1, anahtar ×1, Pipi hamlesi ×6;;5001;65
@@ -937,7 +937,7 @@
 936;8×11;88;orta;9;;14;2;16;kar, fok, sarkıt;kar freni ×1, fok ×1, sarkıt ×1;;5001;40
 937;8×11;88;zor;9;14;14;3;24;kar, sıralı balık, ok, rampa;sıra ×3;;61;50
 938;8×11;88;kolay;9;;14;1;25;kar, rüzgâr, kar topu;kar freni ×1, rüzgâr ×7;;841;35
-939;8×11;88;orta;7;;11;2;12;kar, kar topu, Pipi, fok;itme ×1, kar freni ×2, fok ×1, kar yığını ×1, Pipi hamlesi ×4;;5000;40
+939;8×11;88;orta;7;;11;2;12;kar, kar topu, Pipi, fok;itme ×1, kar freni ×2, fok ×1, kar yığını ×1, Pipi hamlesi ×4;;5001;40
 940;8×11;88;çok zor;11;15;17;4;14;kar, su, sıralı balık, eriyen kar, kasa;itme ×2, köprü ×1, kar freni ×5, eritme ×2, sıra ×4;;3317;65
 941;8×11;88;kolay;8;;12;1;19;kar, çatlak buz, kol-kapı;kırma ×2, kar freni ×2;;336;35
 942;8×11;88;kolay;6;;9;2;20;kar, ok, eriyen kar, döner tabla;ok ×1, kar freni ×2, dönüş ×4;;777;35
@@ -945,32 +945,32 @@
 944;8×11;88;kolay;9;;14;3;13;kar, Pipi, çatlak buz, rampa;kırma ×2, kar freni ×1, Pipi hamlesi ×4;;5001;35
 945;8×11;88;orta;10;;15;4;12;kar, kol-kapı, eriyen kar;kol ×1, kar freni ×2, eritme ×1;;5000;40
 946;8×11;88;orta;10;;15;3;19;kar, sıralı balık, eriyen kar, kar topu;itme ×1, kar freni ×3, eritme ×1, sıra ×3, kar yığını ×1;;3268;40
-947;8×11;88;zor;7;11;11;3;16;kar, sıralı balık, fok, su, kasa;itme ×2, köprü ×1, fok ×1, sıra ×3;;3271;50
+947;8×11;88;zor;7;11;11;3;16;kar, sıralı balık, fok, su, kasa;itme ×2, köprü ×1, fok ×1, sıra ×3;;5000;50
 948;8×11;88;kolay;9;;14;4;27;kar, basınç plakası, Pipi, sal, kasa;kar freni ×1, plaka ×1, Pipi hamlesi ×6;;5001;35
 949;8×11;88;orta;9;;14;3;19;kar, basınç plakası, ok, su, kasa;itme ×1, ok ×1, kar freni ×1, plaka ×2;;389;40
-950;8×11;88;çok zor;11;15;17;2;13;kar, sarkıt, fok;kar freni ×1, sarkıt ×1;;4367;65
+950;8×11;88;çok zor;11;15;17;2;13;kar, sarkıt, fok;kar freni ×1, sarkıt ×1;;5001;65
 951;8×11;88;kolay;8;;12;4;16;kar, sarkıt, kol-kapı;kar freni ×1, sarkıt ×3;;4757;35
-952;8×11;88;kolay;8;;12;2;11;kar, eriyen kar, fok;kar freni ×4, eritme ×2;;5000;35
+952;8×11;88;kolay;8;;12;2;11;kar, eriyen kar, fok;kar freni ×4, eritme ×2;;5001;35
 953;8×11;88;orta;5;;8;1;19;kar, sarkıt, döner tabla, kar topu;sarkıt ×1;;1869;40
 954;8×11;88;kolay;5;;8;1;22;kar, eriyen kar, Pipi;kar freni ×1, eritme ×1, Pipi hamlesi ×3;;5000;35
-955;8×11;88;orta;10;;15;4;17;kar, ok, fok;ok ×1, fok ×1;;822;40
+955;8×11;88;orta;10;;15;4;17;kar, ok, fok;ok ×1, fok ×1;;5000;40
 956;8×11;88;orta;9;;14;2;18;kar, kırılgan kaya, rampa;uçuş ×1, kaya kırma ×3;;3399;40
 957;8×11;88;zor;8;12;12;4;17;kar, Pipi, sarkıt;kar freni ×3, sarkıt ×1, Pipi hamlesi ×1;;5000;50
-958;8×11;88;kolay;6;;9;1;13;kar, çatlak buz, fok;kırma ×2, kar freni ×1;;2962;35
-959;8×11;88;orta;5;;8;2;16;kar, rampa, fok, kasa;uçuş ×1;;5001;40
+958;8×11;88;kolay;6;;9;1;13;kar, çatlak buz, fok;kırma ×2, kar freni ×1;;5000;35
+959;8×11;88;orta;5;;8;2;16;kar, rampa, fok, kasa;uçuş ×1;;5000;40
 960;8×11;88;çok zor;7;10;11;1;11;kar, ok, kırılgan kaya, buz deliği;ok ×1, kaya kırma ×1;;358;65
 961;8×11;88;kolay;8;;12;1;19;kar, anahtar-kilit, eriyen kar;kar freni ×1, eritme ×1, anahtar ×1;;645;35
 962;8×11;88;kolay;5;;8;4;13;kar, rüzgâr, su, kasa;rüzgâr ×4;;5000;35
 963;8×11;88;orta;10;;15;2;13;kar, sal, döner tabla, sıralı balık;kar freni ×1, sıra ×2, dönüş ×1, sal ×2;;207;40
 964;8×11;88;kolay;7;;11;3;17;kar, sal, sıralı balık;kar freni ×2, sıra ×3, sal ×1;;184;35
 965;8×11;88;orta;10;;15;3;21;kar, buz deliği, döner tabla;ışınlanma ×2, dönüş ×3;;157;40
-966;8×11;88;orta;8;;12;4;14;kar, fok, anahtar-kilit, kasa;kar freni ×2, fok ×1;;5001;40
+966;8×11;88;orta;8;;12;4;14;kar, fok, anahtar-kilit, kasa;kar freni ×2, fok ×1;;5002;40
 967;8×11;88;zor;8;12;12;3;11;kar, kırılgan kaya, ok;kar freni ×2, kaya kırma ×2;;668;50
 968;8×11;88;kolay;9;;14;2;14;kar, kırılgan kaya, sıralı balık;kar freni ×2, sıra ×2, kaya kırma ×2;;83;35
 969;8×11;88;orta;5;;8;4;20;kar, sarkıt, eriyen kar, sal;kar freni ×2, sarkıt ×1;;5001;40
 970;8×11;88;çok zor;7;10;11;3;8;kar, çatlak buz, kırılgan kaya;kırma ×2;;5001;65
 971;8×11;88;kolay;6;;9;1;17;kar, anahtar-kilit, Pipi;anahtar ×1, Pipi hamlesi ×2;;5000;35
-972;8×11;88;kolay;8;;12;1;20;kar, döner tabla, fok, anahtar-kilit;kar freni ×1, dönüş ×1;;366;35
+972;8×11;88;kolay;8;;12;1;20;kar, döner tabla, fok, anahtar-kilit;kar freni ×1, dönüş ×1;;5000;35
 973;8×11;88;orta;9;;14;3;16;kar, Pipi, döner tabla;Pipi hamlesi ×5;;5001;40
 974;8×11;88;kolay;9;;14;2;20;kar, sıralı balık, kasa, döner tabla;itme ×1, kar freni ×2, sıra ×2, dönüş ×3;;366;35
 975;8×11;88;orta;5;;8;1;14;kar, su, eriyen kar, kasa;itme ×2, köprü ×1, kar freni ×2, eritme ×1;;2058;40
@@ -989,7 +989,7 @@
 988;8×11;88;kolay;5;;8;3;16;kar, kırılgan kaya, rüzgâr;kaya kırma ×2, rüzgâr ×3;;5000;35
 989;8×11;88;orta;6;;9;4;6;kar, buz deliği, su, kasa;itme ×1, ışınlanma ×1;;983;40
 990;8×11;88;çok zor;11;15;17;3;13;kar, sarkıt, su, kasa;itme ×2, sarkıt ×1;;1867;65
-991;8×11;88;kolay;6;;9;3;17;kar, fok, ok, su, kasa;fok ×1;;5000;35
+991;8×11;88;kolay;7;;11;3;17;kar, fok, ok, su, kasa;itme ×1, fok ×2;;5001;35
 992;8×11;88;kolay;5;;8;1;16;kar, su, sal, kasa;itme ×2, köprü ×1, kar freni ×1;;1079;35
 993;8×11;88;orta;9;;14;2;13;kar, sarkıt, eriyen kar, sal;kar freni ×2, eritme ×1, sarkıt ×2;;2287;40
 994;8×11;88;kolay;9;;14;1;13;kar, sarkıt, buz deliği;kar freni ×1, sarkıt ×3;;66;35

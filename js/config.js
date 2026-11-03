@@ -5,7 +5,9 @@ export const TIER_LABEL = { easy: '', medium: '', hard: 'ZOR', veryhard: 'ÇOK Z
 export const ECON = {
   coin: { easy: 20, medium: 25, hard: 35, veryhard: 50 },
   coinPerStar: 5,
-  hintBase: 50, // level içinde coin'le alınan ipucu: 50, 100, 200, 400… (her alımda 2 katı, her level baştan)
+  hintBase: 50, // tek ipucu: gün içinde her alımda 2 katı (50, 100, 200, 400…), gün dönünce baştan
+  hintGameMult: 1.5, // oyun içinden almak mağazadan bu kadar pahalı
+  hintGamePack5: 300, // oyun içi 5'li paket (mağazada hintPack5Cost)
   hintAdAmount: 10, // ödüllü reklam bu kadar ipucu verir
   continueCost: 80,
   continueMoves: 5,
