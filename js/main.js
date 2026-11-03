@@ -1016,13 +1016,16 @@ function renderWardrobe() {
   });
 
   const it = wardrobeDraft && items.find(x => x.id === wardrobeDraft);
+  // Seçim varken eylem çubuğu kaydırırken de görünür kalır (alt menünün hemen üstünde).
+  $('wardrobeAction').classList.toggle('floating', !!it);
   if (!it) { $('wardrobeAction').innerHTML = `<p class="sheet-note" style="flex:1">Bir parçaya dokun, Pofi'nin üzerinde dene.</p>`; return; }
   const have = owned.includes(it.id), price = discounted(P, it.price);
   const btn = have ? `<button id="wBuy" class="btn green">Giy</button>`
     : it.reward ? `<button class="btn primary" disabled>Köy Lv${it.reward} ödülü</button>`
     : it.event ? `<button class="btn primary" disabled>Haftalık etkinlik ödülü</button>`
-    : `<button id="wBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz coin · ' : 'Satın al ve giy · '}${coinIco}${price}</button>`;
-  $('wardrobeAction').innerHTML = `<button id="wCancel" class="btn link">Vazgeç</button>${btn}`;
+    : `<button id="wBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz · ' : 'Al ve giy · '}${coinIco}${price}</button>`;
+  $('wardrobeAction').innerHTML = `<canvas class="w-mini"></canvas><button id="wCancel" class="btn link">Vazgeç</button>${btn}`;
+  drawPofi(fitCanvas($('wardrobeAction').querySelector('.w-mini'), 44, 44), 22, 43, 32, { outfit: previewOutfit() });
   $('wCancel').onclick = () => { wardrobeDraft = null; renderWardrobe(); };
   if ($('wBuy')) $('wBuy').onclick = () => {
     if (!have) {
@@ -1321,6 +1324,7 @@ function renderInterior() {
   });
 
   const d = room.draft;
+  $('roomAction').classList.toggle('floating', !!d);
   if (!d) {
     $('roomAction').innerHTML = `<p class="sheet-note" style="flex:1">${have >= 3 ? `${slot.name} tamamlandı.` : 'Bir eşyaya dokun, odada önizle.'}</p>`;
     return;

@@ -528,7 +528,11 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 
 /* gardırop aksiyonu */
 .w-action { display: flex; gap: 8px; align-items: center; }
-.w-action .btn.primary, .w-action .btn.green { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+/* seçim varken: kaydırma sırasında alt menünün üstünde yapışık kalır */
+.w-action.floating { position: sticky; bottom: 6px; z-index: 4; background: #fff; border-radius: 18px; padding: 8px 10px; box-shadow: 0 6px 22px rgba(29, 53, 87, .25); animation: wa-in .18s ease-out; }
+.w-action .w-mini { width: 44px; height: 44px; flex: none; background: #eef6fd; border-radius: 12px; }
+@keyframes wa-in { from { transform: translateY(14px); opacity: 0; } }
+.w-action .btn.primary, .w-action .btn.green { flex: 1; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .w-item.sel { border-color: var(--blue); background: #e8f3ff; }
 
 .breakdown { color: var(--ink-soft); font-size: 14px; }
