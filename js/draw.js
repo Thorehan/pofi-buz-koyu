@@ -121,6 +121,7 @@ export function drawPofi(ctx, x, y, size, o = {}) {
 // Kıyafet görselleri (pofi-r8): 512×512, tek önden görünüş. Şapkada kenarın alt ortası [256,340],
 // atkıda boyun bandının ortası [256,256]; ikisinde de bant 300 px (kulaklıkta iki yastığın merkezleri arası).
 const OUTFIT_W = 300;
+const OUTFIT_BAND = { partyhat: 288 }; // scales.json'da bandı 300'den dar olanlar
 const SIDE_POSES = new Map([['stand_side', 0.12], ['slide_side', 0.3]]); // kulaklığın arkaya kayması (kafa genişliği oranı)
 
 // Görsel Pofi. (x, y) ayak/karın hizası. Görsel yoksa false döner.
@@ -165,7 +166,7 @@ function drawPofiArt(ctx, x, y, size, pose, o = {}) {
     if (im) {
       // Kenar, kafa tepesinden kafa genişliğinin %28'i aşağıda (gözlerin hemen üstü) ve kafadan biraz dar;
       // kulaklık yastıkları kafanın iki yanına, daha aşağıya oturur.
-      const muff = outfit.hat === 'earmuffs', [drop, fit] = muff ? [0.474, 1.11] : [0.278, 0.98], k = (hw * fit) / OUTFIT_W;
+      const muff = outfit.hat === 'earmuffs', [drop, fit] = muff ? [0.474, 1.11] : [0.278, 0.98], k = (hw * fit) / (OUTFIT_BAND[outfit.hat] || OUTFIT_W);
       // Yandan pozlarda kulaklık daraltılıp kafanın arkasına kaydırılır; yoksa öndeki yastık gözü kapatır.
       if (muff && SIDE_POSES.has(pose)) {
         ctx.translate(-hw * SIDE_POSES.get(pose), 0);

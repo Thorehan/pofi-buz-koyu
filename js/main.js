@@ -736,7 +736,7 @@ function renderVillage() {
   const vNext = VILLAGERS.find(v => v.price && !P.villagers.includes(v.id));
   const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
   const slotsOpen = DECOR_SLOTS.filter(s => Math.floor(s.at[0]) < (P.land || 1));
-  const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.map(d => discounted(P, d.price)))}+</span></button>`;
+  const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event).map(d => discounted(P, d.price)))}+</span></button>`;
   $('buildList').innerHTML = dCard + vCard + dcCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
@@ -1138,14 +1138,14 @@ function guestProgress(type, n) {
 // Köy çizimi için: tema rengi, jeton ve konuğun işaret durumu.
 function eventVillage() {
   const ev = ensureEvent(P), g = P.event.guest?.day === dateKey() ? P.event.guest : null;
-  return { id: ev.id, token: ev.token, color: ev.color, guest: g?.claimed ? null : { done: !!g && g.have >= g.need } };
+  return { id: ev.id, token: ev.token, color: ev.color, art: !!ev.art, guest: g?.claimed ? null : { done: !!g && g.have >= g.need } };
 }
 
 function showGuest() {
   const ev = ensureEvent(P), g = ensureGuest(), def = GUEST_TASKS.find(d => d.type === g.type), done = g.have >= g.need;
   openOverlay(`
     <span class="new-tag" style="background:${ev.color}">ETKİNLİK KONUĞU</span>
-    <div class="ev-guest-face">${ev.token}</div>
+    <div class="ev-guest-face">${tokenHtml(ev)}</div>
     <h2>Foki</h2>
     <p>${g.claimed ? `Bugünkü işimiz bitti, yarın yine gel! ${ev.name} sürüyor.` : done ? 'Süpersin! İşte jetonların.' : `${ev.name} için köyüne geldim! Bugün bana yardım eder misin? <b>${def.text}</b>.`}</p>
     ${g.claimed ? '' : `<div class="progress"><div style="width:${Math.round((g.have / g.need) * 100)}%;height:100%;background:${ev.color}"></div></div>
@@ -1208,6 +1208,9 @@ function showVillagers() {
 // ---------- süsler (GDD 12.3) ----------
 // Süsleme modu: köyde boş süs yerleri "+" ile görünür. Yere dokun → süsü seç (sahnede önizlenir)
 // → "Satın al ve yerleştir". Her yerleştirme ayrı ücretlidir; değiştirilen süs geri verilmez.
+// Süs seçenekleri: coin'le alınanlar ve etkinlikten kazanılmış hatıra süsleri.
+const decorList = () => DECOR_ITEMS.filter(d => !d.event || P.decorOwned.includes(d.id));
+
 function enterDecor() {
   closeSheet();
   village.decorMode = true;
@@ -1231,11 +1234,11 @@ function renderDecor() {
   let action = '<div class="sheet-actions"><button id="dcDone" class="btn green">Bitti</button></div>';
   if (slot) {
     body = `<div class="sheet-sec"><b>Süs seç</b><small>Dokun, yerinde gör</small></div>
-      <div class="wardrobe-grid">${DECOR_ITEMS.map(d => `<button class="w-item${cur === d.id ? ' on' : ''}${pv === d.id ? ' sel' : ''}" data-dec="${d.id}"><canvas></canvas><span>${d.name}</span><span class="price">${cur === d.id ? 'Yerleşik' : `${coinIco}${discounted(P, d.price)}`}</span></button>`).join('')}</div>`;
+      <div class="wardrobe-grid">${decorList().map(d => `<button class="w-item${cur === d.id ? ' on' : ''}${pv === d.id ? ' sel' : ''}" data-dec="${d.id}"><canvas></canvas><span>${d.name}</span><span class="price">${cur === d.id ? 'Yerleşik' : d.event ? 'Hatıra' : `${coinIco}${discounted(P, d.price)}`}</span></button>`).join('')}</div>`;
     const it = pv && DECOR_ITEMS.find(d => d.id === pv), price = it ? discounted(P, it.price) : 0;
     action = `<div class="sheet-actions">
       ${cur ? '<button id="dcRemove" class="btn link">Kaldır</button>' : '<button id="dcBack" class="btn link">Başka yer</button>'}
-      ${it ? `<button id="dcBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz coin · ' : 'Satın al ve yerleştir · '}${coinIco}${price}</button>` : '<button id="dcDone" class="btn green">Bitti</button>'}
+      ${it ? `<button id="dcBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${it.event ? 'Yerleştir' : `${P.coins < price ? 'Yetersiz coin · ' : 'Satın al ve yerleştir · '}${coinIco}${price}`}</button>` : '<button id="dcDone" class="btn green">Bitti</button>'}
     </div>`;
   }
   $('sheet').innerHTML = `
@@ -1499,13 +1502,15 @@ $('btnReset').onclick = () => {
 };
 
 // ---------- haftalık etkinlik (docs/v04-oneri.md, bölüm 3) ----------
+// Haftanın jetonu: görseli olan temada resim, yoksa emoji.
+const tokenHtml = (ev, cls = 'tok') => (ev.art ? `<img class="${cls}" src="assets/art/ev_token_${ev.id}.webp" alt="${ev.token}">` : ev.token);
 // Etkinlik ekranı: haftaya özel 15 temalı level, jetonla ilerleyen ödül yolu ve jeton dükkânı.
 function renderEventCard() {
   const ev = ensureEvent(P), next = nextMilestone(P), ready = claimable(P).length;
   const pct = next ? P.event.earned / next.pts : 1;
   const card = $('eventCard');
   card.style.setProperty('--ev', ev.color);
-  card.innerHTML = `<span class="ev-token">${ev.token}</span><span class="ev-text"><b>${ev.name}</b>`
+  card.innerHTML = `<span class="ev-token">${tokenHtml(ev)}</span><span class="ev-text"><b>${ev.name}</b>`
     + `<span class="ev-bar"><div style="width:${Math.min(100, pct * 100)}%"></div></span>`
     + `<small>${P.event.tokens} jeton · ${next ? `sonraki ödül ${next.pts}` : 'bütün ödüller açıldı'} · ${timeLeft(ev.ends)}</small></span>`
     + (ready ? '<i class="dot"></i>' : '');
@@ -1522,6 +1527,9 @@ function renderEventScreen() {
   const ev = ensureEvent(P), prize = prizeOf(ev), E = P.event;
   const shopPrice = it => (ev.rule?.sale ? Math.ceil(it.cost / 2) : it.cost);
   $('screenEvent').style.setProperty('--ev', ev.color);
+  // görselli temada banner sahnesi sağda, yazı solda koyulaşan zeminin üstünde
+  $('evBanner').classList.toggle('has-art', !!ev.art);
+  $('evBanner').style.backgroundImage = ev.art ? `linear-gradient(90deg, ${ev.color} 0%, ${ev.color}e6 38%, ${ev.color}00 62%), url(assets/art/ev_banner_${ev.id}.webp)` : '';
   const rules = [
     ev.rule?.mech && 'Temalı mekanikler',
     ev.rule?.fish && `+${ev.rule.fish} balık`,
@@ -1533,11 +1541,11 @@ function renderEventScreen() {
     ev.rule?.sale && 'Dükkân yarı fiyat',
   ].filter(Boolean);
   $('evBanner').innerHTML = `
-    <span class="ev-big">${ev.token}</span>
+    <span class="ev-big">${tokenHtml(ev)}</span>
     <div class="ev-head"><span class="new-tag">${ev.big ? 'ÖZEL GÜN' : 'HAFTALIK ETKİNLİK'}</span><h2>${ev.name}</h2><p>${ev.text}</p>
       <div class="ev-chips">${rules.map(r => `<span>${r}</span>`).join('')}${ev.bonus ? `<span>${BONUS_TEXT[ev.bonus]}</span>` : ''}</div>
       <small>Bitmesine ${timeLeft(ev.ends)} · kalan jeton hafta sonunda ${EVENT_TOKENS.coinRate} katı coin olur</small></div>
-    <span class="ev-wallet">${ev.token} <b>${E.tokens}</b></span>`;
+    <span class="ev-wallet">${tokenHtml(ev)} <b>${E.tokens}</b></span>`;
 
   // levelller: sırayla açılır
   const firstOpen = Array.from({ length: EVENT_LEVELS }, (_, k) => k).find(k => !E.done[k]) ?? EVENT_LEVELS;
@@ -1580,14 +1588,15 @@ function renderEventScreen() {
   });
 
   // dükkân
-  $('evShop').innerHTML = EVENT_SHOP.filter(it => !it.prize || prize).map(it => {
+  const decorId = `ev_${ev.id}`, decorItem = DECOR_ITEMS.find(d => d.id === decorId);
+  $('evShop').innerHTML = EVENT_SHOP.filter(it => (!it.prize || prize) && (!it.decor || (ev.art && decorItem))).map(it => {
     const n = E.bought[it.id] || 0, price = shopPrice(it);
-    const owned = it.prize && P.owned[prize.slot].includes(prize.id);
+    const owned = (it.prize && P.owned[prize.slot].includes(prize.id)) || (it.decor && P.decorOwned.includes(decorId));
     const left = it.max - n;
-    const label = it.prize ? prize.name : it.name;
+    const label = it.prize ? prize.name : it.decor ? `${it.name}: ${decorItem.name}` : it.name;
     const act = owned ? '<span class="check">Sahipsin</span>' : left <= 0 ? '<span class="check">Tükendi</span>'
-      : `<button class="btn green" data-evs="${it.id}" ${E.tokens < price ? 'disabled' : ''}>${ev.token} ${price}</button>`;
-    return `<div class="ev-step"><span class="rw">${label}</span><small>${owned || it.prize ? '' : `${left}/${it.max}`}</small>${act}</div>`;
+      : `<button class="btn green" data-evs="${it.id}" ${E.tokens < price ? 'disabled' : ''}>${tokenHtml(ev, 'tok sm')} ${price}</button>`;
+    return `<div class="ev-step"><span class="rw">${label}</span><small>${owned || it.prize || it.decor ? '' : `${left}/${it.max}`}</small>${act}</div>`;
   }).join('');
   $('evShop').querySelectorAll('[data-evs]').forEach(btn => {
     btn.onclick = () => {
@@ -1596,11 +1605,12 @@ function renderEventScreen() {
       E.tokens -= price;
       E.bought[it.id] = (E.bought[it.id] || 0) + 1;
       if (it.prize) { if (!P.owned[prize.slot].includes(prize.id)) P.owned[prize.slot].push(prize.id); }
+      else if (it.decor) { if (!P.decorOwned.includes(decorId)) P.decorOwned.push(decorId); }
       else giveReward(it.r);
       persist();
       sfx.coin();
       track('event_shop', { event: ev.id, item: it.id, price });
-      toast(it.prize ? `${prize.name} gardırobuna eklendi!` : `${it.name} alındı`);
+      toast(it.prize ? `${prize.name} gardırobuna eklendi!` : it.decor ? `${decorItem.name} alındı · köyde Süsler'den yerleştir` : `${it.name} alındı`);
       renderEventScreen();
       updateWallet();
     };

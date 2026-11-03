@@ -300,6 +300,14 @@ html, body {
 .ev-h-row canvas { width: 64px; height: 64px; margin-bottom: -6px; }
 #evShop .ev-step small { color: var(--ink-soft); }
 .ev-guest-face { font-size: 54px; line-height: 1; text-align: center; }
+.ev-guest-face .tok { width: 64px; height: 64px; }
+img.tok { width: 1.15em; height: 1.15em; vertical-align: -0.22em; object-fit: contain; }
+.event-card .ev-token img.tok { width: 32px; height: 32px; }
+.ev-banner .ev-big img.tok { width: 52px; height: 52px; vertical-align: 0; }
+img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
+.ev-banner.has-art { background-size: cover; background-position: right center; min-height: 168px; }
+.ev-banner.has-art .ev-head { max-width: 54%; text-shadow: 0 1px 2px rgba(0, 0, 0, .35); }
+.ev-banner.has-art .ev-big { display: none; }
 .event-card .ev-text { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .event-card b { font-size: 15px; }
 .event-card small { opacity: .9; font-size: 12px; }

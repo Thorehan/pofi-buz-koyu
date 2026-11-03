@@ -1827,6 +1827,8 @@ function evTent(ctx, x, y, u, t, ev) {
   ctx.strokeStyle = ev.color;
   ctx.lineWidth = 2;
   ctx.stroke();
+  const tok = ev.art && art(`ev_token_${ev.id}`);
+  if (tok) { const r = u * 0.024; ctx.drawImage(tok, x - r, top - u * 0.022 + bob - r, r * 2, r * 2); return; }
   ctx.font = `${Math.round(u * 0.028)}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
