@@ -299,6 +299,7 @@ html, body {
 .ev-h-row { display: flex; align-items: flex-end; justify-content: space-between; }
 .ev-h-row canvas { width: 64px; height: 64px; margin-bottom: -6px; }
 #evShop .ev-step small { color: var(--ink-soft); }
+.ev-guest-face { font-size: 54px; line-height: 1; text-align: center; }
 .event-card .ev-text { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .event-card b { font-size: 15px; }
 .event-card small { opacity: .9; font-size: 12px; }

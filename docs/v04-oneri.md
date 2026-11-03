@@ -1,7 +1,7 @@
 # Pofi v0.4 planı: grid büyümesi, yeni mekanikler, yıllık etkinlikler, engel görselleri
 
 **Kararlar (3 Kasım 2026):**
-- Etkinlikler: "Etkinlik" ekranı (yol, 15 temalı level, dükkân) ve haftalık temalı jeton. Hafta bitince kalan jeton coin'e döner. Ekran, takvim, jeton, temalı level kuralları (karanlık, ters kontrol, hamle sınırı, sıralı/ek balık, zorunlu mekanik) yapıldı; köy konuğu ve köy süslemesi sırada.
+- Etkinlikler: "Etkinlik" ekranı (yol, 15 temalı level, dükkân) ve haftalık temalı jeton. Hafta bitince kalan jeton coin'e döner. Ekran, takvim, jeton, temalı level kuralları (karanlık, ters kontrol, hamle sınırı, sıralı/ek balık, zorunlu mekanik) yapıldı; köyde etkinlik çadırı, konuk Foki (günlük iş, 25 jeton), tema renginde flamalar ve temaya göre yağış (kalp, konfeti, yaprak, çiçek, fener, kayan yıldız) da yapıldı.
 - Etkinlik görselleri: önce ilk çeyrek (13 hafta, ~2,0 $), sonra oyuncu tepkisine göre devam.
 - Engeller: hepsi yeniden çizilecek (8 karo, 10 nesne, 9 yeni mekaniğin parçaları; ~0,37 $).
 - Grid: son boyut ekran ve oynanışa göre hesaplandı, 8×11 (bölüm 1).

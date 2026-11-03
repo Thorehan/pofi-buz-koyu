@@ -1,5 +1,5 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
-import { roundRect, circle, ellipse, drawPofi } from './draw.js';
+import { roundRect, circle, ellipse, drawPofi, drawSeal } from './draw.js';
 import { art, tinted, BLD, BLD_Z2 } from './art.js';
 import { DISTRICTS, DECOR_SLOTS } from './config.js';
 
@@ -69,6 +69,16 @@ const LAKE_FISH = [[0.13, 0.797], [0.185, 0.791]]; // iskele yoksa ana yolun gö
 const PIER_FISH = [[0.12, 0.93], [0.2, 0.935]]; // iskele varsa güvertenin ön kenarında
 const HARBOR_FISH = [[1.4, 0.845], [1.56, 0.843], [1.84, 0.84]];
 const QUEUE = [[0.29, 0.727], [0.29, 0.752]]; // kakao standına çıkan patikada sıra
+// Haftalık etkinlik: meydanda (iglo ile ana yol arasındaki boş kar) çadır ve yanında konuk Foki.
+const EV_TENT = [0.598, 0.705];
+const EV_GUEST = [0.68, 0.728];
+// Etkinlik haftasında gökyüzünden düşenler (kar zaten yağıyor); tema kimliğine göre.
+const EVENT_FALL = {
+  valentine: 'hearts', friendship: 'hearts', mothers: 'petals', spring: 'petals', eggs: 'petals',
+  newyear: 'confetti', emoji: 'confetti', school: 'confetti', olympics: 'confetti', harborfair: 'confetti', penguinday: 'confetti',
+  sugar: 'confetti', winterfest: 'confetti', harvest: 'leaves', animals: 'leaves', feast: 'leaves', ghostseal: 'leaves',
+  meteors: 'stars', lantern: 'lanterns', lanternnight: 'lanterns',
+};
 
 // Fener dizisi gökyüzünde asılı; kurulmamışken yeri ufuk çizgisinde gösterilir.
 const plotAt = id => (id === 'lights' ? [0.5, 0.42] : AT[id]);
@@ -864,6 +874,7 @@ export class VillageView {
     this.walkers = [{ x: 0.5, tx: 0.6, face: 1, wait: 0, lane: 0, size: 0.12, speed: 0.06 }];
     this.vs = new Map(); // köylü durumları
     this.onVillager = null; // köylüye dokunulunca (id)
+    this.onEvent = null; // etkinlik çadırına ('tent') ya da konuğa ('guest') dokunulunca
     this.onDecorSlot = null; // süsleme modunda süs yerine dokunulunca (yer id)
     this.decorMode = false;
     this.decorSel = null; // seçili süs yeri
@@ -899,6 +910,8 @@ export class VillageView {
         if (slot) this.onDecorSlot?.(slot);
         return;
       }
+      const evk = this.eventHit(x, y);
+      if (evk) { this.onEvent?.(evk); return; }
       const vid = this.villagerHit(x, y);
       if (vid) { this.onVillager?.(vid); return; }
       const lock = this.lockHit(x, y);
@@ -1052,6 +1065,18 @@ export class VillageView {
     return null;
   }
 
+  eventHit(sx, sy) {
+    const { cam, W, H } = this;
+    const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
+    // çadır ile konuk yan yana: en yakın olan seçilir
+    let best = null, bd = Infinity;
+    for (const [id, x, y, r] of this.evpos || []) {
+      const d = Math.hypot(wx - x, wy - y);
+      if (d < r + 8 && d / r < bd) { bd = d / r; best = id; }
+    }
+    return best;
+  }
+
   say(id, text) { this.speech = { id, text, until: performance.now() + 3200 }; }
 
   drawSpeech(ctx, u, t) {
@@ -1140,7 +1165,7 @@ export class VillageView {
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {} }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     const { ctx, W, H } = this;
@@ -1374,9 +1399,21 @@ export class VillageView {
       });
       if (phase === 'night') for (const id of ['igloo', 'hut']) if (village[id]) zzz(ctx, AT[id][0] * W, AT[id][1] * H - u * 0.2, u, time);
     }
+    // Haftalık etkinlik: çadır (dokununca etkinlik ekranı) ve konuk Foki (günlük iş)
+    this.evpos = [];
+    if (event) {
+      const [tx, ty] = [EV_TENT[0] * W, EV_TENT[1] * H], [gx, gy] = [EV_GUEST[0] * W, EV_GUEST[1] * H];
+      this.evpos.push(['tent', tx, ty - u * 0.08, u * 0.09], ['guest', gx, gy - u * 0.045, u * 0.06]);
+      items.push([ty, () => evTent(ctx, tx, ty, u, time, event)]);
+      items.push([gy, () => {
+        evGuest(ctx, gx, gy, u, time, event);
+        if (event.guest) taskMark(ctx, gx, gy - u * 0.17, u, time, event.guest.done);
+      }]);
+    }
     items.sort((a, b) => a[0] - b[0]);
     for (const [, draw] of items) draw();
-    if (vl >= 8) this.bunting(ctx, W, H, u, time);
+    if (event) this.bunting(ctx, W, H, u, time, [event.color, '#ffffff']);
+    else if (vl >= 8) this.bunting(ctx, W, H, u, time);
     this.lockRects = [];
     for (let i = land; i < n; i++) this.lockedPanel(ctx, i, W, H, u, time, vl);
     for (const [x, y, kind] of markers) {
@@ -1395,6 +1432,7 @@ export class VillageView {
     ctx.restore();
 
     if (vl >= 2) this.snowfall(ctx, W, H, time);
+    if (event && EVENT_FALL[event.id]) eventFall(ctx, W, H, time, EVENT_FALL[event.id], event.color);
     if (!this.focus && n > 1) this.panelNav(ctx, W, H, u, time);
 
     this.parts = this.parts.filter(p => (p.life -= dt) > 0);
@@ -1671,7 +1709,7 @@ export class VillageView {
     });
   }
 
-  bunting(ctx, W, H, u, t) {
+  bunting(ctx, W, H, u, t, theme = null) {
     const y = H * 0.48;
     ctx.strokeStyle = '#5b4636';
     ctx.lineWidth = 1;
@@ -1679,7 +1717,7 @@ export class VillageView {
     ctx.moveTo(W * 0.3, y);
     ctx.quadraticCurveTo(W * 0.5, y + u * 0.05, W * 0.7, y);
     ctx.stroke();
-    const cols = ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff', '#a46bff'];
+    const cols = theme || ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff', '#a46bff'];
     for (let k = 0; k < 10; k++) {
       const f = (k + 0.5) / 10, x = W * 0.3 + f * W * 0.4, yy = y + 4 * f * (1 - f) * u * 0.025;
       ctx.fillStyle = cols[k % cols.length];
@@ -1738,6 +1776,141 @@ export class VillageView {
       circle(ctx, x, y, 1.2 + (k % 3) * 0.6);
       ctx.fill();
     }
+  }
+}
+
+// Etkinlik çadırı: tema renginde çizgili tente, tezgâh, tepesinde haftanın jetonu.
+function evTent(ctx, x, y, u, t, ev) {
+  const w = u * 0.16, h = u * 0.12;
+  ctx.fillStyle = 'rgba(29,53,87,.16)';
+  ellipse(ctx, x, y, w * 0.62, u * 0.018);
+  ctx.fill();
+  // direkler ve tezgâh
+  ctx.fillStyle = '#8e5a2b';
+  ctx.fillRect(x - w * 0.46, y - h * 0.7, u * 0.008, h * 0.7);
+  ctx.fillRect(x + w * 0.46 - u * 0.008, y - h * 0.7, u * 0.008, h * 0.7);
+  ctx.fillStyle = '#c98b4f';
+  roundRect(ctx, x - w * 0.42, y - h * 0.32, w * 0.84, h * 0.32, u * 0.006);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(x - w * 0.42, y - h * 0.32, w * 0.84, h * 0.06);
+  // çizgili tente
+  const top = y - h * 0.95, eave = y - h * 0.62, n = 6;
+  for (let i = 0; i < n; i++) {
+    const x0 = x - w / 2 + (w / n) * i, x1 = x0 + w / n;
+    ctx.fillStyle = i % 2 ? '#ffffff' : ev.color;
+    ctx.beginPath();
+    ctx.moveTo(x + (x0 - x) * 0.25, top);
+    ctx.lineTo(x + (x1 - x) * 0.25, top);
+    ctx.lineTo(x1, eave);
+    ctx.lineTo(x0, eave);
+    ctx.fill();
+    // saçak
+    ctx.beginPath();
+    ctx.arc(x0 + w / n / 2, eave, w / n / 2, 0, Math.PI);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(29,53,87,.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x - w * 0.125, top);
+  ctx.lineTo(x + w * 0.125, top);
+  ctx.lineTo(x + w / 2, eave);
+  ctx.lineTo(x - w / 2, eave);
+  ctx.closePath();
+  ctx.stroke();
+  // tepede jeton
+  const bob = Math.sin(t * 2.5) * u * 0.004;
+  ctx.fillStyle = '#ffffff';
+  circle(ctx, x, top - u * 0.022 + bob, u * 0.022);
+  ctx.fill();
+  ctx.strokeStyle = ev.color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.font = `${Math.round(u * 0.028)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ev.token, x, top - u * 0.021 + bob);
+}
+
+// Konuk Foki: gezgin fok, tema renginde parti şapkasıyla çadıra bakar.
+function evGuest(ctx, x, y, u, t, ev) {
+  const s = u * 0.11, hop = Math.abs(Math.sin(t * 2.2)) * u * 0.004;
+  const im = art('obj_seal');
+  ctx.save();
+  ctx.translate(x, y - hop);
+  ctx.scale(-1, 1); // çadıra (sola) dönük
+  if (im) ctx.drawImage(im, -s / 2, -s * 0.92, s, s);
+  else drawSeal(ctx, 0, 0, s * 0.85, 1, t);
+  // parti şapkası (fokun başı görselin sağ üstünde)
+  ctx.translate(s * 0.27, -s * 0.66);
+  ctx.rotate(0.25);
+  ctx.fillStyle = ev.color;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.09, 0);
+  ctx.lineTo(s * 0.09, 0);
+  ctx.lineTo(0, -s * 0.22);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  circle(ctx, 0, -s * 0.23, s * 0.035);
+  ctx.fill();
+  ctx.restore();
+}
+
+// Etkinlik yağışı (ekran koordinatı): kalpler, yapraklar, konfeti, kayan yıldızlar ya da yükselen fenerler.
+function eventFall(ctx, W, H, t, kind, color) {
+  const N = kind === 'stars' ? 3 : kind === 'lanterns' ? 8 : 22;
+  for (let k = 0; k < N; k++) {
+    const sx = (k * 0.618 + 0.13) % 1, sp = 16 + (k % 5) * 5;
+    if (kind === 'stars') {
+      const p = ((t * 0.35 + k / N) % 1);
+      if (p > 0.35) continue;
+      const q = p / 0.35, x = (sx * 0.8 + 0.1) * W + q * W * 0.25, y = H * (0.05 + (k % 3) * 0.06) + q * H * 0.12;
+      ctx.strokeStyle = `rgba(255,240,200,${1 - q})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - W * 0.06, y - H * 0.03);
+      ctx.stroke();
+      continue;
+    }
+    if (kind === 'lanterns') {
+      const y = H - ((t * (10 + (k % 4) * 3) + k * 61) % (H * 0.9)), x = sx * W + Math.sin(t * 0.8 + k) * 6;
+      ctx.globalAlpha = Math.min(1, (H - y) / (H * 0.2)) * 0.9;
+      ctx.fillStyle = '#ff6b4a';
+      roundRect(ctx, x - 4, y - 5, 8, 10, 3);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,209,102,.5)';
+      circle(ctx, x, y, 7);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      continue;
+    }
+    const y = (t * sp + k * 53) % (H + 20) - 10, x = sx * W + Math.sin(t * 1.3 + k) * 10, a = t * 2 + k;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(a) * 0.8);
+    if (kind === 'hearts') {
+      ctx.fillStyle = k % 3 ? color : '#ff95b2';
+      ctx.beginPath();
+      ctx.moveTo(0, 3);
+      ctx.bezierCurveTo(-6, -2, -3, -7, 0, -3);
+      ctx.bezierCurveTo(3, -7, 6, -2, 0, 3);
+      ctx.fill();
+    } else if (kind === 'petals') {
+      ctx.fillStyle = ['#ffb3c7', '#ffd6e0', '#fff0a8'][k % 3];
+      ellipse(ctx, 0, 0, 4, 2.2);
+      ctx.fill();
+    } else if (kind === 'leaves') {
+      ctx.fillStyle = ['#e07b39', '#c9541f', '#f2b134'][k % 3];
+      ellipse(ctx, 0, 0, 4.5, 2.4);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = [color, '#ffd166', '#3cc977', '#3d9bff', '#ff5a6a'][k % 5];
+      ctx.fillRect(-2.5, -1.5, 5, 3);
+    }
+    ctx.restore();
   }
 }
 

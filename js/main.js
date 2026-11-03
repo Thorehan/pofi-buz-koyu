@@ -16,7 +16,7 @@ import { loadArt, setArtEnabled, accentHue, onArtLoad } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
-  ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, VISIT_GIFT,
+  ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -33,6 +33,7 @@ const visitView = new VillageView($('visitCanvas'));
 village.onSelect = id => (sheet?.id === id && INTERIOR[id] && P.village[id] ? enterInterior(id) : openSheet(id));
 village.onDistrict = i => showDistrict(i);
 village.onVillager = id => talkTo(id);
+village.onEvent = kind => { sfx.ui(); if (kind === 'tent') showScreen('event'); else showGuest(); };
 village.onDecorSlot = id => { village.decorSel = id; village.decorPreview = null; renderDecor(); };
 board.outfit = P.outfit;
 
@@ -61,7 +62,7 @@ function updateWallet() {
   $('coins').textContent = P.coins;
   $('flakes').textContent = P.flakes;
   $('playLevel').textContent = P.level;
-  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady() && !homesReady().length && !taskDone());
+  $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady() && !homesReady().length && !taskDone() && !guestDone());
   $('dotShop').classList.toggle('hidden', freeCoinsLeft() <= 0);
   renderNextCard();
   renderDailyButtons();
@@ -424,7 +425,7 @@ function win() {
   const evPts = addTokens(P, Math.round(levelTokens(ev, {
     stars, fish: run.L.fishCells.length, daily: run.daily, hintsUsed: run.hintsUsed > 0, eventLevel: isEv, firstClear,
   }) * (1 + buff(P, 'eventPct'))));
-  if (isEv) P.event.done[run.event] = Math.max(P.event.done[run.event] || 0, stars);
+  if (isEv) { P.event.done[run.event] = Math.max(P.event.done[run.event] || 0, stars); guestProgress('evlevel', 1); }
   persist();
   const notes = [
     pct > 0 && `Köy bonusu +%${Math.round(pct * 100)}`,
@@ -1067,6 +1068,7 @@ function ensureTask() {
 }
 const taskDone = () => { const t = P.task; return !!t && t.day === dateKey() && !t.claimed && t.have >= t.need; };
 function taskProgress(type, n) {
+  guestProgress(type, n);
   const t = ensureTask();
   if (!t || t.claimed || t.type !== type || t.have >= t.need) return;
   t.have = Math.min(t.need, t.have + n);
@@ -1111,6 +1113,58 @@ function showTask() {
     sfx.reward();
     track('task_claim', { type: t.type, giver: t.giver });
     toast(`+${TASK_REWARD.coins} coin, +${TASK_REWARD.flakes} kar tanesi, ${ev.token} +${EVENT_TOKENS.task} jeton`);
+  };
+}
+
+// ---------- etkinlik konuğu Foki ----------
+// Her gün bir iş verir (köylü işinden ayrı); ödülü haftanın jetonu. İş etkinlik haftası boyunca P.event'te durur.
+function ensureGuest() {
+  ensureEvent(P);
+  const g = P.event.guest;
+  if (g?.day === dateKey()) return g;
+  const pool = GUEST_TASKS.filter(t => !t.needs || P.village[t.needs]);
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  P.event.guest = { day: dateKey(), type: t.type, need: t.need, have: 0, claimed: false };
+  save(P);
+  return P.event.guest;
+}
+const guestDone = () => { const g = P.event?.guest; return !!g && g.day === dateKey() && !g.claimed && g.have >= g.need; };
+function guestProgress(type, n) {
+  const g = ensureGuest();
+  if (g.claimed || g.type !== type || g.have >= g.need) return;
+  g.have = Math.min(g.need, g.have + n);
+  if (g.have >= g.need) toast('Foki: "İşim bitti, çadıra uğra!"');
+}
+// Köy çizimi için: tema rengi, jeton ve konuğun işaret durumu.
+function eventVillage() {
+  const ev = ensureEvent(P), g = P.event.guest?.day === dateKey() ? P.event.guest : null;
+  return { id: ev.id, token: ev.token, color: ev.color, guest: g?.claimed ? null : { done: !!g && g.have >= g.need } };
+}
+
+function showGuest() {
+  const ev = ensureEvent(P), g = ensureGuest(), def = GUEST_TASKS.find(d => d.type === g.type), done = g.have >= g.need;
+  openOverlay(`
+    <span class="new-tag" style="background:${ev.color}">ETKİNLİK KONUĞU</span>
+    <div class="ev-guest-face">${ev.token}</div>
+    <h2>Foki</h2>
+    <p>${g.claimed ? `Bugünkü işimiz bitti, yarın yine gel! ${ev.name} sürüyor.` : done ? 'Süpersin! İşte jetonların.' : `${ev.name} için köyüne geldim! Bugün bana yardım eder misin? <b>${def.text}</b>.`}</p>
+    ${g.claimed ? '' : `<div class="progress"><div style="width:${Math.round((g.have / g.need) * 100)}%;height:100%;background:${ev.color}"></div></div>
+    <small class="breakdown">${g.have}/${g.need} · ödül ${ev.token} ${GUEST_REWARD} jeton</small>`}
+    ${done && !g.claimed ? '<button id="gClaim" class="btn green">Jetonları al</button>' : ''}
+    <button id="gEvent" class="btn secondary">Etkinliğe git</button>
+    <button id="gClose" class="btn link">Kapat</button>`);
+  $('gClose').onclick = closeOverlay;
+  $('gEvent').onclick = () => { closeOverlay(); showScreen('event'); };
+  if ($('gClaim')) $('gClaim').onclick = () => {
+    if (g.claimed || g.have < g.need) return;
+    g.claimed = true;
+    addTokens(P, GUEST_REWARD);
+    persist();
+    closeOverlay();
+    sfx.reward();
+    track('guest_claim', { event: ev.id, type: g.type });
+    toast(`${ev.token} +${GUEST_REWARD} jeton`);
+    updateWallet();
   };
 }
 
@@ -1680,7 +1734,7 @@ function frame(now) {
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
       cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1, homeReady: homesReady(),
-      villagers: villagersHere(), hour: hourNow(), task: taskMarker(), decor: P.decor,
+      villagers: villagersHere(), hour: hourNow(), task: taskMarker(), decor: P.decor, event: eventVillage(),
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
     if (village.panel !== shownPanel) renderZoneTag();

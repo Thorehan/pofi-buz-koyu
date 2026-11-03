@@ -310,6 +310,15 @@ export const EVENT_TRACK = [
   { pts: 660, r: { prize: true } }, // temanın kıyafeti; yoksa EVENT_PRIZE_FALLBACK
 ];
 export const EVENT_PRIZE_FALLBACK = { coins: 1000, flakes: 8 };
+// Etkinlik konuğu Foki: her hafta temaya uygun gelen gezgin fok. Meydandaki etkinlik çadırının yanında durur
+// ve her gün bir iş verir; ödülü jeton.
+export const GUEST_TASKS = [
+  { type: 'evlevel', need: 2, text: '2 etkinlik leveli bitir' },
+  { type: 'levels', need: 3, text: '3 level bitir' },
+  { type: 'fish', need: 10, text: 'Levellerde 10 balık topla' },
+  { type: 'cocoa', need: 1, text: 'Yolculara kakao sat', needs: 'cocoa' },
+];
+export const GUEST_REWARD = 25;
 // Etkinlik dükkânı: haftalık jetonla alınır; her ürün haftada en fazla "max" kez.
 export const EVENT_SHOP = [
   { id: 'hints', name: '3 ipucu', cost: 40, max: 3, r: { hints: 3 } },
