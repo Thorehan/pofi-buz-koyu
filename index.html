@@ -81,6 +81,18 @@
           <i id="dotDailyPuzzle" class="dot hidden"></i>
         </button>
       </div>
+      <div class="quick-row">
+        <button id="btnMap" class="quick">
+          <span class="q-ico map"><svg viewBox="0 0 24 24"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg></span>
+          <span class="q-text"><b>Harita</b><small id="mapSub"></small></span>
+          <i id="dotMap" class="dot hidden"></i>
+        </button>
+        <button id="btnAch" class="quick">
+          <span class="q-ico trophy"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M8.5 20h7M10 17h4"/></svg></span>
+          <span class="q-text"><b>Başarımlar</b><small id="achSub"></small></span>
+          <i id="dotAch" class="dot hidden"></i>
+        </button>
+      </div>
       <button id="nextCard" class="next-card"></button>
       <button id="btnPlay" class="btn big primary play">
         <span>Oyna</span>
@@ -171,6 +183,22 @@
     <div id="evTrack" class="ev-track"></div>
     <h3>Jeton dükkânı</h3>
     <div id="evShop" class="ev-track"></div>
+  </section>
+
+  <!-- Harita: geçmiş levellere dönüş -->
+  <section id="screenMap" class="screen hidden">
+    <div class="map-head">
+      <div class="mh-top"><div><b>Harita</b><small id="mapStars"></small></div><button id="mapChest" class="map-chest"></button></div>
+      <div class="progress"><div id="mapBar"></div></div>
+    </div>
+    <div id="mapScroll" class="map-scroll"><canvas id="mapCanvas"></canvas><div id="mapSpacer"></div></div>
+  </section>
+
+  <!-- Başarımlar -->
+  <section id="screenAch" class="screen page hidden">
+    <h2 class="page-title">Başarımlar</h2>
+    <small id="achSummary" class="page-note"></small>
+    <div id="achList" class="ach-list"></div>
   </section>
 
   <!-- Mağaza -->

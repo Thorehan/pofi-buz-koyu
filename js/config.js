@@ -345,6 +345,42 @@ export const EVENT_SHOP = [
   { id: 'decor', name: 'Hatıra süsü', cost: 150, max: 1, decor: true }, // köyün süs yerlerine konur (görselli temalarda)
 ];
 
+// ---------- Yıldızlar, harita ve başarımlar ----------
+// Yıldız sandığı: toplam yıldız her STAR_CHEST.every yıldızda bir sandık açar. Ödüller sırayla döner,
+// her 5. sandık büyüktür. Böylece eski levellere dönüp 3 yıldız yapmak anlam kazanır.
+export const STAR_CHEST = {
+  every: 30,
+  rewards: [{ coins: 150, hints: 1 }, { coins: 200, flakes: 3 }, { coins: 250, hints: 2 }, { coins: 300, flakes: 4 }, { coins: 600, hints: 3, flakes: 8 }],
+};
+// Tekrar oynama: bitirilmiş bir level yeniden bitirilince yalnızca yeni kazanılan yıldızlar ödül verir.
+export const REPLAY = { coin: 5, perNewStar: 15, flakePerNewStar: 1, tokenPerNewStar: 3 };
+// Haritadaki bölgeler (level aralığı, ad, gökyüzü renkleri üst/alt, yol kenarı süsleri)
+export const MAP_REGIONS = [
+  { from: 1, name: 'Buzul Koyu', top: '#cfe8fb', bottom: '#eef7ff', deco: ['pine', 'snowballs', 'fence'] },
+  { from: 101, name: 'Kar Tepeleri', top: '#bcd9f4', bottom: '#e3f1fc', deco: ['pine', 'lantern', 'bench'] },
+  { from: 251, name: 'Kuzey Işıkları', top: '#b9b3ec', bottom: '#dfe3fb', deco: ['aurora', 'statue', 'pine'] },
+  { from: 451, name: 'Liman Kıyısı', top: '#a9dcea', bottom: '#e1f5f8', deco: ['flag', 'lantern', 'fence'] },
+  { from: 651, name: 'Çam Ormanı', top: '#b7e2cc', bottom: '#e6f6ec', deco: ['pine', 'pine', 'bench'] },
+  { from: 851, name: 'Kristal Zirve', top: '#d6c8f2', bottom: '#f1ecfb', deco: ['statue', 'aurora', 'snowballs'] },
+];
+// Başarımlar: her birinin kademeleri var; kademe ödülü ACH_REWARD[kademe]. stat, main.js'te hesaplanır.
+export const ACHIEVEMENTS = [
+  { id: 'levels', name: 'Kâşif', icon: '🧭', stat: 'levels', text: n => `${n} level bitir`, tiers: [10, 50, 100, 250, 500, 1000] },
+  { id: 'stars', name: 'Yıldız avcısı', icon: '⭐', stat: 'stars', text: n => `${n} yıldız topla`, tiers: [30, 150, 300, 750, 1500, 3000] },
+  { id: 'perfect', name: 'Kusursuz', icon: '✨', stat: 'perfect', text: n => `${n} leveli 3 yıldızla bitir`, tiers: [10, 50, 100, 300, 600, 1000] },
+  { id: 'fish', name: 'Balıkçı', icon: '🐟', stat: 'fish', text: n => `${n} balık topla`, tiers: [50, 250, 1000, 3000, 8000] },
+  { id: 'nohint', name: 'Kendi başına', icon: '🧠', stat: 'nohint', text: n => `İpucu kullanmadan ${n} level bitir`, tiers: [25, 100, 300, 600] },
+  { id: 'village', name: 'Köy kurucusu', icon: '🏘️', stat: 'vl', text: n => `Köy seviyesi ${n} ol`, tiers: [3, 5, 8, 10, 12] },
+  { id: 'cocoa', name: 'Kakao ustası', icon: '☕', stat: 'cups', text: n => `${n} fincan kakao sat`, tiers: [50, 250, 1000, 5000] },
+  { id: 'daily', name: 'Sadık dost', icon: '📅', stat: 'streak', text: n => `Günlük bulmacada ${n} günlük seri yap`, tiers: [3, 7, 14, 30] },
+  { id: 'events', name: 'Şenlik ruhu', icon: '🎉', stat: 'events', text: n => `${n} haftalık etkinliğin ödül yolunu bitir`, tiers: [1, 4, 12, 26, 52] },
+  { id: 'wardrobe', name: 'Moda ikonu', icon: '🎩', stat: 'outfits', text: n => `${n} kıyafete sahip ol`, tiers: [3, 8, 15, 25] },
+  { id: 'villagers', name: 'Kalabalık köy', icon: '🐧', stat: 'villagers', text: n => `${n} köylü davet et`, tiers: [1, 3, 6] },
+];
+export const ACH_REWARD = [
+  { coins: 100 }, { coins: 200, hints: 1 }, { coins: 350, flakes: 3 }, { coins: 500, hints: 3 }, { coins: 800, flakes: 8 }, { coins: 1200, hints: 5, flakes: 10 },
+];
+
 // Arkadaş köyü ziyareti: günde en fazla 3 farklı köyden hediye.
 export const VISIT_GIFT = { coins: 20, perDay: 3 };
 

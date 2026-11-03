@@ -77,6 +77,10 @@ Aynı level numarası her zaman aynı tahtayı verir; üretim rastgele görünü
 | Günlük ödüller | `DAILY_REWARDS` | |
 | Kakao satışı | `COCOA` | Pasif gelir |
 | Etkinlik jetonu, ödül yolu, dükkân | `EVENT_TOKENS`, `EVENT_TRACK`, `EVENT_SHOP` | Haftalık etkinliğin temposu |
+| Yıldız sandığı (her kaç yıldızda bir, ödüller) | `STAR_CHEST` | 3 yıldız yapmanın değeri |
+| Tekrar oynama ödülü (yalnız yeni yıldızlar) | `REPLAY` | Eski levellere dönme isteği; tekrar tekrar coin toplanmasını engeller |
+| Başarımlar ve kademe ödülleri | `ACHIEVEMENTS`, `ACH_REWARD` | Uzun vadeli hedefler |
+| Harita bölgeleri | `MAP_REGIONS` | Haritadaki bölge adları ve renkleri |
 
 ### Değişiklikten sonra
 
