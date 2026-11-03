@@ -17,7 +17,7 @@ import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
-  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD,
+  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -424,6 +424,10 @@ function win() {
     P.ach.fish = (P.ach.fish || 0) + run.L.fishCells.length;
     if (!run.hintsUsed) P.ach.nohint = (P.ach.nohint || 0) + 1;
   }
+  if (!run.hintsUsed) questProgress('nohint', 1);
+  if (run.replay && run.gained) questProgress('replay', 1);
+  if (run.daily) questProgress('daily', 1);
+  if (run.event !== null) questProgress('evlevel', 1);
   taskProgress('levels', 1);
   taskProgress('fish', run.L.fishCells.length);
   if (stars === 3) taskProgress('stars', 1);
@@ -968,6 +972,7 @@ function upgrade(id) {
   const vlBefore = villageLevel(P);
   bankCocoa();
   P.flakes -= cost;
+  questProgress('build', 1);
   if (!P.village[id]) {
     P.village[id] = { lv: 1, style: 0, color: null };
     P.styles[id] = [0];
@@ -1126,6 +1131,7 @@ function ensureTask() {
 const taskDone = () => { const t = P.task; return !!t && t.day === dateKey() && !t.claimed && t.have >= t.need; };
 function taskProgress(type, n) {
   guestProgress(type, n);
+  questProgress(type, n);
   const t = ensureTask();
   if (!t || t.claimed || t.type !== type || t.have >= t.need) return;
   t.have = Math.min(t.need, t.have + n);
@@ -1516,8 +1522,9 @@ function renderDailyButtons() {
   const tot = totalStars(), chestReady = Math.floor(tot / STAR_CHEST.every) > P.starChests, ac = achClaimable();
   $('mapSub').textContent = chestReady ? `⭐ ${tot} · 🎁 hazır!` : `⭐ ${tot} · 🎁 ${tot - P.starChests * STAR_CHEST.every}/${STAR_CHEST.every}`;
   $('dotMap').classList.toggle('hidden', !chestReady);
-  $('achSub').textContent = ac ? `${ac} ödül hazır!` : `${achDone()}/${achTotal()} kademe`;
-  $('dotAch').classList.toggle('hidden', !ac);
+  const q = ensureQuests(), qDone = q.list.filter(x => x.have >= x.need).length, qReady = questReady();
+  $('achSub').textContent = ac + qReady ? `${ac + qReady} ödül hazır!` : `Bugün ${qDone}/${q.list.length} görev`;
+  $('dotAch').classList.toggle('hidden', !(ac + qReady));
   const dp = dailyPuzzleState();
   $('btnDailyPuzzle').classList.toggle('muted-q', !dp.unlocked || dp.done);
   $('dotDailyPuzzle').classList.toggle('hidden', !dp.unlocked || dp.done);
@@ -1764,6 +1771,70 @@ function showLevelPopup(n) {
   $('lvPlay').onclick = () => { closeOverlay(); playFromMap = true; startLevel(n); };
 }
 
+// ---------- günlük görevler ----------
+// Her gün tarihe göre 3 görev (aynı gün herkes için aynı). Her görev QUEST_REWARD, üçü alınınca QUEST_CHEST.
+function ensureQuests() {
+  const day = dateKey();
+  if (P.quests?.day === day) return P.quests;
+  const pool = DAILY_QUESTS.filter(q => !q.needs || (q.needs === 'dailyPuzzle' ? P.level > DAILY_PUZZLE.unlockLevel : P.village[q.needs]));
+  let seed = [...day].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  const rnd = () => ((seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296);
+  const list = [];
+  while (list.length < 3 && pool.length) list.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
+  P.quests = { day, list: list.map(q => ({ type: q.type, need: q.need, have: 0, claimed: false })), chest: false };
+  save(P);
+  return P.quests;
+}
+function questProgress(type, n) {
+  const q = ensureQuests();
+  for (const it of q.list) {
+    if (it.type !== type || it.have >= it.need) continue;
+    it.have = Math.min(it.need, it.have + n);
+    if (it.have >= it.need) setTimeout(() => toast(`Görev tamam: ${DAILY_QUESTS.find(d => d.type === type).text} ✔`, 2200), 1500);
+  }
+}
+const questReady = () => {
+  const q = P.quests?.day === dateKey() ? P.quests : null;
+  if (!q) return 0;
+  return q.list.filter(x => x.have >= x.need && !x.claimed).length + (q.list.every(x => x.claimed) && !q.chest ? 1 : 0);
+};
+
+function renderQuests() {
+  const q = ensureQuests(), allClaimed = q.list.every(x => x.claimed);
+  $('questBox').innerHTML = `
+    <div class="qb-head"><b>Bugünün görevleri</b><small>Yarın yenileri gelir</small></div>
+    ${q.list.map((it, i) => {
+      const d = DAILY_QUESTS.find(x => x.type === it.type), done = it.have >= it.need;
+      const act = it.claimed ? '<span class="check">✓</span>' : done ? `<button class="btn green" data-q="${i}">Al</button>` : `<span class="ach-rw">${rewardHtml(QUEST_REWARD)}</span>`;
+      return `<div class="quest${it.claimed ? ' claimed' : ''}"><div class="q-body"><span>${d.text}</span><div class="progress"><div style="width:${(it.have / it.need) * 100}%"></div></div><small class="ach-rw">${it.have}/${it.need}</small></div>${act}</div>`;
+    }).join('')}
+    <div class="qb-chest"><span>🎁 Üç görevi de bitir: ${rewardHtml(QUEST_CHEST)}</span>${q.chest ? '<span class="check">✓</span>' : `<button id="qChest" class="btn primary" ${allClaimed ? '' : 'disabled'}>Aç</button>`}</div>`;
+  $('questBox').querySelectorAll('[data-q]').forEach(btn => {
+    btn.onclick = () => {
+      const it = q.list[+btn.dataset.q];
+      if (it.claimed || it.have < it.need) return;
+      it.claimed = true;
+      giveReward(QUEST_REWARD);
+      persist();
+      sfx.coin();
+      track('quest_claim', { type: it.type });
+      renderAch();
+      updateWallet();
+    };
+  });
+  if ($('qChest')) $('qChest').onclick = () => {
+    if (q.chest || !q.list.every(x => x.claimed)) return;
+    q.chest = true;
+    giveReward(QUEST_CHEST);
+    persist();
+    sfx.reward();
+    track('quest_chest');
+    toast('Günlük sandık açıldı!');
+    renderAch();
+    updateWallet();
+  };
+}
+
 // ---------- başarımlar ----------
 function achStat(stat) {
   switch (stat) {
@@ -1785,10 +1856,11 @@ const achDone = () => ACHIEVEMENTS.reduce((n, a) => n + (P.achClaimed[a.id] || 0
 const achTotal = () => ACHIEVEMENTS.reduce((n, a) => n + a.tiers.length, 0);
 
 function renderAch() {
+  renderQuests();
   $('achSummary').textContent = `${achDone()}/${achTotal()} kademe · ${achClaimable()} ödül hazır`;
   $('achList').innerHTML = ACHIEVEMENTS.map(a => {
     const i = achInfo(a), target = a.tiers[Math.min(i.got, a.tiers.length - 1)], prevT = i.got ? a.tiers[i.got - 1] : 0;
-    const pct = i.max ? 100 : Math.min(100, ((i.v - prevT) / (target - prevT)) * 100);
+    const pct = i.max ? 100 : Math.max(0, Math.min(100, ((i.v - prevT) / (target - prevT)) * 100));
     const dots = a.tiers.map((_, k) => `<i class="${k < i.got ? 'on' : k < i.reached ? 'ready' : ''}"></i>`).join('');
     const act = i.claimable ? `<button class="btn green" data-ach="${a.id}">Al</button>` : i.max ? '<span class="check">✓</span>' : '';
     return `<div class="ach-card${i.claimable ? ' ready' : ''}${i.max ? ' done' : ''}">

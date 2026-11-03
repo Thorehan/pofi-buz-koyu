@@ -271,6 +271,21 @@ html, body {
 #mapCanvas { position: sticky; top: 0; display: block; width: 100%; height: 100%; }
 /* başarımlar */
 .ach-list { display: flex; flex-direction: column; gap: 8px; }
+.quest-box { background: #fff; border-radius: 18px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; border: 2px solid #e1ecf7; flex: none; }
+.quest-box .qb-head { display: flex; align-items: center; justify-content: space-between; }
+.quest-box .qb-head b { font-size: 16px; color: var(--ink); }
+.quest-box .qb-head small { color: var(--ink-soft); font-size: 12px; }
+.quest { display: flex; align-items: center; gap: 10px; }
+.quest .q-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.quest .q-body span { font-size: 14px; color: var(--ink); }
+.quest .progress { margin: 0; height: 7px; background: #eef2f7; }
+.quest .progress div { height: 100%; background: var(--green); border-radius: inherit; }
+.quest.claimed { opacity: .5; }
+.quest .btn { padding: 6px 12px; font-size: 14px; flex: none; }
+.quest .check { color: var(--green-d); font-weight: 700; }
+.qb-chest { display: flex; align-items: center; gap: 8px; justify-content: space-between; border-top: 1px dashed #dbe3ee; padding-top: 8px; font-size: 14px; color: var(--ink-soft); }
+.qb-chest .btn { padding: 7px 14px; font-size: 14px; }
+.quest-box .ico, .ach-rw .ico { width: 15px; height: 15px; vertical-align: -2px; }
 .ach-card { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 16px; padding: 10px 12px; border: 2px solid #e1ecf7; }
 .ach-card.ready { border-color: var(--green); }
 .ach-card.done { opacity: .6; }

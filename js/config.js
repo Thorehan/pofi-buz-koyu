@@ -377,6 +377,21 @@ export const ACHIEVEMENTS = [
   { id: 'wardrobe', name: 'Moda ikonu', icon: '🎩', stat: 'outfits', text: n => `${n} kıyafete sahip ol`, tiers: [3, 8, 15, 25] },
   { id: 'villagers', name: 'Kalabalık köy', icon: '🐧', stat: 'villagers', text: n => `${n} köylü davet et`, tiers: [1, 3, 6] },
 ];
+// Günlük görevler: her gün tarihe göre 3 görev seçilir (herkeste aynı gün aynı görevler). needs: o özellik açık değilse seçilmez.
+export const DAILY_QUESTS = [
+  { type: 'levels', need: 4, text: '4 level bitir' },
+  { type: 'stars', need: 2, text: '2 leveli 3 yıldızla bitir' },
+  { type: 'nohint', need: 2, text: 'İpucu kullanmadan 2 level bitir' },
+  { type: 'fish', need: 15, text: '15 balık topla' },
+  { type: 'replay', need: 1, text: 'Haritadan bir levelde yeni yıldız kazan' },
+  { type: 'build', need: 1, text: 'Köyde bir yapı kur ya da geliştir' },
+  { type: 'cocoa', need: 1, text: 'Yolculara kakao sat', needs: 'cocoa' },
+  { type: 'evlevel', need: 1, text: '1 etkinlik leveli bitir' },
+  { type: 'daily', need: 1, text: 'Günlük bulmacayı çöz', needs: 'dailyPuzzle' },
+];
+export const QUEST_REWARD = { coins: 60 };
+export const QUEST_CHEST = { coins: 200, hints: 2, flakes: 2 }; // üç görev de alınınca
+
 export const ACH_REWARD = [
   { coins: 100 }, { coins: 200, hints: 1 }, { coins: 350, flakes: 3 }, { coins: 500, hints: 3 }, { coins: 800, flakes: 8 }, { coins: 1200, hints: 5, flakes: 10 },
 ];
