@@ -1,7 +1,10 @@
 import { parseLevel, simulate, solve, won, generateLevel, starsFor, T } from './engine.js';
 import { BoardView, paintTile } from './board.js';
 import { VillageView, phaseOf, drawDecor } from './village.js';
-import { ensureEvent, eventPoints, timeLeft, claimable, nextMilestone, prizeOf, encodeVillage, decodeVillage, extractCode } from './live.js';
+import {
+  ensureEvent, levelTokens, addTokens, BONUS_TEXT, eventLevelDef, timeLeft, claimable, nextMilestone, prizeOf,
+  encodeVillage, decodeVillage, extractCode,
+} from './live.js';
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
   buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone, cupPrice, nextRecipe,
@@ -13,7 +16,7 @@ import { loadArt, setArtEnabled, accentHue, onArtLoad } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
-  ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_POINTS, VISIT_GIFT,
+  ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, VISIT_GIFT,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -65,7 +68,7 @@ function updateWallet() {
   renderEventCard();
 }
 
-const SCREENS = ['splash', 'login', 'intro', 'home', 'game', 'village', 'visit', 'interior', 'wardrobe', 'shop', 'settings'];
+const SCREENS = ['splash', 'login', 'intro', 'home', 'game', 'village', 'visit', 'interior', 'event', 'wardrobe', 'shop', 'settings'];
 const TAB_SCREENS = ['home', 'village', 'wardrobe', 'shop', 'settings'];
 
 function showScreen(name) {
@@ -74,7 +77,8 @@ function showScreen(name) {
   $('app').dataset.screen = name;
   board.active = name === 'game';
   setAmbient(name === 'game' || name === 'village');
-  $('btnBack').classList.toggle('hidden', name !== 'game' && name !== 'visit' && name !== 'interior');
+  $('btnBack').classList.toggle('hidden', !['game', 'visit', 'interior', 'event'].includes(name));
+  board.dark = false;
   $('tabbar').classList.toggle('hidden', !TAB_SCREENS.includes(name));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   if (name !== 'village' && sheet) closeSheet();
@@ -87,9 +91,11 @@ function showScreen(name) {
     else if (!P.villageName && !nameAsked) { nameAsked = true; setTimeout(() => { if (screen === 'village' && !overlayOpen()) showVillageName(); }, 400); }
   }
   if (name === 'wardrobe') renderWardrobe();
+  if (name === 'event') renderEventScreen();
   if (name === 'shop') renderShop();
   if (name === 'settings') renderSettings();
   if (name === 'home' && P.profile) $('greet').textContent = `Merhaba ${P.profile.name}, Pofi seni bekliyor!`;
+  if (name === 'home') { ensureEvent(P); if (P.eventNote) { const n = P.eventNote; P.eventNote = null; persist(); setTimeout(() => toast(`${n.name} bitti: kalan ${n.tokens} jeton ${n.coins} coin oldu`, 3200), 600); } }
   updateWallet();
   if (name === 'home' && !dailyPopupShown && !dailyRewardState().claimedToday) {
     dailyPopupShown = true;
@@ -202,9 +208,12 @@ function levelDef(n) {
   return n <= LEVELS.length ? LEVELS[n - 1] : generateLevel(n);
 }
 
-function startLevel(n, daily = false) {
+function startLevel(n, daily = false, evk = null) {
   let def;
-  if (daily) {
+  const ev = evk !== null ? ensureEvent(P) : null;
+  if (ev) {
+    def = eventLevelDef(ev, evk, P.event.base);
+  } else if (daily) {
     const key = dateKey();
     def = { ...generateLevel(Math.max(9, P.level - 1), { seed: +key.replace(/-/g, '') }), limit: null, daily: key };
   } else {
@@ -213,13 +222,23 @@ function startLevel(n, daily = false) {
   const { L, S } = parseLevel(def);
   // Kardan adam: hamle limitli levellerde ek hamle.
   const limit = def.limit ? def.limit + buff(P, 'hardMoves') : null;
-  run = { def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintBuys: 0, hintLock: false };
+  run = {
+    def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintBuys: 0, hintLock: false,
+    event: ev ? evk : null, reverse: !!ev?.rule?.reverse,
+  };
   showScreen('game');
+  board.dark = !!ev?.rule?.dark;
   board.outfit = P.outfit;
   board.setLevel(L, S);
-  board.tutorialDir = !daily && def.n <= 2 ? solve(L, S)?.[0] ?? -1 : -1;
+  board.tutorialDir = !daily && !ev && def.n <= 2 ? solve(L, S)?.[0] ?? -1 : -1;
   renderHud();
   renderGoal();
+  if (ev) {
+    track('event_level_start', { event: ev.id, k: evk });
+    const tips = [ev.rule?.reverse && 'Kontroller ters: sağa kaydırırsan sola gider!', ev.rule?.dark && 'Karanlık: yalnızca penguenin çevresi görünür.', run.limit && `${run.limit} hamle hakkın var`].filter(Boolean);
+    if (tips.length) toast(tips.join(' · '), 2600);
+    return;
+  }
   track(daily ? 'daily_puzzle_start' : 'level_start', { level: def.n, tier: def.tier, min: def.min });
 
   const intro = !daily && INTRO[def.n];
@@ -243,7 +262,7 @@ function drawIntroIcon(cv, kind) {
 }
 
 function renderHud() {
-  $('hudLevel').textContent = run.daily ? 'Günlük bulmaca' : `Level ${run.def.n}`;
+  $('hudLevel').textContent = run.event !== null ? `Etkinlik ${run.event + 1}/${EVENT_LEVELS}` : run.daily ? 'Günlük bulmaca' : `Level ${run.def.n}`;
   const tl = run.daily ? '' : TIER_LABEL[run.def.tier];
   $('hudTier').textContent = tl;
   $('hudTier').className = `tier ${run.def.tier}${tl ? '' : ' hidden'}`;
@@ -271,8 +290,10 @@ function renderGoal() {
   drawFish(fitCanvas($('goalFish'), 28, 20), 13, 10, 24, 0);
 }
 
+const flip = d => (d & 4) | (((d & 3) + 2) % 4);
 board.onMove = dir => {
   if (!run || run.finished || overlayOpen()) return;
+  if (run.reverse) dir = flip(dir);
   const r = simulate(run.L, run.st, dir);
   if (!r) { sfx.bump(); return; }
   run.history.push(run.st);
@@ -371,6 +392,9 @@ function win() {
     P.dailyPuzzleDay = run.def.daily;
     raw = Math.round(dailyPuzzleCoins(P.dailyPuzzleStreak) * (1 + buff(P, 'puzzlePct')));
     track('daily_puzzle_complete', { streak: P.dailyPuzzleStreak, moves: run.moves });
+  } else if (run.event !== null) {
+    raw = ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
+    track('event_level_complete', { k: run.event, moves: run.moves, stars });
   } else {
     raw = ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
     P.stars[run.def.n] = Math.max(P.stars[run.def.n] || 0, stars);
@@ -394,17 +418,20 @@ function win() {
     board.celebrate();
     sfx.win();
   }, 150);
-  // Haftalık etkinlik puanı
+  // Haftalık etkinlik jetonu (etkinlik levelinde ilk bitiriş çok daha fazla verir)
   const ev = ensureEvent(P);
-  const evPts = Math.round(eventPoints(ev, { stars, fish: run.L.fishCells.length, daily: run.daily, hintsUsed: run.hintsUsed > 0 }) * (1 + buff(P, 'eventPct')));
-  P.event.points += evPts;
+  const isEv = run.event !== null, firstClear = isEv && !P.event.done[run.event];
+  const evPts = addTokens(P, Math.round(levelTokens(ev, {
+    stars, fish: run.L.fishCells.length, daily: run.daily, hintsUsed: run.hintsUsed > 0, eventLevel: isEv, firstClear,
+  }) * (1 + buff(P, 'eventPct'))));
+  if (isEv) P.event.done[run.event] = Math.max(P.event.done[run.event] || 0, stars);
   persist();
   const notes = [
     pct > 0 && `Köy bonusu +%${Math.round(pct * 100)}`,
     fishCoins > 0 && `Balık +${fishCoins}`,
     stars === 3 && '3 yıldız +1 ❄',
     lucky && 'Şanslı ağ +1 ❄',
-    `${ev.name} +${evPts} puan`,
+    `${ev.token} +${evPts} jeton`,
   ].filter(Boolean).join(' · ');
   setTimeout(() => showResult(stars, base, flakes, notes), 1100);
 }
@@ -471,7 +498,7 @@ function showResult(stars, base, flakes, notes) {
       save(P);
       then();
     };
-    $('toNext').onclick = () => leave(() => (run.daily ? showScreen('home') : startLevel(P.level)));
+    $('toNext').onclick = () => leave(() => (run.event !== null ? showScreen('event') : run.daily ? showScreen('home') : startLevel(P.level)));
     if (villageBtn) $('toVillage').onclick = () => leave(() => showScreen('village'));
   };
 
@@ -516,7 +543,7 @@ function fail() {
   if (free > 0) $('fFree').onclick = () => { P.daily.cont++; persist(); resume(); };
   $('fAd').onclick = async () => { if (await showRewarded('continue')) resume(); };
   $('fCoin').onclick = () => { P.coins -= ECON.continueCost; persist(); resume(); };
-  $('fRetry').onclick = () => { closeOverlay(); startLevel(run.def.n, run.daily); };
+  $('fRetry').onclick = () => { closeOverlay(); restartRun(); };
 }
 
 // İpucu bir hamleyi gösterir; oyuncu hamle yapana (ya da geri alana) kadar düğme kilitli kalır,
@@ -534,7 +561,7 @@ function useHint() {
     run.hintsUsed++;
     persist();
     track('booster_used', { type: 'hint', level: run.def.n });
-    board.hintDir = sol[0];
+    board.hintDir = run.reverse ? flip(sol[0]) : sol[0]; // ters kontrolde kaydırılacak yönü gösterir
     board.hintT = 2.6;
     if (run.st.q >= 0) board.sel = sol[0] >= 4 ? 1 : 0;
     run.hintLock = true;
@@ -1077,11 +1104,13 @@ function showTask() {
     t.claimed = true;
     P.coins += TASK_REWARD.coins;
     P.flakes += TASK_REWARD.flakes;
+    const ev = ensureEvent(P);
+    addTokens(P, EVENT_TOKENS.task);
     persist();
     closeOverlay();
     sfx.reward();
     track('task_claim', { type: t.type, giver: t.giver });
-    toast(`+${TASK_REWARD.coins} coin, +${TASK_REWARD.flakes} kar tanesi`);
+    toast(`+${TASK_REWARD.coins} coin, +${TASK_REWARD.flakes} kar tanesi, ${ev.token} +${EVENT_TOKENS.task} jeton`);
   };
 }
 
@@ -1415,54 +1444,116 @@ $('btnReset').onclick = () => {
   $('rsNo').onclick = closeOverlay;
 };
 
-// ---------- haftalık etkinlik ----------
+// ---------- haftalık etkinlik (docs/v04-oneri.md, bölüm 3) ----------
+// Etkinlik ekranı: haftaya özel 15 temalı level, jetonla ilerleyen ödül yolu ve jeton dükkânı.
 function renderEventCard() {
   const ev = ensureEvent(P), next = nextMilestone(P), ready = claimable(P).length;
-  const pct = next ? P.event.points / next.pts : 1;
+  const pct = next ? P.event.earned / next.pts : 1;
   const card = $('eventCard');
   card.style.setProperty('--ev', ev.color);
-  card.innerHTML = `<canvas></canvas><span class="ev-text"><b>${ev.name}</b>`
+  card.innerHTML = `<span class="ev-token">${ev.token}</span><span class="ev-text"><b>${ev.name}</b>`
     + `<span class="ev-bar"><div style="width:${Math.min(100, pct * 100)}%"></div></span>`
-    + `<small>${P.event.points} puan · ${next ? `sonraki ödül ${next.pts}` : 'bütün ödüller açıldı'} · ${timeLeft(ev.ends)}</small></span>`
+    + `<small>${P.event.tokens} jeton · ${next ? `sonraki ödül ${next.pts}` : 'bütün ödüller açıldı'} · ${timeLeft(ev.ends)}</small></span>`
     + (ready ? '<i class="dot"></i>' : '');
-  const prize = prizeOf(ev);
-  drawPofi(fitCanvas(card.querySelector('canvas'), 40, 40), 20, 39, 30, { outfit: { [prize.slot]: prize.id } });
 }
 
-function showEvent() {
-  const ev = ensureEvent(P), prize = prizeOf(ev);
-  const steps = EVENT_TRACK.map((m, i) => {
-    const done = P.event.claimed.includes(i), ready = !done && P.event.points >= m.pts;
-    const rw = m.r.prize ? `<b>${prize.name}</b>&nbsp;<small>özel kıyafet</small>` : rewardHtml(m.r);
+const evPrizeReward = ev => (prizeOf(ev) ? null : EVENT_PRIZE_FALLBACK);
+function giveReward(r) {
+  P.coins += r.coins || 0;
+  P.hints += r.hints || 0;
+  P.flakes += r.flakes || 0;
+}
+
+function renderEventScreen() {
+  const ev = ensureEvent(P), prize = prizeOf(ev), E = P.event;
+  const shopPrice = it => (ev.rule?.sale ? Math.ceil(it.cost / 2) : it.cost);
+  $('screenEvent').style.setProperty('--ev', ev.color);
+  const rules = [
+    ev.rule?.mech && 'Temalı mekanikler',
+    ev.rule?.fish && `+${ev.rule.fish} balık`,
+    ev.rule?.order && 'Sıralı balık',
+    ev.rule?.nosnow && 'Kalıcı kar yok',
+    ev.rule?.limit && 'Hamle sınırı',
+    ev.rule?.dark && 'Karanlık tahta',
+    ev.rule?.reverse && 'Ters kontrol',
+    ev.rule?.sale && 'Dükkân yarı fiyat',
+  ].filter(Boolean);
+  $('evBanner').innerHTML = `
+    <span class="ev-big">${ev.token}</span>
+    <div class="ev-head"><span class="new-tag">${ev.big ? 'ÖZEL GÜN' : 'HAFTALIK ETKİNLİK'}</span><h2>${ev.name}</h2><p>${ev.text}</p>
+      <div class="ev-chips">${rules.map(r => `<span>${r}</span>`).join('')}${ev.bonus ? `<span>${BONUS_TEXT[ev.bonus]}</span>` : ''}</div>
+      <small>Bitmesine ${timeLeft(ev.ends)} · kalan jeton hafta sonunda ${EVENT_TOKENS.coinRate} katı coin olur</small></div>
+    <span class="ev-wallet">${ev.token} <b>${E.tokens}</b></span>`;
+
+  // levelller: sırayla açılır
+  const firstOpen = Array.from({ length: EVENT_LEVELS }, (_, k) => k).find(k => !E.done[k]) ?? EVENT_LEVELS;
+  $('evLevels').innerHTML = Array.from({ length: EVENT_LEVELS }, (_, k) => {
+    const st = E.done[k] || 0, open = k <= firstOpen;
+    return `<button class="ev-lv${st ? ' done' : ''}${open ? '' : ' locked'}${k === firstOpen ? ' next' : ''}" data-evl="${k}" ${open ? '' : 'disabled'}>
+      <b>${k + 1}</b><span>${st ? '★'.repeat(st) + '☆'.repeat(3 - st) : open ? `+${EVENT_TOKENS.eventLevel}` : '🔒'}</span></button>`;
+  }).join('');
+  $('evLevels').querySelectorAll('[data-evl]').forEach(b => {
+    b.onclick = () => {
+      b.classList.add('loading');
+      setTimeout(() => startLevel(0, false, +b.dataset.evl), 30); // üretim kısa sürebilir; önce dokunuş görünsün
+    };
+  });
+
+  // ödül yolu
+  $('evTrack').innerHTML = EVENT_TRACK.map((m, i) => {
+    const done = E.claimed.includes(i), ready = !done && E.earned >= m.pts;
+    const r = m.r.prize ? evPrizeReward(ev) : m.r;
+    const rw = r ? rewardHtml(r) : `<b>${prize.name}</b>&nbsp;<small>haftanın kıyafeti</small>`;
     const act = ready ? `<button class="btn green" data-ev="${i}">Al</button>` : done ? '<span class="check">✓</span>' : '';
     return `<div class="ev-step${done ? ' done' : ready ? ' ready' : ''}"><span class="pts">${m.pts}</span><span class="rw">${rw}</span>${act}</div>`;
   }).join('');
-  openOverlay(`
-    <span class="new-tag" style="background:${ev.color}">HAFTALIK ETKİNLİK</span>
-    <h2>${ev.name}</h2>
-    <canvas class="intro-icon" id="evPrize"></canvas>
-    <p>${ev.text}</p>
-    <small class="breakdown">${P.event.points} puan · bitmesine ${timeLeft(ev.ends)} · her level en az ${EVENT_POINTS.level} puan, yıldız başına +${EVENT_POINTS.star}</small>
-    <div class="ev-track">${steps}</div>
-    <button id="evClose" class="btn link">Kapat</button>`);
-  drawPofi(fitCanvas($('evPrize'), 84, 84), 42, 82, 64, { outfit: { ...P.outfit, [prize.slot]: prize.id } });
-  $('evClose').onclick = closeOverlay;
-  $('overlayCard').querySelectorAll('[data-ev]').forEach(btn => {
+  $('evEarned').textContent = `Bu hafta kazanılan: ${E.earned} jeton`;
+  $('evTrack').querySelectorAll('[data-ev]').forEach(btn => {
     btn.onclick = () => {
-      const i = +btn.dataset.ev, r = EVENT_TRACK[i].r;
-      if (P.event.claimed.includes(i) || P.event.points < EVENT_TRACK[i].pts) return;
-      P.coins += r.coins || 0;
-      P.hints += r.hints || 0;
-      P.flakes += r.flakes || 0;
-      if (r.prize && !P.owned[prize.slot].includes(prize.id)) P.owned[prize.slot].push(prize.id);
-      P.event.claimed.push(i);
+      const i = +btn.dataset.ev, m = EVENT_TRACK[i];
+      if (E.claimed.includes(i) || E.earned < m.pts) return;
+      const r = m.r.prize ? evPrizeReward(ev) : m.r;
+      if (r) giveReward(r);
+      else if (!P.owned[prize.slot].includes(prize.id)) P.owned[prize.slot].push(prize.id);
+      E.claimed.push(i);
       persist();
       sfx.reward();
       track('event_claim', { event: ev.id, step: i });
-      toast(r.prize ? `${prize.name} gardırobuna eklendi!` : 'Ödül alındı');
-      showEvent();
+      toast(r ? 'Ödül alındı' : `${prize.name} gardırobuna eklendi!`);
+      renderEventScreen();
+      updateWallet();
     };
   });
+
+  // dükkân
+  $('evShop').innerHTML = EVENT_SHOP.filter(it => !it.prize || prize).map(it => {
+    const n = E.bought[it.id] || 0, price = shopPrice(it);
+    const owned = it.prize && P.owned[prize.slot].includes(prize.id);
+    const left = it.max - n;
+    const label = it.prize ? prize.name : it.name;
+    const act = owned ? '<span class="check">Sahipsin</span>' : left <= 0 ? '<span class="check">Tükendi</span>'
+      : `<button class="btn green" data-evs="${it.id}" ${E.tokens < price ? 'disabled' : ''}>${ev.token} ${price}</button>`;
+    return `<div class="ev-step"><span class="rw">${label}</span><small>${owned || it.prize ? '' : `${left}/${it.max}`}</small>${act}</div>`;
+  }).join('');
+  $('evShop').querySelectorAll('[data-evs]').forEach(btn => {
+    btn.onclick = () => {
+      const it = EVENT_SHOP.find(x => x.id === btn.dataset.evs), price = shopPrice(it);
+      if (E.tokens < price || (E.bought[it.id] || 0) >= it.max) return;
+      E.tokens -= price;
+      E.bought[it.id] = (E.bought[it.id] || 0) + 1;
+      if (it.prize) { if (!P.owned[prize.slot].includes(prize.id)) P.owned[prize.slot].push(prize.id); }
+      else giveReward(it.r);
+      persist();
+      sfx.coin();
+      track('event_shop', { event: ev.id, item: it.id, price });
+      toast(it.prize ? `${prize.name} gardırobuna eklendi!` : `${it.name} alındı`);
+      renderEventScreen();
+      updateWallet();
+    };
+  });
+  const pv = $('evPrize');
+  if (prize) drawPofi(fitCanvas(pv, 64, 64), 32, 62, 50, { outfit: { ...P.outfit, [prize.slot]: prize.id } });
+  pv.classList.toggle('hidden', !prize);
 }
 
 // ---------- köy paylaşımı ve arkadaş köyü ziyareti ----------
@@ -1520,6 +1611,8 @@ function openVisit(code) {
       persist();
       sfx.coin();
       gift = `Ziyaret hediyesi: +${VISIT_GIFT.coins} coin`;
+      const ev = ensureEvent(P);
+      if (ev.bonus === 'visit') { addTokens(P, EVENT_BONUS.visit); persist(); gift += ` · ${ev.token} +${EVENT_BONUS.visit} jeton`; }
     }
   } else gift = 'Bu senin köyün 🙂';
   $('visitTag').textContent = `${v.vname || v.name} · Köy Lv${vl}`;
@@ -1555,15 +1648,17 @@ $('btnBack').onclick = () => {
   closeOverlay();
   if (screen === 'visit') { leaveVisit(); return; }
   if (screen === 'interior') { room = null; showScreen('village'); return; }
+  const back = screen === 'game' && run?.event !== null && run?.event !== undefined ? 'event' : 'home';
   run = null;
-  showScreen('home');
+  showScreen(back);
 };
 $('btnUndo').onclick = undo;
-$('btnRestart').onclick = () => { if (run && !overlayOpen()) { startLevel(run.def.n, run.daily); nudgeHint(); } };
+const restartRun = () => startLevel(run.def.n, run.daily, run.event);
+$('btnRestart').onclick = () => { if (run && !overlayOpen()) { restartRun(); nudgeHint(); } };
 $('btnHint').onclick = useHint;
 $('btnCocoa').onclick = () => sellCocoa(1);
 $('btnRecipes').onclick = showRecipes;
-$('eventCard').onclick = showEvent;
+$('eventCard').onclick = () => showScreen('event');
 $('btnShare').onclick = shareVillage;
 $('btnVisit').onclick = askVisit;
 $('btnVisitBack').onclick = leaveVisit;

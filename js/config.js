@@ -233,25 +233,89 @@ export const COLORS = [
   { id: 'coral', name: 'Mercan', hex: '#ff6b5e' },
 ];
 
-// ---------- Haftalık etkinlik (GDD 10, Faz 4) ----------
-// Her pazartesi 00:00'da (yerel saat) sıradaki temaya geçilir. Puanlar level bitirerek kazanılır;
-// her temanın bir "odak" kuralı ek puan verir. Son basamak o temanın özel kıyafeti.
-export const EVENTS = [
-  { id: 'fish', name: 'Balık Festivali', color: '#ff8c42', text: 'Topladığın her balık +5 etkinlik puanı.', reward: { hat: 'fishhat' } },
-  { id: 'flake', name: 'Kar Tanesi Avı', color: '#3d8fe0', text: '3 yıldızla bitirdiğin her level +15 etkinlik puanı.', reward: { scarf: 'flakes' } },
-  { id: 'sled', name: 'Kızak Yarışı', color: '#e5484d', text: 'Günlük bulmaca +60 etkinlik puanı.', reward: { hat: 'helmet' } },
-  { id: 'aurora', name: 'Kuzey Işığı Haftası', color: '#8f5bd6', text: 'İpucu kullanmadan bitirdiğin her level +15 etkinlik puanı.', reward: { hat: 'starhat' } },
+// ---------- Yıllık etkinlik takvimi (docs/v04-oneri.md, bölüm 3) ----------
+// Her pazartesi 00:00'da (yerel saat) takvimdeki temaya geçilir. Takvim 28 Aralık 2026 haftasından başlar
+// ve 52 haftada bir tekrar eder. Tema: jeton simgesi, etkinlik levellerinin kuralı, jeton bonusu, ödül.
+// rule: mech = etkinlik levellerinde zorunlu mekanikler (oyuncu açtıysa), fish = ek balık, order = sıralı balık,
+//       nosnow = kalıcı kar yok, limit = hamle sınırı, dark = karanlık tahta, reverse = ters kontrol, sale = dükkân yarı fiyat
+// bonus: fish (balık başına +1), star3 (3 yıldıza +5), nohint (ipucusuz +5), daily (günlük bulmaca +30), visit (arkadaş köyü +10)
+// prize: son ödül basamağı ve dükkândaki kıyafet; null ise yerine coin ve kar tanesi verilir.
+export const EVENT_THEMES = {
+  newyear: { name: 'Yılbaşı Havai Fişekleri', color: '#7b4fd0', token: '🎆', text: 'Yeni yıl! Etkinlik levellerinde fazladan balık var.', rule: { fish: 1 }, bonus: 'star3', big: true },
+  snowflake: { name: 'Kar Tanesi Avı', color: '#3d8fe0', token: '❄️', text: 'Eriyen karlar her yerde; frenini dikkatli kullan.', rule: { mech: ['melt'] }, bonus: 'star3', prize: { scarf: 'flakes' } },
+  igloo: { name: 'İglo Yapım Haftası', color: '#4f8fc8', token: '🧱', text: 'Kasaları ve kar toplarını doğru yere taşı.', rule: { mech: ['crate', 'ball'] }, bonus: null },
+  penguin: { name: 'Penguen Dostları', color: '#1d3557', token: '🐧', text: '20 Ocak Penguen Farkındalık Günü. Pipi de yardıma geliyor!', rule: { mech: ['pipi'] }, bonus: 'star3', big: true },
+  fish: { name: 'Balık Festivali', color: '#ff8c42', token: '🐟', text: 'Tahtalar balık dolu; her balık +1 jeton.', rule: { fish: 2 }, bonus: 'fish', prize: { hat: 'fishhat' } },
+  lantern: { name: 'Fener Şenliği', color: '#e5484d', token: '🏮', text: 'Çin Yeni Yılı. Karanlıkta fenerin ışığıyla yolunu bul.', rule: { dark: true }, bonus: 'nohint', big: true },
+  valentine: { name: 'Kalpli Balıklar', color: '#ff5f8f', token: '💗', text: 'Sevgililer Günü. Kalpli balıkları sırayla topla.', rule: { order: true }, bonus: 'fish', big: true },
+  sculpture: { name: 'Buz Heykeli Yarışması', color: '#6fb0e0', token: '🧊', text: 'Kırılgan kayaları yontarak yol aç.', rule: { mech: ['fragile'] }, bonus: null },
+  polarbear: { name: 'Kutup Ayısı Ziyareti', color: '#8aa1b8', token: '🐻', text: 'Kutup Ayısı Günü. Foklar ortalıkta dolaşıyor.', rule: { mech: ['seal'] }, bonus: 'star3', big: true },
+  sled: { name: 'Kızak Yarışı', color: '#e5484d', token: '🛷', text: 'Her etkinlik levelinde hamle sınırı var.', rule: { limit: true }, bonus: 'daily', prize: { hat: 'helmet' } },
+  sugar: { name: 'Şeker Bayramı Kakaosu', color: '#c98b4f', token: '🍬', text: 'Bayramınız kutlu olsun! Her balık +1 jeton.', rule: { fish: 1 }, bonus: 'fish', big: true },
+  spring: { name: 'Bahar Uyanışı', color: '#3fae5a', token: '🌷', text: 'Buzlar çatlıyor, karlar eriyor.', rule: { mech: ['melt', 'crack'] }, bonus: 'nohint', big: true },
+  eggs: { name: 'Yumurta Avı', color: '#f5b81c', token: '🥚', text: 'Bahar şenliği. Balıkları sırayla topla.', rule: { order: true }, bonus: 'star3', big: true },
+  aprilfool: { name: 'Şaşkın Pofi', color: '#ff9f43', token: '🤪', text: '1 Nisan! Etkinlik levellerinde kontroller ters.', rule: { reverse: true }, bonus: 'star3', big: true },
+  aurora: { name: 'Kuzey Işığı Haftası', color: '#8f5bd6', token: '✨', text: 'Buz delikleri ışıldıyor; ipucusuz bitir, fazladan kazan.', rule: { mech: ['hole'] }, bonus: 'nohint', prize: { hat: 'starhat' } },
+  crystal: { name: 'Kristal Mağara', color: '#4f86b8', token: '💎', text: 'Mağara karanlık, tavandan sarkıtlar sarkıyor.', rule: { dark: true, mech: ['icicle'] }, bonus: null },
+  penguinday: { name: 'Dünya Penguen Günü', color: '#1d3557', token: '🐧', text: '25 Nisan ve 23 Nisan Çocuk Şenliği. Pofi ve Pipi birlikte.', rule: { mech: ['pipi'], fish: 1 }, bonus: 'star3', big: true },
+  gullmail: { name: 'Martı Postası', color: '#4ea8de', token: '✉️', text: 'Oklar ve döner tablalar mektupları taşıyor.', rule: { mech: ['arrow', 'turn'] }, bonus: null },
+  mothers: { name: 'Anneler Günü Kakaosu', color: '#ff95b2', token: '🌸', text: 'Annelere sıcak kakao!', rule: { fish: 1 }, bonus: 'star3', big: true },
+  whales: { name: 'Balina Göçü', color: '#2a5d8f', token: '🐋', text: 'Salla suları aş.', rule: { mech: ['water', 'raft'] }, bonus: null },
+  olympics: { name: 'Kızak Olimpiyatı', color: '#e5484d', token: '🏅', text: '19 Mayıs. Hamle sınırıyla en iyi derece!', rule: { limit: true }, bonus: 'star3', big: true },
+  angler: { name: 'Usta Balıkçı', color: '#ff8c42', token: '🎣', text: 'Bol balık, ama sırayla.', rule: { fish: 2, order: true }, bonus: 'fish' },
+  kites: { name: 'Uçurtma Rüzgârı', color: '#4ea8de', token: '🪁', text: 'Rüzgâr ve rampalarla uç.', rule: { mech: ['wind', 'ramp'] }, bonus: null },
+  ocean: { name: 'Okyanus Haftası', color: '#1f6fb2', token: '🌊', text: 'Dünya Okyanus Günü. Su, sal ve köprüler.', rule: { mech: ['water', 'raft', 'crate'] }, bonus: 'fish', big: true },
+  fathers: { name: 'Babalar Günü Balık Turu', color: '#5b6578', token: '🎣', text: 'Babalarla balığa! Her balık +1 jeton.', rule: { fish: 2 }, bonus: 'fish', big: true },
+  midnightsun: { name: 'Gece Yarısı Güneşi', color: '#ff9f43', token: '☀️', text: 'Kutupta güneş batmıyor; karlar eriyor.', rule: { mech: ['melt'] }, bonus: 'nohint', big: true },
+  skating: { name: 'Buz Pateni Şampiyonası', color: '#7fb8e6', token: '⛸️', text: 'Kalıcı kar yok, çatlak buz çok.', rule: { nosnow: true, mech: ['crack'] }, bonus: 'star3' },
+  treasure: { name: 'Hazine Sandığı', color: '#c98b4f', token: '🗝️', text: 'Anahtar balığı bul, kilitleri aç.', rule: { mech: ['key'] }, bonus: null },
+  emoji: { name: 'Emoji Penguenler', color: '#f5b81c', token: '😄', text: 'Dünya Emoji Günü. Gülümse, 3 yıldız topla!', rule: { fish: 1 }, bonus: 'star3', big: true },
+  snowball: { name: 'Kar Topu Savaşı', color: '#7fa9cc', token: '⚪', text: 'Kar toplarıyla kendi frenini kur.', rule: { mech: ['ball'] }, bonus: null },
+  friendship: { name: 'Dostluk Haftası', color: '#ff95b2', token: '🤝', text: 'Dostluk Günü. Arkadaş köyü ziyareti +10 jeton.', rule: { mech: ['pipi'] }, bonus: 'visit', big: true },
+  compass: { name: 'Pusula Avı', color: '#8e5a2b', token: '🧭', text: 'Döner tablalar ve oklarla yönünü bul.', rule: { mech: ['turn', 'arrow'] }, bonus: null },
+  meteors: { name: 'Yıldız Kayması', color: '#2f3b7a', token: '🌠', text: 'Perseid gecesi. Karanlıkta yıldız topla.', rule: { dark: true }, bonus: 'star3', big: true },
+  harborfair: { name: 'Liman Panayırı', color: '#ff6b5e', token: '🎪', text: 'Sallar ve basınç plakaları panayırda.', rule: { mech: ['raft', 'plate'] }, bonus: null },
+  school: { name: 'Okula Dönüş', color: '#4ea8de', token: '✏️', text: 'Balıkları sırayla say; ipucusuz bitir, fazladan kazan.', rule: { order: true }, bonus: 'nohint', big: true },
+  harvest: { name: 'Kakao Hasadı', color: '#8e5a2b', token: '☕', text: 'Ekinoks. Bol balıklı hasat haftası.', rule: { fish: 1 }, bonus: 'fish', big: true },
+  animals: { name: 'Hayvan Dostları', color: '#3fae5a', token: '🐾', text: 'Hayvanları Koruma Günü. Foklara yol ver.', rule: { mech: ['seal'] }, bonus: 'star3', big: true },
+  ghostseal: { name: 'Hayalet Fok Gecesi', color: '#5a3d8f', token: '🎃', text: 'Cadılar Bayramı. Karanlıkta foklar dolaşıyor!', rule: { dark: true, mech: ['seal'] }, bonus: 'star3', big: true },
+  feast: { name: 'Kakao Sofrası ve Büyük İndirim', color: '#c98b4f', token: '🥧', text: 'Şükran Günü ve Kara Cuma. Etkinlik dükkânı yarı fiyat!', rule: { fish: 1, sale: true }, bonus: 'fish', big: true },
+  lanternnight: { name: 'Fener Gecesi', color: '#ff9f43', token: '🏮', text: 'Uzun kış gecesi; fenerinle yolunu bul.', rule: { dark: true }, bonus: 'nohint' },
+  winterfest: { name: 'Kış Şenliği', color: '#2b9a63', token: '🎄', text: 'Gündönümü ve Noel. Sarkıtlar ve kar topları.', rule: { mech: ['icicle', 'ball'] }, bonus: 'star3', big: true },
+};
+export const EVENT_CALENDAR_START = [2026, 11, 28]; // 28 Aralık 2026, pazartesi (ay 0'dan)
+export const EVENT_CALENDAR = [
+  'newyear', 'snowflake', 'igloo', 'penguin', 'fish', 'lantern', 'valentine', 'sculpture', 'polarbear', 'sled',
+  'sugar', 'spring', 'eggs', 'aprilfool', 'aurora', 'crystal', 'penguinday', 'gullmail', 'mothers', 'whales',
+  'olympics', 'angler', 'kites', 'ocean', 'fathers', 'midnightsun', 'skating', 'treasure', 'emoji', 'snowball',
+  'friendship', 'compass', 'meteors', 'harborfair', 'fish', 'sled', 'school', 'igloo', 'harvest', 'aurora',
+  'animals', 'crystal', 'gullmail', 'ghostseal', 'sculpture', 'whales', 'treasure', 'feast', 'snowball', 'snowflake',
+  'lanternnight', 'winterfest',
 ];
-export const EVENT_POINTS = { level: 10, star: 5, daily: 20 };
+// Jeton: normal level, etkinlik leveli, günlük bulmaca ve köylü görevi verir. Hafta bitince kalan jeton coin'e döner.
+export const EVENT_TOKENS = { level: 5, star: 2, eventLevel: 20, eventStar: 5, replay: 3, daily: 20, task: 15, coinRate: 2 };
+export const EVENT_BONUS = { fish: 1, star3: 5, nohint: 5, daily: 30, visit: 10 };
+export const EVENT_LEVELS = 15; // haftaya özel etkinlik leveli
+// Ödül yolu: bu hafta kazanılan toplam jetona göre (harcanan jeton yolu geri almaz).
 export const EVENT_TRACK = [
-  { pts: 30, r: { coins: 100 } },
-  { pts: 80, r: { hints: 2 } },
-  { pts: 150, r: { coins: 250 } },
-  { pts: 250, r: { flakes: 3 } },
-  { pts: 380, r: { coins: 400 } },
-  { pts: 540, r: { hints: 3, flakes: 3 } },
-  { pts: 730, r: { coins: 700 } },
-  { pts: 950, r: { prize: true } }, // temanın özel kıyafeti
+  { pts: 20, r: { coins: 100 } },
+  { pts: 50, r: { hints: 2 } },
+  { pts: 90, r: { coins: 200 } },
+  { pts: 140, r: { flakes: 3 } },
+  { pts: 200, r: { coins: 300 } },
+  { pts: 270, r: { hints: 3 } },
+  { pts: 350, r: { flakes: 5 } },
+  { pts: 440, r: { coins: 500 } },
+  { pts: 540, r: { hints: 5, flakes: 5 } },
+  { pts: 660, r: { prize: true } }, // temanın kıyafeti; yoksa EVENT_PRIZE_FALLBACK
+];
+export const EVENT_PRIZE_FALLBACK = { coins: 1000, flakes: 8 };
+// Etkinlik dükkânı: haftalık jetonla alınır; her ürün haftada en fazla "max" kez.
+export const EVENT_SHOP = [
+  { id: 'hints', name: '3 ipucu', cost: 40, max: 3, r: { hints: 3 } },
+  { id: 'flakes', name: '5 kar tanesi', cost: 60, max: 3, r: { flakes: 5 } },
+  { id: 'coins', name: '300 coin', cost: 100, max: 3, r: { coins: 300 } },
+  { id: 'prize', name: 'Haftanın kıyafeti', cost: 400, max: 1, prize: true },
 ];
 
 // Arkadaş köyü ziyareti: günde en fazla 3 farklı köyden hediye.
@@ -281,6 +345,6 @@ export const WARDROBE = {
     { id: 'yellow', name: 'Sarı', price: 50 },
     { id: 'striped', name: 'Çizgili', price: 150 },
     { id: 'aurora', name: 'Kuzey ışığı', price: 0, reward: 10 },
-    { id: 'flakes', name: 'Kar taneli', price: 0, event: 'flake' },
+    { id: 'flakes', name: 'Kar taneli', price: 0, event: 'snowflake' },
   ],
 };

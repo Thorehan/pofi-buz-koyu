@@ -895,6 +895,36 @@ export class BoardView {
     }
     ctx.globalAlpha = 1;
 
+    // Karanlık tahta (etkinlik kuralı): yalnızca penguenlerin çevresi aydınlık; kalan balıklar hafifçe parlar.
+    if (this.dark) {
+      const R = s * 2.3, lights = [[px + s / 2, py + s / 2]];
+      if (this.S.q >= 0) { const [qx, qy] = this.cellXY(a && who ? this.S.p : this.S.q); lights.push([qx + s / 2, qy + s / 2]); }
+      ctx.save();
+      roundRect(ctx, this.ox - 2, this.oy - 2, s * L.w + 4, s * L.h + 4, 14);
+      ctx.clip();
+      ctx.beginPath();
+      ctx.rect(this.ox - 8, this.oy - 8, s * L.w + 16, s * L.h + 16);
+      for (const [lx, ly] of lights) { ctx.moveTo(lx + R, ly); ctx.arc(lx, ly, R, 0, Math.PI * 2, true); }
+      ctx.fillStyle = 'rgba(8,18,40,.9)';
+      ctx.fill('evenodd');
+      for (const [lx, ly] of lights) {
+        const g = ctx.createRadialGradient(lx, ly, R * 0.55, lx, ly, R);
+        g.addColorStop(0, 'rgba(8,18,40,0)');
+        g.addColorStop(1, 'rgba(8,18,40,.9)');
+        ctx.fillStyle = g;
+        circle(ctx, lx, ly, R);
+        ctx.fill();
+      }
+      L.fishCells.forEach((c, i) => {
+        if ((this.S.fish >> i) & 1) return;
+        const [fx, fy] = this.cellXY(c);
+        ctx.fillStyle = `rgba(255,209,102,${0.45 + 0.25 * Math.sin(time * 4 + i)})`;
+        circle(ctx, fx + s / 2, fy + s / 2, s * 0.09);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
     if (!a && this.hintT > 0 && this.hintDir >= 0) this.arrow(this.hintDir, time, '#ffcc33');
     if (!a && this.tutorialDir >= 0) this.hand(this.tutorialDir, time);
   }

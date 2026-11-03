@@ -1,7 +1,7 @@
 # Pofi v0.4 planı: grid büyümesi, yeni mekanikler, yıllık etkinlikler, engel görselleri
 
 **Kararlar (3 Kasım 2026):**
-- Etkinlikler: "Etkinlik" ekranı (yol, 15 temalı level, dükkân) ve haftalık temalı jeton. Hafta bitince kalan jeton coin'e döner.
+- Etkinlikler: "Etkinlik" ekranı (yol, 15 temalı level, dükkân) ve haftalık temalı jeton. Hafta bitince kalan jeton coin'e döner. Ekran, takvim, jeton, temalı level kuralları (karanlık, ters kontrol, hamle sınırı, sıralı/ek balık, zorunlu mekanik) yapıldı; köy konuğu ve köy süslemesi sırada.
 - Etkinlik görselleri: önce ilk çeyrek (13 hafta, ~2,0 $), sonra oyuncu tepkisine göre devam.
 - Engeller: hepsi yeniden çizilecek (8 karo, 10 nesne, 9 yeni mekaniğin parçaları; ~0,37 $).
 - Grid: son boyut ekran ve oynanışa göre hesaplandı, 8×11 (bölüm 1).
@@ -100,7 +100,7 @@ Sıra basitten karmaşığa. 500 sonrasında yeni mekanik yok; mekanik birleşim
 
 ## 3. Yıllık etkinlik takvimi
 
-Her hafta Pazartesi başlayan bir etkinlik olacak (oyun haftayı zaten Pazartesi açıyor). Özel bir güne denk gelen hafta o güne ait. Diğer haftalar oyuna uygun genel temalardan gelecek. Genel temalar 16 tanelik bir havuzdan, yıl içinde 2'şer kez dönecek; böylece içerik ve maliyet azalır. Tekrar eden temada ödül, kıyafetin renk varyantı oluyor.
+Her hafta Pazartesi başlayan bir etkinlik olacak (oyun haftayı zaten Pazartesi açıyor). Özel bir güne denk gelen hafta o güne ait. Diğer haftalar oyuna uygun genel temalardan gelecek. Genel temalar 17 tanelik bir havuzdan, yıl içinde 1-2 kez dönecek; böylece içerik ve maliyet azalır. Tekrar eden temada ödül, kıyafetin renk varyantı oluyor.
 
 ### 3.1 Önerilen etkinlik modeli
 
@@ -187,27 +187,27 @@ Her hafta Pazartesi başlayan bir etkinlik olacak (oyun haftayı zaten Pazartesi
 | 13 Ara | ○ Fener Gecesi | |
 | 20 Ara | ★ Kış Şenliği | 21 Aralık gündönümü, 25 Aralık |
 
-Toplam: 21 büyük (özel gün) ve 31 genel hafta. Genel haftalar 16 farklı temadan geliyor.
+Toplam: 24 büyük (özel gün) ve 28 genel hafta. Genel haftalar 17 farklı temadan geliyor (Fener Gecesi de genel tema).
 
 ### 3.4 Her etkinlik için gereken içerik ve maliyet
 
 | Paket | İçerik | Görsel | Maliyet |
 |---|---|---|---|
-| Genel tema (×16) | banner, jeton ikonu, 1 kıyafet, 1 süs, konuk | 4 | ~0,10 $ |
-| Büyük etkinlik, orta (×21) | banner, jeton, şapka ve atkı, 3 süs, konuk | 6 | ~0,16 $ |
-| Büyük etkinlik, tam (×21) | orta paket ve üstüne temalı tahta kaplaması (buz, kaya, arka plan) ile köy süsleme seti | 10 | ~0,26 $ |
+| Genel tema (×17) | banner, jeton ikonu, 1 kıyafet, 1 süs, konuk | 4 | ~0,10 $ |
+| Büyük etkinlik, orta (×24) | banner, jeton, şapka ve atkı, 3 süs, konuk | 6 | ~0,16 $ |
+| Büyük etkinlik, tam (×24) | orta paket ve üstüne temalı tahta kaplaması (buz, kaya, arka plan) ile köy süsleme seti | 10 | ~0,26 $ |
 
 Yıllık toplam (%20 tekrar payı dahil):
 
 | Seçenek | Kapsam | Görsel | Maliyet |
 |---|---|---|---|
-| **A) Ekonomik** | Hepsi genel paket (16 genel + 21 özel gün, 4'er görsel) | ~150 | **~4,6 $** |
-| **B) Orta** | 16 genel + 21 orta büyük | ~190 | **~6,0 $** |
-| **C) Tam** | 16 genel + 21 tam büyük | ~275 | **~8,6 $** |
+| **A) Ekonomik** | Hepsi genel paket (17 genel + 24 özel gün, 4'er görsel) | ~165 | **~5,1 $** |
+| **B) Orta** | 17 genel + 24 orta büyük | ~210 | **~6,6 $** |
+| **C) Tam** | 17 genel + 24 tam büyük | ~310 | **~9,6 $** |
 
 Kodla yapılanların görsel maliyeti yok: etkinlik ekranı, etkinlik levelleri, jeton ve dükkân, köy görevleri, konuk davranışı, köyün renk ve hava efektleri.
 
-Mevcut görsel bütçesi 4 $; bunun 3,22 $'ı harcandı. Etkinlikler için ek bütçe gerekiyor. İlk çeyreği (13 hafta) üretip oyuncu tepkisine göre devam etmek de mümkün; B seçeneğinde bu ~2,0 $ eder (6 büyük ve 7 genel etkinlik).
+Mevcut görsel bütçesi 4 $; bunun 3,22 $'ı harcandı. Etkinlikler için ek bütçe gerekiyor. İlk çeyreği (13 hafta) üretip oyuncu tepkisine göre devam etmek de mümkün; B seçeneğinde bu ~2,1 $ eder (8 büyük ve 5 genel etkinlik). Not: takvimi koda dökerken özel gün sayısı 24, genel tema 17 çıktı; ilk taslaktaki 21/16 sayıları düzeltildi.
 
 ## 4. Engellerin yeniden çizimi (daha az gerçekçi, Pofi tarzında)
 

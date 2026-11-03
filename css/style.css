@@ -275,6 +275,30 @@ html, body {
   box-shadow: 0 3px 0 rgba(0, 0, 0, .15);
 }
 .event-card canvas { width: 40px; height: 40px; flex: none; background: rgba(255, 255, 255, .25); border-radius: 12px; }
+.event-card .ev-token { width: 40px; height: 40px; flex: none; background: rgba(255, 255, 255, .25); border-radius: 12px; display: grid; place-items: center; font-size: 24px; }
+/* etkinlik ekranı */
+#screenEvent { padding-top: 58px; }
+.ev-banner { position: relative; display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 18px; color: #fff; background: linear-gradient(135deg, var(--ev, #ff8c42), color-mix(in srgb, var(--ev, #ff8c42) 60%, #1d3557)); box-shadow: 0 4px 0 rgba(0, 0, 0, .15); flex: none; }
+.ev-banner .ev-big { font-size: 46px; line-height: 1; flex: none; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .18)); }
+.ev-banner .ev-head { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ev-banner h2 { margin: 0; font-size: 21px; line-height: 1.15; }
+.ev-banner p { margin: 0; font-size: 14px; opacity: .95; }
+.ev-banner small { font-size: 12px; opacity: .85; }
+.ev-banner .new-tag { align-self: flex-start; background: rgba(0, 0, 0, .22); color: #fff; }
+.ev-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.ev-chips span { background: rgba(255, 255, 255, .22); border-radius: 8px; padding: 2px 7px; font-size: 12px; font-weight: 600; }
+.ev-wallet { position: absolute; top: 10px; right: 10px; background: #fff; color: var(--ink); border-radius: 12px; padding: 3px 9px; font-size: 14px; box-shadow: 0 2px 0 rgba(0, 0, 0, .12); }
+.ev-levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; flex: none; }
+.ev-lv { aspect-ratio: 1; border: 2px solid #e1ecf7; border-radius: 14px; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font: 600 12px 'Fredoka', sans-serif; color: var(--ink-soft); padding: 0; }
+.ev-lv b { font-size: 19px; color: var(--ink); }
+.ev-lv.done { border-color: color-mix(in srgb, var(--ev) 45%, #e1ecf7); }
+.ev-lv.done span { color: #f5a623; letter-spacing: -1px; }
+.ev-lv.next { border-color: var(--ev); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ev) 25%, transparent); }
+.ev-lv.locked { opacity: .45; }
+.ev-lv.loading { opacity: .6; }
+.ev-h-row { display: flex; align-items: flex-end; justify-content: space-between; }
+.ev-h-row canvas { width: 64px; height: 64px; margin-bottom: -6px; }
+#evShop .ev-step small { color: var(--ink-soft); }
 .event-card .ev-text { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .event-card b { font-size: 15px; }
 .event-card small { opacity: .9; font-size: 12px; }

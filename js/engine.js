@@ -620,8 +620,27 @@ function essential(fn, rows, m) {
 
 // Belirli bir level için çözülebilir, bandında ve yeni mekaniği gerçekten gerektiren bir tahta üret.
 // Öncelik: katı testi geçen bant içi aday → katı testi geçen en yakın → zayıf testi geçen en yakın → herhangi.
-export function generateLevel(n, { seed = n, maxAttempts = 6000 } = {}) {
-  const spec = levelSpec(n, rng(seed * 31 + 7));
+// Etkinlik levelleri: temanın kuralı spec'i değiştirir (zorunlu mekanikler, ek balık, sıralı balık, karsız).
+// Oyuncunun henüz açmadığı mekanikler zorlanmaz.
+function applyRule(spec, rule, n) {
+  if (!rule) return spec;
+  let mech = spec.mech.slice();
+  const forced = (rule.mech || []).filter(m => unlockOf(m) <= n);
+  if (forced.length) {
+    mech = ['snow', ...forced];
+    if ((mech.includes('water') || mech.includes('plate')) && !mech.includes('crate')) mech.push('crate');
+    spec.req = REQ_OF[forced[0]];
+  }
+  if (rule.order && unlockOf('order') <= n && !mech.includes('order')) mech.push('order');
+  if (rule.nosnow) { mech = mech.filter(m => m !== 'snow'); if (spec.req === 'snow') spec.req = null; }
+  spec.mech = mech;
+  if (rule.fish) spec.fish += rule.fish;
+  spec.fish = Math.min(mech.includes('order') ? 4 : 5, Math.max(mech.includes('order') ? 2 : 1, spec.fish));
+  return spec;
+}
+
+export function generateLevel(n, { seed = n, maxAttempts = 6000, rule = null } = {}) {
+  const spec = applyRule(levelSpec(n, rng(seed * 31 + 7)), rule, n);
   let best = null, weak = null, loose = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const r = rng(seed * 100003 + attempt * 7717 + 1);

@@ -1,9 +1,12 @@
 // Canlı içerik: haftalık etkinlik ve arkadaş köyü ziyareti.
 // Sunucu yok: etkinlik yerel saatten hesaplanır, köy bağlantının içine kodlanır.
-import { EVENTS, EVENT_POINTS, EVENT_TRACK, BUILDINGS, COLORS, WARDROBE } from './config.js';
+import {
+  EVENT_THEMES, EVENT_CALENDAR, EVENT_CALENDAR_START, EVENT_TOKENS, EVENT_BONUS, EVENT_TRACK, BUILDINGS, COLORS, WARDROBE,
+} from './config.js';
+import { generateLevel } from './engine.js';
 
 const DAY = 864e5;
-const EPOCH = new Date(2026, 0, 5); // bir pazartesi: tema sırasının başlangıcı
+const CAL0 = new Date(...EVENT_CALENDAR_START); // takvimin ilk pazartesisi
 
 const pad = n => String(n).padStart(2, '0');
 const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -15,19 +18,34 @@ function weekStart(now) {
   return d;
 }
 
+// Takvim 52 haftada bir tekrar eder; takvimden önceki haftalar da aynı sıradan (yılın o dönemine denk) gelir.
 export function currentEvent(now = new Date()) {
   const start = weekStart(now);
-  const week = Math.round((start - EPOCH) / (7 * DAY)); // yaz saati kaymasına karşı yuvarla
-  const ev = EVENTS[((week % EVENTS.length) + EVENTS.length) % EVENTS.length];
+  const week = Math.round((start - CAL0) / (7 * DAY)); // yaz saati kaymasına karşı yuvarla
+  // Test: ?etkinlik=valentine gibi bir tema zorlanabilir.
+  const force = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('etkinlik') : null;
+  const id = EVENT_THEMES[force] ? force : EVENT_CALENDAR[((week % EVENT_CALENDAR.length) + EVENT_CALENDAR.length) % EVENT_CALENDAR.length];
   const ends = new Date(start);
   ends.setDate(ends.getDate() + 7);
-  return { ...ev, key: `${ev.id}-${keyOf(start)}`, ends };
+  return { id, ...EVENT_THEMES[id], key: `${keyOf(start)}:${id}`, week, ends };
 }
 
-// Hafta değişince ilerleme sıfırlanır (alınmamış ödüller de gider).
+// Hafta değişince kalan jeton coin'e çevrilir (P.eventNote ile oyuncuya söylenir) ve ilerleme sıfırlanır.
+// base: etkinlik levellerinin zorluğu hafta başındaki seviyeden sabitlenir.
 export function ensureEvent(P) {
   const ev = currentEvent();
-  if (!P.event || P.event.key !== ev.key) P.event = { key: ev.key, points: 0, claimed: [] };
+  if (!P.event || P.event.key !== ev.key) {
+    const old = P.event;
+    if (old && old.tokens > 0 && String(old.key).includes(':')) {
+      const coins = old.tokens * EVENT_TOKENS.coinRate;
+      P.coins += coins;
+      P.eventNote = { name: old.name, tokens: old.tokens, coins };
+    }
+    P.event = {
+      key: ev.key, name: ev.name, earned: 0, tokens: 0, claimed: [], done: {}, bought: {},
+      base: Math.max(12, Math.min(700, (P.level || 1) - 6)),
+    };
+  }
   return ev;
 }
 
@@ -37,24 +55,54 @@ export function timeLeft(ends, now = new Date()) {
   return d ? `${d}g ${h}s` : h ? `${h}s ${m}dk` : `${m}dk`;
 }
 
-// Bir level bitince kazanılan etkinlik puanı: taban + yıldız + temanın odak bonusu.
-export function eventPoints(ev, { stars, fish, daily, hintsUsed }) {
-  let pts = EVENT_POINTS.level + stars * EVENT_POINTS.star + (daily ? EVENT_POINTS.daily : 0);
-  if (ev.id === 'fish') pts += fish * 5;
-  if (ev.id === 'flake' && stars === 3) pts += 15;
-  if (ev.id === 'sled' && daily) pts += 60;
-  if (ev.id === 'aurora' && !hintsUsed) pts += 15;
-  return pts;
+export function addTokens(P, n) {
+  P.event.earned += n;
+  P.event.tokens += n;
+  return n;
 }
 
-export const claimable = P => EVENT_TRACK.map((m, i) => i).filter(i => P.event.points >= EVENT_TRACK[i].pts && !P.event.claimed.includes(i));
-export const nextMilestone = P => EVENT_TRACK.find(m => P.event.points < m.pts) || null;
+// Bir level bitince kazanılan jeton: taban + yıldız + temanın bonusu.
+export function levelTokens(ev, { stars, fish, daily, hintsUsed, eventLevel, firstClear }) {
+  let t = eventLevel
+    ? (firstClear ? EVENT_TOKENS.eventLevel + stars * EVENT_TOKENS.eventStar : EVENT_TOKENS.replay)
+    : EVENT_TOKENS.level + stars * EVENT_TOKENS.star + (daily ? EVENT_TOKENS.daily : 0);
+  if (ev.bonus === 'fish') t += fish * EVENT_BONUS.fish;
+  if (ev.bonus === 'star3' && stars === 3) t += EVENT_BONUS.star3;
+  if (ev.bonus === 'nohint' && !hintsUsed) t += EVENT_BONUS.nohint;
+  if (ev.bonus === 'daily' && daily) t += EVENT_BONUS.daily;
+  return t;
+}
 
-// Etkinlik kıyafeti: { slot, id, name }
+export const BONUS_TEXT = {
+  fish: `Topladığın her balık +${EVENT_BONUS.fish} jeton`,
+  star3: `3 yıldızla bitirdiğin her level +${EVENT_BONUS.star3} jeton`,
+  nohint: `İpucu kullanmadan bitirdiğin her level +${EVENT_BONUS.nohint} jeton`,
+  daily: `Günlük bulmaca +${EVENT_BONUS.daily} jeton`,
+  visit: `Arkadaş köyü ziyareti +${EVENT_BONUS.visit} jeton`,
+};
+
+export const claimable = P => EVENT_TRACK.map((m, i) => i).filter(i => P.event.earned >= EVENT_TRACK[i].pts && !P.event.claimed.includes(i));
+export const nextMilestone = P => EVENT_TRACK.find(m => P.event.earned < m.pts) || null;
+
+// Etkinlik kıyafeti: { slot, id, name } ya da tema kıyafetsizse null.
 export function prizeOf(ev) {
-  const slot = ev.reward.hat ? 'hat' : 'scarf';
-  const id = ev.reward[slot];
+  if (!ev.prize) return null;
+  const slot = ev.prize.hat ? 'hat' : 'scarf';
+  const id = ev.prize[slot];
   return { slot, id, name: WARDROBE[slot].find(x => x.id === id).name };
+}
+
+// Etkinlik leveli k (0'dan): hafta başındaki seviyeye yakın zorluk, haftaya özel tohum, temanın kuralı.
+// Oyunda anlık üretilir ve oturum boyunca saklanır.
+const evLevels = new Map();
+export function eventLevelDef(ev, k, base) {
+  const key = `${ev.key}:${k}:${base}`;
+  if (!evLevels.has(key)) {
+    const def = generateLevel(base + k * 2, { seed: (ev.week + 5000) * 97 + k * 13 + 1, rule: ev.rule, maxAttempts: 3000 });
+    if (ev.rule?.limit) def.limit = def.limit ? Math.min(def.limit, def.min + 3) : def.min + 3;
+    evLevels.set(key, { ...def, n: 10000 + k });
+  }
+  return evLevels.get(key);
 }
 
 // ---------- köy paylaşımı ----------
