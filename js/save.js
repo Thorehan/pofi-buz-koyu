@@ -32,7 +32,7 @@ function defaults() {
     starChests: 0, // açılmış yıldız sandığı sayısı
     quests: null, // { day, list: [{ type, need, have, claimed }], chest }
     mapSeen: 0,
-    boosters: { pick: 2, shovel: 2, whistle: 1 }, // başlangıç hediyesi
+    boosters: { route: 1, moves5: 1 }, // başlangıç hediyesi
     album: {}, // tür id -> kaç kez yakalandı
     albumSets: {}, // ödülü verilmiş setler
     masters: {}, // { bölgeIndeksi: en iyi yıldız } — usta levelleri // haritada en son gösterilen level (Pofi'nin yeni levele zıplaması için)

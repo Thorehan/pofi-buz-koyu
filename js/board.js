@@ -676,6 +676,12 @@ export class BoardView {
     this.ghost = { r, t: 0 };
   }
 
+  // Rota göster: çözümün hamleleri art arda hayalet olarak oynar, sonunda kısa bekleyip baştan başlar
+  showRoute(seq) {
+    this.hintDir = -1;
+    this.ghost = { r: seq[0], seq, i: 0, t: 0 };
+  }
+
   // puff: gölge bulunduğu yerde kar tozu olup dağılır (hamle yapıldığında)
   clearHint(puff = false) {
     const g = this.ghost;
@@ -690,9 +696,16 @@ export class BoardView {
   }
 
   drawGhost(time) {
-    const { ctx, s } = this, g = this.ghost, path = g.r.pPath, last = path.length - 1;
-    const step = STEP * 2.2, travel = last * step, period = travel + 1.1;
-    const k = g.t % period;
+    const { ctx, s } = this, g = this.ghost, step = STEP * 2.2;
+    // rota: her hamleden sonra kısa durak, son hamleden sonra uzun durak; sonra sıradaki hamle
+    const stop = (gg, j) => (j === gg.seq.length - 1 ? 1.2 : 0.3);
+    if (g.seq) {
+      let per = (g.r.pPath.length - 1) * step + stop(g, g.i);
+      while (g.t >= per) { g.t -= per; g.i = (g.i + 1) % g.seq.length; g.r = g.seq[g.i]; per = (g.r.pPath.length - 1) * step + stop(g, g.i); }
+    }
+    const path = g.r.pPath, last = path.length - 1;
+    const travel = last * step, period = travel + (g.seq ? stop(g, g.i) : 1.1);
+    const k = g.seq ? g.t : g.t % period;
     // yolun izi: soluk noktalar
     ctx.fillStyle = 'rgba(255,255,255,.55)';
     for (let i = 1; i <= last; i++) {
@@ -705,7 +718,8 @@ export class BoardView {
     const [px, py] = this.lerpPath(path, u);
     const outfit = g.r.who ? PIPI_OUTFIT : this.outfit, size = s * (g.r.who ? 0.78 : 0.88);
     g.pos = [px + s / 2, py + s / 2];
-    const fadeIn = Math.min(1, k / 0.25), fadeOut = k > period - 0.3 ? (period - k) / 0.3 : 1;
+    const first = !g.seq || g.i === 0, final = !g.seq || g.i === g.seq.length - 1;
+    const fadeIn = first ? Math.min(1, k / 0.25) : 1, fadeOut = final && k > period - 0.3 ? (period - k) / 0.3 : 1;
     ctx.save();
     ctx.globalAlpha = 0.62 * fadeIn * fadeOut;
     if (k < travel) {
@@ -720,6 +734,18 @@ export class BoardView {
       drawPofi(ctx, 0, 0, size, { outfit, wave: Math.sin(time * 6) * 0.4 });
     }
     ctx.restore();
+    if (g.seq) {
+      // hamle sırası rozeti
+      const [bx, by] = this.cellXY(path[0]);
+      ctx.fillStyle = 'rgba(29,53,87,.78)';
+      roundRect(ctx, bx + s * 0.08, by + s * 0.06, s * 0.5, s * 0.28, s * 0.14);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = `700 ${Math.round(s * 0.2)}px Fredoka, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${g.i + 1}/${g.seq.length}`, bx + s * 0.33, by + s * 0.2);
+    }
   }
 
   // Bölüm sonu konfeti yağmuru: tahtanın üstünden renkli kâğıtlar dökülür.

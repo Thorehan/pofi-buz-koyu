@@ -442,7 +442,7 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .hint-bar .hb-row { display: flex; gap: 6px; }
 .hint-bar .hb-row .btn { flex: 1; padding: 9px 4px; font-size: 14px; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .hint-bar small { color: var(--ink-soft); font-size: 12px; text-align: center; }
-.boost-bar .bb-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.boost-bar .bb-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .bb-card { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; background: #f4f8fc; border: 2px solid #e1ecf7; border-radius: 14px; padding: 7px 4px; }
 .bb-card.on { border-color: #ffb703; background: #fff6dc; }
 .bb-card.off { opacity: .45; }
@@ -803,3 +803,5 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .as-head .rw { display: inline-flex; align-items: center; gap: 2px; font-weight: 600; }
 .as-head .rw .ico { width: 13px; height: 13px; }
 .as-head .rw .ico.hint { width: 10px; height: 10px; margin: 0 1px; }
+#btnBoost.pulse { animation: boostPulse 1s ease-in-out infinite; }
+@keyframes boostPulse { 50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(143,91,214,.25); } }

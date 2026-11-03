@@ -368,13 +368,20 @@ export const MAP_REGIONS = [
 export const MASTER_LEVELS = [
   { after: 100, n: 112 }, { after: 250, n: 262 }, { after: 450, n: 462 }, { after: 650, n: 662 }, { after: 850, n: 862 }, { after: 1000, n: 1000 },
 ];
-// Güçlendiriciler: level içinde kullanılır. Kazma bir kayayı kırar, kürek bir buz hücresine kar (fren) koyar,
-// düdük fokları birkaç hamle durdurur. Mağazada price; oyun içinden almak ECON.hintGameMult kat pahalı.
+// Güçlendiriciler: level içinde kullanılır. Mağazada price; oyun içinden almak ECON.hintGameMult kat pahalı (gamePrice varsa o).
+// Askıda (suspended, 2026-11-04 kullanıcı kararı): kazma, kürek ve düdük hiçbir ekranda görünmez; eldekiler coin olarak iade edildi.
+// Neden: yıldızlar güçlendiricisiz en kısa çözüme göre verilir; tahtayı değiştiren kazma ve kürek en kısa çözümün altında
+// bitirişi ve 3 yıldızı satın alınabilir yapıyordu. Geri gelirse kural: kazma ya da kürek kullanılan levelde en fazla
+// 2 yıldız alınır ve bu kartta açıkça yazar.
+// Rota göster çözümü yalnızca gösterir (hamleleri oyuncu yapar); +5 hamle yalnızca hamle sınırlı levellerde çalışır.
 export const BOOSTERS = [
-  { id: 'pick', name: 'Buz kazması', text: 'Bir kayayı kırar', icon: '⛏️', price: 150 },
-  { id: 'shovel', name: 'Kar küreği', text: 'Buza kar koyar (fren)', icon: '❄️', price: 120 },
-  { id: 'whistle', name: 'Fok düdüğü', text: 'Foklar 3 hamle uyur', icon: '🎵', price: 100 },
+  { id: 'route', name: 'Rota göster', text: 'Çözümün tamamını gösterir', icon: '🧭', price: 250 },
+  { id: 'moves5', name: '+5 hamle', text: 'Hamle sınırlı levellerde', icon: '⏱️', price: 60, gamePrice: 80, limitOnly: true },
+  { id: 'pick', name: 'Buz kazması', text: 'Bir kayayı kırar', icon: '⛏️', price: 150, suspended: true },
+  { id: 'shovel', name: 'Kar küreği', text: 'Buza kar koyar (fren)', icon: '❄️', price: 120, suspended: true },
+  { id: 'whistle', name: 'Fok düdüğü', text: 'Foklar 3 hamle uyur', icon: '🎵', price: 100, suspended: true },
 ];
+export const ACTIVE_BOOSTERS = BOOSTERS.filter(b => !b.suspended);
 export const WHISTLE_MOVES = 3;
 
 // Balık albümü: bazı levellerde balıklardan biri nadir türdür (parıltılı). Level bitince albüme eklenir.
@@ -409,6 +416,8 @@ export const ACHIEVEMENTS = [
   { id: 'perfect', name: 'Kusursuz', icon: '✨', stat: 'perfect', text: n => `${n} leveli 3 yıldızla bitir`, tiers: [10, 50, 100, 300, 600, 1000] },
   { id: 'fish', name: 'Balıkçı', icon: '🐟', stat: 'fish', text: n => `${n} balık topla`, tiers: [50, 250, 1000, 3000, 8000] },
   { id: 'nohint', name: 'Kendi başına', icon: '🧠', stat: 'nohint', text: n => `İpucu kullanmadan ${n} level bitir`, tiers: [25, 100, 300, 600] },
+  // ipucu, rota ve güçlendirici olmadan ilk kez 3 yıldız alınan level sayısı (tekrar oynayıp 3 yıldıza çıkarmak da sayılır)
+  { id: 'clean', name: 'Yardımsız usta', icon: '🏔️', stat: 'clean', text: n => `Yardım almadan ${n} leveli 3 yıldızla bitir`, tiers: [10, 50, 150, 400, 800] },
   { id: 'village', name: 'Köy kurucusu', icon: '🏘️', stat: 'vl', text: n => `Köy seviyesi ${n} ol`, tiers: [3, 5, 8, 10, 12] },
   { id: 'cocoa', name: 'Kakao ustası', icon: '☕', stat: 'cups', text: n => `${n} fincan kakao sat`, tiers: [50, 250, 1000, 5000] },
   { id: 'daily', name: 'Sadık dost', icon: '📅', stat: 'streak', text: n => `Günlük bulmacada ${n} günlük seri yap`, tiers: [3, 7, 14, 30] },

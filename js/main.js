@@ -17,7 +17,7 @@ import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
-  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, WHISTLE_MOVES, FISH_SETS, ALBUM,
+  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, ACTIVE_BOOSTERS, WHISTLE_MOVES, FISH_SETS, ALBUM,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -26,6 +26,18 @@ import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js
 
 const $ = id => document.getElementById(id);
 const P = load(); // oyuncu kaydı
+// Askıya alınan güçlendiriciler (kazma, kürek, düdük): eldekiler mağaza fiyatı kadar coin olarak iade edilir.
+{
+  let refund = 0;
+  // yeni güçlendiricilerin başlangıç hediyesi eski kayıtlara da verilir
+  for (const id of ['route', 'moves5']) if (P.boosters[id] === undefined) P.boosters[id] = 1;
+  for (const b of BOOSTERS) if (b.suspended && P.boosters[b.id] > 0) { refund += P.boosters[b.id] * b.price; P.boosters[b.id] = 0; }
+  if (refund) {
+    P.coins += refund;
+    save(P);
+    setTimeout(() => toast(`Güçlendiriciler yenilendi: eldekiler için +${refund} coin iade edildi`, 4000), 3000);
+  }
+}
 let LEVELS = []; // data/levels.json — sonrası çalışma anında üretilir
 
 const board = new BoardView($('board'));
@@ -295,7 +307,10 @@ function renderHud() {
   const hints = P.hints + freeLeft('hints');
   $('hintCount').textContent = hints > 0 ? hints : '+';
   $('btnHint').disabled = run.hintLock;
-  const bc = BOOSTERS.reduce((n, b) => n + (P.boosters[b.id] || 0), 0);
+  const bc = ACTIVE_BOOSTERS.reduce((n, b) => n + (P.boosters[b.id] || 0), 0);
+  const low = run.limit && !run.finished && run.limit - run.moves <= 2 && run.limit - run.moves > 0;
+  $('btnBoost').classList.toggle('pulse', !!low);
+  if (low && !run.offered5) { run.offered5 = true; toast('Hamle azalıyor · Güç → +5 hamle', 2400); }
   $('boostCount').textContent = bc > 0 ? bc : '+';
   $('btnUndo').disabled = run.history.length === 0;
 }
@@ -324,6 +339,10 @@ board.onMove = dir => {
   run.fishSound = popcount(run.history[run.history.length - 1].fish);
   sealSounded = false;
   board.play(r, run.history[run.history.length - 1]);
+  if (run.route) {
+    if (dir === run.route[0] && run.route.length > 1) { run.route.shift(); board.showRoute(routeSeq(run.st, run.route)); }
+    else run.route = null;
+  }
   sfx.slide(r.pPath.length - 1);
   if (P.settings.haptics) navigator.vibrate?.(10);
   renderHud();
@@ -378,6 +397,7 @@ board.onSettled = () => {
 
 function undo() {
   if (!run || run.finished || board.anim || !run.history.length) return;
+  run.route = null;
   run.st = run.history.pop();
   run.moves = Math.max(0, run.moves - 1);
   run.stuck = false;
@@ -432,6 +452,7 @@ function win() {
   } else {
     const prev = P.stars[run.def.n] || 0;
     run.replay = prev > 0;
+    if (stars === 3 && prev < 3 && !run.hintsUsed && !run.boosts) P.ach.clean = (P.ach.clean || 0) + 1;
     run.gained = Math.max(0, stars - prev);
     raw = run.replay ? REPLAY.coin + run.gained * REPLAY.perNewStar : ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
     P.stars[run.def.n] = Math.max(prev, stars);
@@ -616,12 +637,14 @@ function fail() {
     <h2>Hamlen bitti!</h2>
     <p>Çok yaklaştın: ${popcount(run.st.fish)}/${run.L.fishCells.length} balık toplandı.</p>
     ${free > 0 ? `<button id="fFree" class="btn green big">Ücretsiz +${ECON.continueMoves} hamle</button><small class="breakdown">Deniz feneri · bugün ${free} hakkın var</small>` : ''}
+    ${P.boosters.moves5 > 0 ? `<button id="fBoost" class="btn green big">⏱️ +${ECON.continueMoves} hamle · elinde ${P.boosters.moves5}</button>` : ''}
     <button id="fAd" class="btn primary big ad">+${ECON.continueMoves} hamle</button>
     <button id="fCoin" class="btn secondary">+${ECON.continueMoves} hamle · ${ECON.continueCost} coin</button>
     <button id="fRetry" class="btn link">Baştan başla</button>`);
   $('fCoin').disabled = P.coins < ECON.continueCost;
   const resume = () => { run.limit += ECON.continueMoves; run.finished = false; closeOverlay(); renderHud(); };
   if (free > 0) $('fFree').onclick = () => { P.daily.cont++; persist(); resume(); };
+  if ($('fBoost')) $('fBoost').onclick = () => { P.boosters.moves5--; run.boosts = (run.boosts || 0) + 1; persist(); track('booster_used', { type: 'moves5', level: run.def.n }); resume(); };
   $('fAd').onclick = async () => { if (await showRewarded('continue')) resume(); };
   $('fCoin').onclick = () => { P.coins -= ECON.continueCost; persist(); resume(); };
   $('fRetry').onclick = () => { closeOverlay(); restartRun(); };
@@ -672,7 +695,7 @@ function useHint() {
 // Güç düğmesi araç çubuğunun üstünde üç kart açar. Kazma ve kürek hedef ister (tahtada geçerli hücreler parlar),
 // düdük hemen etki eder. Güçlendirici bitince kartta coin'le alma ve ödüllü reklam (+1) çıkar.
 const boostIcon = b => (art(`booster_${b.id}`) ? `<img src="assets/art/booster_${b.id}.webp" alt="">` : b.icon);
-const boostPrice = b => Math.round(b.price * ECON.hintGameMult);
+const boostPrice = b => b.gamePrice ?? Math.round(b.price * ECON.hintGameMult);
 
 function boostCells(kind) {
   const L = run.L, S = run.st, cells = new Set();
@@ -689,13 +712,15 @@ function showBoostBar() {
   if (!run || run.finished) return;
   $('hintBar').classList.add('hidden');
   const bar = $('boostBar'), hasSeal = run.st.seals.length > 0;
+  // kart kapalı mı: düdük fok ister, +5 hamle hamle sınırı ister
+  const offText = b => (b.id === 'whistle' && !hasSeal ? 'Bu levelde fok yok' : b.limitOnly && !run.limit ? 'Bu level hamle sınırsız' : '');
   bar.innerHTML = `
     <div class="hb-head"><b>Güçlendiriciler</b><button class="hb-x" aria-label="Kapat">×</button></div>
-    <div class="bb-row">${BOOSTERS.map(b => {
-      const n = P.boosters[b.id] || 0, off = b.id === 'whistle' && !hasSeal, price = boostPrice(b);
+    <div class="bb-row">${ACTIVE_BOOSTERS.map(b => {
+      const n = P.boosters[b.id] || 0, off = !!offText(b), price = boostPrice(b);
       const act = n > 0 ? `<button class="btn green" data-use="${b.id}" ${off ? 'disabled' : ''}>${board.target?.kind === b.id ? 'Vazgeç' : `Kullan · ${n}`}</button>`
         : `<div class="bb-buy"><button class="btn secondary" data-buy="${b.id}" ${P.coins < price ? 'disabled' : ''}>${coinIco}${price}</button><button class="btn primary ad" data-ad="${b.id}">+1</button></div>`;
-      return `<div class="bb-card${off ? ' off' : ''}${board.target?.kind === b.id ? ' on' : ''}"><span class="bb-ico">${boostIcon(b)}</span><b>${b.name}</b><small>${off ? 'Bu levelde fok yok' : b.text}</small>${act}</div>`;
+      return `<div class="bb-card${off ? ' off' : ''}${board.target?.kind === b.id ? ' on' : ''}"><span class="bb-ico">${boostIcon(b)}</span><b>${b.name}</b><small>${off ? offText(b) : b.text}</small>${act}</div>`;
     }).join('')}</div>`;
   bar.classList.remove('hidden');
   bar.querySelector('.hb-x').onclick = () => { bar.classList.add('hidden'); endTarget(); };
@@ -725,8 +750,32 @@ function showBoostBar() {
   });
 }
 
+// Rota: verilen hamlelerin art arda sonuçları (hayalet için)
+function routeSeq(st, dirs) {
+  return dirs.map(d => { const r = simulate(run.L, st, d); st = r.state; return r; });
+}
+
 function useBoost(kind) {
   if (!run || run.finished || board.anim || !(P.boosters[kind] > 0)) return;
+  if (kind === 'route') {
+    const sol = solve(run.L, run.st, 150000);
+    if (!sol) { toast('Bu durumdan çıkış yok. Önce geri al.'); return; }
+    run.route = sol.slice();
+    board.showRoute(routeSeq(run.st, sol));
+    spendBoost(kind);
+    run.hintsUsed++; // yardım sayılır (ipucusuz ödüller ve Yardımsız usta)
+    sfx.task();
+    toast(`Rota: ${sol.length} hamle · sen oyna, rota seninle ilerler`, 2600);
+    return;
+  }
+  if (kind === 'moves5') {
+    if (!run.limit) return;
+    run.limit += ECON.continueMoves;
+    spendBoost(kind);
+    sfx.reward();
+    toast(`+${ECON.continueMoves} hamle`);
+    return;
+  }
   if (board.target?.kind === kind) { endTarget(); showBoostBar(); return; }
   if (kind === 'whistle') {
     if (!run.st.seals.length) return;
@@ -759,8 +808,8 @@ board.onTarget = c => {
 function spendBoost(kind) {
   P.boosters[kind]--;
   run.boosts = (run.boosts || 0) + 1;
-  // tahta değişti: eski ipucu ve "sıkıştın" uyarısı geçersiz
-  board.clearHint();
+  // tahta değişti: eski ipucu ve "sıkıştın" uyarısı geçersiz (rota kendi hayaletini az önce kurdu)
+  if (kind !== 'route') { board.clearHint(); run.route = null; }
   run.hintLock = false;
   run.stuck = false;
   persist();
@@ -1568,7 +1617,7 @@ function renderShop() {
     item(['hint', '×5'], 'İpucu paketi', `Her zaman ${ECON.hintPack5Cost} coin · tek fiyat bugün aldıkça ikiye katlanır`,
       `<button class="btn green" data-hints="5" data-cost="${ECON.hintPack5Cost}" ${P.coins < ECON.hintPack5Cost ? 'disabled' : ''}>${coinIco}${ECON.hintPack5Cost}</button>`),
     '<h3>Güçlendiriciler</h3>',
-    ...BOOSTERS.map(b => item(['boost', b.icon], b.name, `${b.text} · elinde ${P.boosters[b.id] || 0}`,
+    ...ACTIVE_BOOSTERS.map(b => item(['boost', b.icon], b.name, `${b.text} · elinde ${P.boosters[b.id] || 0}`,
       `<button class="btn green" data-boost="${b.id}" ${P.coins < b.price ? 'disabled' : ''}>${coinIco}${b.price}</button>`)),
     '<h3>Paketler</h3>',
     item(['noads', 'VIP'], 'Reklamsız ödüller', 'Ödüllü reklam izlemeden x2 ödülleri ve çarpanı doğrudan al',
