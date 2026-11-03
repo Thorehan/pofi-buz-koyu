@@ -1900,6 +1900,33 @@ function renderSettings() {
   $('setArt').checked = P.settings.art !== false;
   $('setAccount').textContent = { guest: 'Misafir', google: 'Google', apple: 'Apple' }[P.profile?.method] || 'Misafir';
 }
+// ---------- telefona kurulum (PWA) ----------
+// Android/Chrome'da tarayıcının kurulum penceresi açılır; iPhone'da Paylaş menüsü anlatılır.
+// Servis çalışanı kodu her açılışta tazeler (eski ve yeni dosyalar karışmaz) ve oyunu çevrimdışı açar.
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+window.addEventListener('appinstalled', () => { installEvt = null; track('pwa_installed'); toast('Pofi ana ekrana eklendi!'); });
+const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+$('btnInstall').onclick = async () => {
+  if (standalone()) { toast('Pofi zaten ana ekranında'); return; }
+  if (installEvt) {
+    installEvt.prompt();
+    const { outcome } = await installEvt.userChoice;
+    track('pwa_prompt', { outcome });
+    installEvt = null;
+    return;
+  }
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  openOverlay(`<h2>Ana ekrana ekle</h2>
+    <p>${ios ? 'Safari\'de alttaki <b>Paylaş</b> düğmesine dokun, sonra <b>Ana Ekrana Ekle</b>\'yi seç.' : 'Tarayıcı menüsünden (⋮) <b>Ana ekrana ekle</b> ya da <b>Uygulamayı yükle</b>\'yi seç.'}</p>
+    <small class="breakdown">Pofi uygulama gibi tam ekran açılır ve internetsiz de oynanır.</small>
+    <button id="insOk" class="btn primary">Tamam</button>`);
+  $('insOk').onclick = closeOverlay;
+};
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* desteklenmiyorsa normal çalışır */ }));
+}
+
 $('setName').onchange = () => {
   const name = $('setName').value.trim().slice(0, 16);
   if (!name || !P.profile) { renderSettings(); return; }

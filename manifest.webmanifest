@@ -1,0 +1,17 @@
+{
+  "name": "Pofi: Buz Köyü",
+  "short_name": "Pofi",
+  "description": "Kay, çarp, çöz, köyünü kur. Funday Morning Games",
+  "lang": "tr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e8f6ff",
+  "theme_color": "#9fd3ff",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
