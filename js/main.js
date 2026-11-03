@@ -1701,7 +1701,9 @@ window.addEventListener('hashchange', () => {
 });
 
 // ---------- bağlantılar ----------
-$('btnPlay').onclick = () => startLevel(P.level);
+// Denge testi: ?oyna=250 ile "Oyna" düğmesi doğrudan o leveli açar (ilerleme kaydı değişmez, yalnız kazanınca ileri gider).
+const testLevel = Math.max(0, Math.min(1000, Math.floor(+new URLSearchParams(location.search).get('oyna') || 0)));
+$('btnPlay').onclick = () => startLevel(testLevel || P.level);
 $('nextCard').onclick = () => showScreen('village');
 $('btnDaily').onclick = showDailyReward;
 $('btnDailyPuzzle').onclick = () => {
