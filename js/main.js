@@ -1566,18 +1566,27 @@ function renderMapHead() {
   $('mapBar').style.width = `${Math.min(100, ((tot - base) / STAR_CHEST.every) * 100)}%`;
   $('mapChest').disabled = !ready;
   $('mapChest').classList.toggle('ready', ready);
-  $('mapChest').innerHTML = ready ? '🎁 Sandığı aç' : `🎁 ${tot - base}/${STAR_CHEST.every}`;
+  const n = Math.floor(tot / STAR_CHEST.every) - P.starChests;
+  $('mapChest').innerHTML = n > 1 ? `🎁 ${n} sandığı aç` : ready ? '🎁 Sandığı aç' : `🎁 ${tot - base}/${STAR_CHEST.every}`;
 }
 
+// Ödülleri topla (coin, ipucu, kar tanesi)
+const addRewards = (a, r) => { for (const k of ['coins', 'hints', 'flakes']) if (r[k]) a[k] = (a[k] || 0) + r[k]; return a; };
+
 function openStarChest() {
-  if (Math.floor(totalStars() / STAR_CHEST.every) <= P.starChests) return;
-  const r = STAR_CHEST.rewards[P.starChests % STAR_CHEST.rewards.length];
-  giveReward(r);
-  P.starChests++;
+  const n = Math.floor(totalStars() / STAR_CHEST.every) - P.starChests;
+  if (n <= 0) return;
+  let r = {};
+  for (let k = 0; k < n; k++) {
+    const one = STAR_CHEST.rewards[P.starChests % STAR_CHEST.rewards.length];
+    giveReward(one);
+    r = addRewards(r, one);
+    P.starChests++;
+  }
   persist();
   sfx.reward();
-  track('star_chest', { n: P.starChests });
-  openOverlay(`<span class="new-tag">YILDIZ SANDIĞI</span><h2>${P.starChests}. sandık açıldı!</h2>
+  track('star_chest', { n: P.starChests, opened: n });
+  openOverlay(`<span class="new-tag">YILDIZ SANDIĞI</span><h2>${n > 1 ? `${n} sandık açıldı!` : `${P.starChests}. sandık açıldı!`}</h2>
     <div class="reward-row">${rewardHtml(r)}</div>
     <small class="breakdown">Her ${STAR_CHEST.every} yıldızda bir sandık · eski levellerde 3 yıldız yaparak daha hızlı topla</small>
     <button id="chOk" class="btn green big">Harika</button>`);
@@ -1857,7 +1866,31 @@ const achTotal = () => ACHIEVEMENTS.reduce((n, a) => n + a.tiers.length, 0);
 
 function renderAch() {
   renderQuests();
-  $('achSummary').textContent = `${achDone()}/${achTotal()} kademe · ${achClaimable()} ödül hazır`;
+  const ready = achClaimable();
+  $('achSummary').innerHTML = `${achDone()}/${achTotal()} kademe · ${ready} ödül hazır${ready > 1 ? ' <button id="achAll" class="btn green">Hepsini al</button>' : ''}`;
+  if ($('achAll')) $('achAll').onclick = () => {
+    let r = {}, n = 0;
+    for (const a of ACHIEVEMENTS) {
+      let i = achInfo(a);
+      while (i.claimable) {
+        const one = ACH_REWARD[i.got];
+        giveReward(one);
+        r = addRewards(r, one);
+        P.achClaimed[a.id] = i.got + 1;
+        n++;
+        i = achInfo(a);
+      }
+    }
+    persist();
+    sfx.reward();
+    track('achievement_claim_all', { n });
+    openOverlay(`<span class="new-tag">BAŞARIMLAR</span><h2>${n} ödül alındı!</h2>
+      <div class="reward-row">${rewardHtml(r)}</div>
+      <button id="achOk" class="btn green big">Harika</button>`);
+    $('achOk').onclick = closeOverlay;
+    renderAch();
+    updateWallet();
+  };
   $('achList').innerHTML = ACHIEVEMENTS.map(a => {
     const i = achInfo(a), target = a.tiers[Math.min(i.got, a.tiers.length - 1)], prevT = i.got ? a.tiers[i.got - 1] : 0;
     const pct = i.max ? 100 : Math.max(0, Math.min(100, ((i.v - prevT) / (target - prevT)) * 100));
