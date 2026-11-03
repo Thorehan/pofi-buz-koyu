@@ -540,6 +540,10 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 /* gardırop */
 .wardrobe-stage { flex: none; height: 30vh; min-height: 180px; border-radius: 20px; background: radial-gradient(circle at 50% 70%, #ffffff, #d6ecfb 70%); position: relative; box-shadow: 0 4px 0 rgba(29, 53, 87, .1); }
 #wardrobePofi { position: absolute; inset: 0; width: 100%; height: 100%; }
+.w-float-wrap { position: sticky; top: 0; height: 0; margin-bottom: -10px; z-index: 6; }
+.w-float { position: absolute; right: 0; top: 52px; width: 104px; height: 124px; border-radius: 18px; background: radial-gradient(circle at 50% 70%, #ffffff, #d6ecfb 70%); box-shadow: 0 6px 22px rgba(29, 53, 87, .25); border: 3px solid #fff; animation: wf-in .18s ease-out; pointer-events: none; }
+#wardrobeFloatPofi { width: 100%; height: 100%; }
+@keyframes wf-in { from { transform: scale(.7); opacity: 0; } }
 .seg { display: flex; background: rgba(255, 255, 255, .7); border-radius: 14px; padding: 4px; gap: 4px; }
 .seg-btn { flex: 1; border: none; background: none; border-radius: 10px; padding: 8px; font: 600 15px 'Fredoka', sans-serif; color: var(--ink-soft); }
 .seg-btn.active { background: #fff; color: var(--ink); box-shadow: 0 2px 0 rgba(29, 53, 87, .1); }

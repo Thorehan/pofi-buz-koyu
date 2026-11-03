@@ -1024,8 +1024,7 @@ function renderWardrobe() {
     : it.reward ? `<button class="btn primary" disabled>Köy Lv${it.reward} ödülü</button>`
     : it.event ? `<button class="btn primary" disabled>Haftalık etkinlik ödülü</button>`
     : `<button id="wBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz · ' : 'Al ve giy · '}${coinIco}${price}</button>`;
-  $('wardrobeAction').innerHTML = `<canvas class="w-mini"></canvas><button id="wCancel" class="btn link">Vazgeç</button>${btn}`;
-  drawPofi(fitCanvas($('wardrobeAction').querySelector('.w-mini'), 44, 44), 22, 43, 32, { outfit: previewOutfit() });
+  $('wardrobeAction').innerHTML = `<button id="wCancel" class="btn link">Vazgeç</button>${btn}`;
   $('wCancel').onclick = () => { wardrobeDraft = null; renderWardrobe(); };
   if ($('wBuy')) $('wBuy').onclick = () => {
     if (!have) {
@@ -1771,6 +1770,13 @@ function frame(now) {
       const ctx = fitCanvas($('wardrobePofi'), r.width, r.height);
       // Denenen (henüz alınmamış) parça burada görünür: önce dene, sonra satın al.
       drawPofi(ctx, r.width / 2, r.height - 12, r.height * 0.8, { outfit: previewOutfit(), wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+      // Büyük önizleme kaydırınca görünmez olursa küçük önizleme sağ üstte takip eder (denenen parça anlık görünür).
+      const off = r.bottom < $('screenWardrobe').getBoundingClientRect().top + 70;
+      $('wardrobeFloat').classList.toggle('hidden', !off);
+      if (off) {
+        const fr = $('wardrobeFloatPofi').getBoundingClientRect();
+        if (fr.width) drawPofi(fitCanvas($('wardrobeFloatPofi'), fr.width, fr.height), fr.width / 2, fr.height - 6, fr.height * 0.8, { outfit: previewOutfit(), wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+      }
     }
   }
   requestAnimationFrame(frame);
