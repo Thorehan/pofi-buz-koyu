@@ -79,7 +79,7 @@ export function parseLevel(def) {
   const L = { w, h, t, fishCells, fishOrder, dynCells, gateCells, fishIdx, dynIdx, gateIdx, holePair, plates, pgates, keys, def };
   const S = {
     p, fish: 0, gates, dyn: new Array(dynCells.length).fill(0), crates: crates.sort((a, b) => a - b), seals,
-    balls: balls.sort((a, b) => a - b), drifts: [], rafts, key: 0, pg: 0, wind, q,
+    balls: balls.sort((a, b) => a - b), drifts: [], rafts, key: 0, pg: 0, wind, q, frz: 0,
   };
   return { L, S };
 }
@@ -125,7 +125,7 @@ function canTake(L, n, fi) {
 
 const copyState = S => ({
   p: S.p, fish: S.fish, gates: S.gates, dyn: S.dyn.slice(), crates: S.crates.slice(), seals: S.seals.slice(),
-  balls: S.balls.slice(), drifts: S.drifts.slice(), rafts: S.rafts.slice(), key: S.key, pg: S.pg, wind: S.wind, q: S.q,
+  balls: S.balls.slice(), drifts: S.drifts.slice(), rafts: S.rafts.slice(), key: S.key, pg: S.pg, wind: S.wind, q: S.q, frz: S.frz || 0,
 });
 
 // ---------- tek hamle ----------
@@ -282,7 +282,8 @@ function move(L, S, dir, who) {
   if (!moved) return null;
   const end = Math.max(pPath.length - 1, crate && crate.moved ? crate.at0 + crate.path.length - 1 : 0);
   updatePlates(L, n, fx, end);
-  const seals = moveSeals(L, n, fx, end);
+  // fok düdüğü (güçlendirici): frz hamle boyunca foklar yerinde kalır
+  const seals = n.frz > 0 ? (n.frz--, n.seals.map(s => ({ from: s >> 2, to: s >> 2, d: s & 3 }))) : moveSeals(L, n, fx, end);
   return { state: n, pPath, jumps, warps, rides, crate: crate && crate.moved ? crate : null, seals, fx, dir: dir, who };
 }
 
@@ -373,7 +374,7 @@ function pushCrate(L, n, list, ci, dir, penguinAt, at0, fx, kind) {
 }
 
 // ---------- çözücü ----------
-const stateKey = s => `${s.p}|${s.fish}|${s.gates}|${s.dyn.join('')}|${s.crates.join(',')}|${s.seals.join(',')}|${s.balls.join(',')}|${s.drifts.join(',')}|${s.rafts.join(',')}|${s.key}${s.pg}${s.wind}|${s.q}`;
+const stateKey = s => `${s.p}|${s.fish}|${s.gates}|${s.dyn.join('')}|${s.crates.join(',')}|${s.seals.join(',')}|${s.balls.join(',')}|${s.drifts.join(',')}|${s.rafts.join(',')}|${s.key}${s.pg}${s.wind}|${s.q}|${s.frz || 0}`;
 
 // En kısa çözümün yön dizisi; çözüm yoksa veya durum sınırı aşılırsa null.
 export function solve(L, S0, maxStates = 120000) {

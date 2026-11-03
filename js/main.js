@@ -1,4 +1,4 @@
-import { parseLevel, simulate, solve, won, generateLevel, starsFor, T } from './engine.js';
+import { parseLevel, simulate, solve, won, generateLevel, starsFor, T, tileOf } from './engine.js';
 import { BoardView, paintTile } from './board.js';
 import { VillageView, phaseOf, drawDecor } from './village.js';
 import {
@@ -17,7 +17,7 @@ import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
-  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD,
+  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, WHISTLE_MOVES,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -86,7 +86,7 @@ function showScreen(name) {
   if (name !== 'village' && sheet) closeSheet();
   if (name !== 'village' && village.decorMode) exitDecor();
   if (name !== 'wardrobe') wardrobeDraft = null;
-  if (name !== 'game') $('hintBar').classList.add('hidden');
+  if (name !== 'game') { $('hintBar').classList.add('hidden'); $('boostBar').classList.add('hidden'); board.target = null; }
   if (name === 'village') {
     village.resize();
     renderVillage();
@@ -293,6 +293,8 @@ function renderHud() {
   const hints = P.hints + freeLeft('hints');
   $('hintCount').textContent = hints > 0 ? hints : '+';
   $('btnHint').disabled = run.hintLock;
+  const bc = BOOSTERS.reduce((n, b) => n + (P.boosters[b.id] || 0), 0);
+  $('boostCount').textContent = bc > 0 ? bc : '+';
   $('btnUndo').disabled = run.history.length === 0;
 }
 
@@ -308,6 +310,8 @@ board.onMove = dir => {
   if (!run || run.finished || overlayOpen()) return;
   if (run.reverse) dir = flip(dir);
   $('hintBar').classList.add('hidden');
+  if (board.target) endTarget();
+  $('boostBar').classList.add('hidden');
   const r = simulate(run.L, run.st, dir);
   if (!r) { sfx.bump(); return; }
   run.history.push(run.st);
@@ -645,8 +649,111 @@ function useHint() {
   showHintBar();
 }
 
+// ---------- güçlendiriciler ----------
+// Güç düğmesi araç çubuğunun üstünde üç kart açar. Kazma ve kürek hedef ister (tahtada geçerli hücreler parlar),
+// düdük hemen etki eder. Güçlendirici bitince kartta coin'le alma ve ödüllü reklam (+1) çıkar.
+const boostIcon = b => (art(`booster_${b.id}`) ? `<img src="assets/art/booster_${b.id}.webp" alt="">` : b.icon);
+const boostPrice = b => Math.round(b.price * ECON.hintGameMult);
+
+function boostCells(kind) {
+  const L = run.L, S = run.st, cells = new Set();
+  for (let c = 0; c < L.w * L.h; c++) {
+    const t = tileOf(L, S, c);
+    if (kind === 'pick' && (t === T.ROCK || t === T.FRAGILE)) cells.add(c);
+    if (kind === 'shovel' && t === T.ICE && L.t[c] === T.ICE && c !== S.p && c !== S.q && !S.crates.includes(c) && !S.balls.includes(c)
+      && !S.seals.some(v => v >> 2 === c) && !S.rafts.includes(c)) cells.add(c);
+  }
+  return cells;
+}
+
+function showBoostBar() {
+  if (!run || run.finished) return;
+  $('hintBar').classList.add('hidden');
+  const bar = $('boostBar'), hasSeal = run.st.seals.length > 0;
+  bar.innerHTML = `
+    <div class="hb-head"><b>Güçlendiriciler</b><button class="hb-x" aria-label="Kapat">×</button></div>
+    <div class="bb-row">${BOOSTERS.map(b => {
+      const n = P.boosters[b.id] || 0, off = b.id === 'whistle' && !hasSeal, price = boostPrice(b);
+      const act = n > 0 ? `<button class="btn green" data-use="${b.id}" ${off ? 'disabled' : ''}>${board.target?.kind === b.id ? 'Vazgeç' : `Kullan · ${n}`}</button>`
+        : `<div class="bb-buy"><button class="btn secondary" data-buy="${b.id}" ${P.coins < price ? 'disabled' : ''}>${coinIco}${price}</button><button class="btn primary ad" data-ad="${b.id}">+1</button></div>`;
+      return `<div class="bb-card${off ? ' off' : ''}${board.target?.kind === b.id ? ' on' : ''}"><span class="bb-ico">${boostIcon(b)}</span><b>${b.name}</b><small>${off ? 'Bu levelde fok yok' : b.text}</small>${act}</div>`;
+    }).join('')}</div>`;
+  bar.classList.remove('hidden');
+  bar.querySelector('.hb-x').onclick = () => { bar.classList.add('hidden'); endTarget(); };
+  bar.querySelectorAll('[data-use]').forEach(btn => { btn.onclick = () => useBoost(btn.dataset.use); });
+  bar.querySelectorAll('[data-buy]').forEach(btn => {
+    btn.onclick = () => {
+      const b = BOOSTERS.find(x => x.id === btn.dataset.buy), price = boostPrice(b);
+      if (P.coins < price) return;
+      P.coins -= price;
+      P.boosters[b.id] = (P.boosters[b.id] || 0) + 1;
+      persist();
+      sfx.coin();
+      track('booster_buy', { id: b.id, price, where: 'game' });
+      updateWallet();
+      renderHud();
+      showBoostBar();
+    };
+  });
+  bar.querySelectorAll('[data-ad]').forEach(btn => {
+    btn.onclick = async () => {
+      if (!(await showRewarded('booster'))) return;
+      P.boosters[btn.dataset.ad] = (P.boosters[btn.dataset.ad] || 0) + 1;
+      persist();
+      renderHud();
+      showBoostBar();
+    };
+  });
+}
+
+function useBoost(kind) {
+  if (!run || run.finished || board.anim || !(P.boosters[kind] > 0)) return;
+  if (board.target?.kind === kind) { endTarget(); showBoostBar(); return; }
+  if (kind === 'whistle') {
+    if (!run.st.seals.length) return;
+    run.st = { ...run.st, frz: WHISTLE_MOVES };
+    board.S = run.st;
+    spendBoost(kind);
+    sfx.task();
+    toast(`Foklar ${WHISTLE_MOVES} hamle uyuyor`);
+    return;
+  }
+  const cells = boostCells(kind);
+  if (!cells.size) { toast(kind === 'pick' ? 'Kırılacak kaya yok' : 'Kar konacak boş buz yok'); return; }
+  board.target = { kind, cells };
+  // çubuk tahtanın alt sıralarını örtmesin diye hedef seçerken kapanır; Güç düğmesi seçimi iptal eder
+  toast(kind === 'pick' ? 'Kırmak istediğin kayaya dokun' : 'Kar koymak istediğin buza dokun', 2200);
+  $('boostBar').classList.add('hidden');
+}
+
+function endTarget() { board.target = null; }
+
+board.onTarget = c => {
+  const kind = board.target?.kind;
+  if (!kind || !run) return;
+  if (kind === 'pick') { run.L.t[c] = T.ICE; board.burst(c, '#9aa7bc', 18, board.s * 3, 0.6, board.s); sfx.crack(); }
+  else { run.L.t[c] = T.SNOW; board.burst(c, '#ffffff', 18, board.s * 2.5, 0.6, board.s); sfx.land(); }
+  endTarget();
+  spendBoost(kind);
+};
+
+function spendBoost(kind) {
+  P.boosters[kind]--;
+  run.boosts = (run.boosts || 0) + 1;
+  // tahta değişti: eski ipucu ve "sıkıştın" uyarısı geçersiz
+  board.clearHint();
+  run.hintLock = false;
+  run.stuck = false;
+  persist();
+  track('booster_used', { type: kind, level: run.def.n });
+  $('boostBar').classList.add('hidden');
+  renderHud();
+  renderGoal();
+}
+
 // İpucu kalmayınca: araç çubuğunun üstünde mini satın alma çubuğu (reklam +10, tek, 5'li).
 function showHintBar() {
+  $('boostBar').classList.add('hidden');
   const one = hintPrice(true), five = packPrice(true), bar = $('hintBar');
   bar.innerHTML = `
     <div class="hb-head"><b>İpucun kalmadı</b><button class="hb-x" aria-label="Kapat">×</button></div>
@@ -1440,6 +1547,9 @@ function renderShop() {
       `<button class="btn green" data-hints="1" data-cost="${hintPrice()}" ${P.coins < hintPrice() ? 'disabled' : ''}>${coinIco}${hintPrice()}</button>`),
     item(['hint', '×5'], 'İpucu paketi', `Her zaman ${ECON.hintPack5Cost} coin · tek fiyat bugün aldıkça ikiye katlanır`,
       `<button class="btn green" data-hints="5" data-cost="${ECON.hintPack5Cost}" ${P.coins < ECON.hintPack5Cost ? 'disabled' : ''}>${coinIco}${ECON.hintPack5Cost}</button>`),
+    '<h3>Güçlendiriciler</h3>',
+    ...BOOSTERS.map(b => item(['boost', b.icon], b.name, `${b.text} · elinde ${P.boosters[b.id] || 0}`,
+      `<button class="btn green" data-boost="${b.id}" ${P.coins < b.price ? 'disabled' : ''}>${coinIco}${b.price}</button>`)),
     '<h3>Paketler</h3>',
     item(['noads', 'VIP'], 'Reklamsız ödüller', 'Ödüllü reklam izlemeden x2 ödülleri ve çarpanı doğrudan al',
       '<button class="btn secondary" data-iap="vip">$3.99</button>'),
@@ -1464,6 +1574,20 @@ function renderShop() {
       if (!buyHints(n, cost, 'shop')) return;
       toast(`+${n} ipucu · toplam ${P.hints}`);
       renderShop();
+    };
+  });
+  $('shopList').querySelectorAll('[data-boost]').forEach(btn => {
+    btn.onclick = () => {
+      const b = BOOSTERS.find(x => x.id === btn.dataset.boost);
+      if (P.coins < b.price) return;
+      P.coins -= b.price;
+      P.boosters[b.id] = (P.boosters[b.id] || 0) + 1;
+      persist();
+      sfx.coin();
+      track('booster_buy', { id: b.id, price: b.price, where: 'shop' });
+      toast(`${b.name} alındı · elinde ${P.boosters[b.id]}`);
+      renderShop();
+      updateWallet();
     };
   });
   $('shopList').querySelectorAll('[data-iap]').forEach(b => {
@@ -2354,6 +2478,7 @@ $('btnUndo').onclick = undo;
 const restartRun = () => { playFromMap = !!run.fromMap; startLevel(run.def.n, run.daily, run.event, run.master); };
 $('btnRestart').onclick = () => { if (run && !overlayOpen()) { restartRun(); nudgeHint(); } };
 $('btnHint').onclick = useHint;
+$('btnBoost').onclick = () => { if (board.target) { endTarget(); return; } if ($('boostBar').classList.contains('hidden')) showBoostBar(); else { $('boostBar').classList.add('hidden'); endTarget(); } };
 $('btnCocoa').onclick = () => sellCocoa(1);
 $('btnRecipes').onclick = showRecipes;
 $('eventCard').onclick = () => showScreen('event');

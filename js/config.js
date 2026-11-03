@@ -368,6 +368,14 @@ export const MAP_REGIONS = [
 export const MASTER_LEVELS = [
   { after: 100, n: 112 }, { after: 250, n: 262 }, { after: 450, n: 462 }, { after: 650, n: 662 }, { after: 850, n: 862 }, { after: 1000, n: 1000 },
 ];
+// Güçlendiriciler: level içinde kullanılır. Kazma bir kayayı kırar, kürek bir buz hücresine kar (fren) koyar,
+// düdük fokları birkaç hamle durdurur. Mağazada price; oyun içinden almak ECON.hintGameMult kat pahalı.
+export const BOOSTERS = [
+  { id: 'pick', name: 'Buz kazması', text: 'Bir kayayı kırar', icon: '⛏️', price: 150 },
+  { id: 'shovel', name: 'Kar küreği', text: 'Buza kar koyar (fren)', icon: '❄️', price: 120 },
+  { id: 'whistle', name: 'Fok düdüğü', text: 'Foklar 3 hamle uyur', icon: '🎵', price: 100 },
+];
+export const WHISTLE_MOVES = 3;
 export const MASTER_REWARD = { coins: 1000, hints: 3, flakes: 10 }; // ilk bitirişte, rozetle birlikte
 
 // Başarımlar: her birinin kademeleri var; kademe ödülü ACH_REWARD[kademe]. stat, main.js'te hesaplanır.

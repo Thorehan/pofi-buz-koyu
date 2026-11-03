@@ -574,11 +574,14 @@ export class BoardView {
 
   // Dokunma: Pipi'li levelde dokunulan penguen seçilir.
   tap(e) {
-    if (!this.L || !(this.S.q >= 0) || this.anim) return;
+    if (!this.L || this.anim) return;
     const r = this.c.getBoundingClientRect();
     const x = Math.floor((e.clientX - r.left - this.ox) / this.s), y = Math.floor((e.clientY - r.top - this.oy) / this.s);
     if (x < 0 || y < 0 || x >= this.L.w || y >= this.L.h) return;
     const c = y * this.L.w + x;
+    // güçlendirici hedefi seçiliyorsa (kazma, kürek) yalnızca geçerli hücreler kabul edilir
+    if (this.target) { if (this.target.cells.has(c)) this.onTarget?.(c); return; }
+    if (!(this.S.q >= 0)) return;
     if (c === this.S.p) this.sel = 0;
     else if (c === this.S.q) this.sel = 1;
     else return;
@@ -879,6 +882,26 @@ export class BoardView {
       const face = (sv & 3) === 3 ? -1 : 1;
       const hop = Math.abs(Math.sin(sealK * Math.PI)) * s * 0.08;
       if (!objArt(ctx, 'obj_seal', x + s / 2, y + s / 2 - hop, s, { flip: face < 0 })) drawSeal(ctx, x + s / 2, y + s * 0.88 - hop, s * 0.85, face, time + i);
+      if (this.S.frz > 0) {
+        // düdükle uyuyan fok: üstünde "z"ler ve kalan hamle
+        ctx.fillStyle = '#5a6f8c';
+        ctx.font = `700 ${Math.round(s * 0.26)}px Fredoka, sans-serif`;
+        ctx.textAlign = 'center';
+        const zz = (time * 1.2 + i * 0.3) % 1;
+        ctx.globalAlpha = 1 - zz;
+        ctx.fillText('z', x + s * 0.72, y + s * (0.2 - zz * 0.15));
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#5a6f8c';
+        ctx.lineWidth = 2;
+        circle(ctx, x + s * 0.2, y + s * 0.18, s * 0.13);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#1d3557';
+        ctx.font = `700 ${Math.round(s * 0.18)}px Fredoka, sans-serif`;
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.S.frz, x + s * 0.2, y + s * 0.19);
+      }
     });
 
     // kasalar
@@ -1030,6 +1053,19 @@ export class BoardView {
       ctx.restore();
     }
 
+    // güçlendirici hedefleri: geçerli hücreler nabız gibi parlar
+    if (this.target) {
+      const k = 0.5 + 0.5 * Math.sin(time * 6);
+      for (const c of this.target.cells) {
+        const [x, y] = this.cellXY(c);
+        ctx.fillStyle = `rgba(255,209,102,${0.18 + 0.2 * k})`;
+        roundRect(ctx, x + 2, y + 2, s - 4, s - 4, s * 0.16);
+        ctx.fill();
+        ctx.strokeStyle = '#ffb703';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
+    }
     if (!a && this.ghost) this.drawGhost(time);
     if (!a && this.ghost && this.hintDir >= 0) this.arrow(this.hintDir, time, '#ffcc33');
     if (!a && this.tutorialDir >= 0) this.hand(this.tutorialDir, time);
