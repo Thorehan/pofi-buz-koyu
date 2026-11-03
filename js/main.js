@@ -409,6 +409,7 @@ function win() {
     run.gained = Math.max(0, stars - prev);
     raw = run.replay ? REPLAY.coin + run.gained * REPLAY.perNewStar : ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
     P.stars[run.def.n] = Math.max(prev, stars);
+    run.starGain = run.replay ? run.gained : stars;
     P.level = Math.max(P.level, run.def.n + 1);
     track('level_complete', { level: run.def.n, moves: run.moves, min: run.def.min, stars });
   }
@@ -440,14 +441,14 @@ function win() {
   const evPts = addTokens(P, run.replay ? run.gained * REPLAY.tokenPerNewStar : Math.round(levelTokens(ev, {
     stars, fish: run.L.fishCells.length, daily: run.daily, hintsUsed: run.hintsUsed > 0, eventLevel: isEv, firstClear,
   }) * (1 + buff(P, 'eventPct'))));
-  if (achClaimable() > achBefore) setTimeout(() => toast('Yeni başarım ödülü hazır! 🏆', 2400), 1800);
+  run.achNew = achClaimable() > achBefore;
   if (isEv) { P.event.done[run.event] = Math.max(P.event.done[run.event] || 0, stars); guestProgress('evlevel', 1); }
   persist();
   const notes = [
     pct > 0 && `Köy bonusu +%${Math.round(pct * 100)}`,
     fishCoins > 0 && `Balık +${fishCoins}`,
-    stars === 3 && '3 yıldız +1 ❄',
-    lucky && 'Şanslı ağ +1 ❄',
+    !run.replay && stars === 3 && '3 yıldız +1 ❄',
+    !run.replay && lucky && 'Şanslı ağ +1 ❄',
     run.replay && (run.gained ? `Tekrar · yeni yıldız +${run.gained}` : 'Tekrar · yeni yıldız yok'),
     `${ev.token} +${evPts} jeton`,
   ].filter(Boolean).join(' · ');
@@ -466,6 +467,21 @@ function multAt(zones, pos) {
   return zones[zones.length - 1].m;
 }
 
+// Sonuç ekranında: yıldız sandığının dolması ve hazır başarım rozeti (normal levellerde).
+function resultProgress() {
+  if (run.daily || run.event !== null) return run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : '';
+  const tot = totalStars(), base = P.starChests * STAR_CHEST.every, gain = run.starGain || 0;
+  const ready = Math.floor(tot / STAR_CHEST.every) > P.starChests;
+  const from = Math.max(0, Math.min(100, ((tot - gain - base) / STAR_CHEST.every) * 100)), to = ready ? 100 : ((tot - base) / STAR_CHEST.every) * 100;
+  return `<div class="rs-chest">
+      <span>🎁</span>
+      <div class="progress"><div id="rsChestBar" style="width:${from}%" data-to="${to}%" ${ready ? 'data-ready="1"' : ''}></div></div>
+      <b>${ready ? 'Sandık hazır!' : `${tot - base}/${STAR_CHEST.every}`}</b>
+    </div>
+    ${gain ? `<small class="breakdown">+${gain} yıldız${ready ? ' · sandığı haritada aç' : ''}</small>` : ''}
+    ${run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : ''}`;
+}
+
 function showResult(stars, base, flakes, notes) {
   const zones = multZones();
   const head = run.daily
@@ -475,6 +491,8 @@ function showResult(stars, base, flakes, notes) {
     ${head}
     <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= stars ? ' on' : ''}">★</span>`).join('')}</div>
     <p>${run.moves} hamle · en iyi çözüm ${run.def.min}</p>
+    ${stars < 3 && !run.daily ? `<div class="rs-retry"><span>3 yıldız için en fazla <b>${run.def.min}</b> hamle</span><button id="rsRetry" class="btn link">Tekrar dene</button></div>` : ''}
+    ${resultProgress()}
     <div class="reward-row">
       <span class="pill big">${coinIco}<b id="rwCoins">${base}</b></span>
       <span class="pill big">${flakeIco}<b>+${flakes}</b></span>
@@ -489,7 +507,11 @@ function showResult(stars, base, flakes, notes) {
       <button id="btnNoThanks" class="btn link invisible">Hayır, teşekkürler (${base})</button>
     </div>`);
 
-  for (let k = 0; k < stars; k++) setTimeout(() => sfx.star(k), 60 + k * 120);
+  for (let k = 0; k < stars; k++) setTimeout(() => sfx.star(k), 180 + k * 260);
+  if ($('rsRetry')) $('rsRetry').onclick = () => { closeOverlay(); restartRun(); };
+  // sandık çubuğu eski değerden yenisine dolar
+  const bar = $('rsChestBar');
+  if (bar) setTimeout(() => { bar.style.width = bar.dataset.to; if (bar.dataset.ready) sfx.reward(); }, 900);
 
   let running = true, pos = 0;
   const t0 = performance.now();
@@ -1517,12 +1539,17 @@ const nodeX = (n, W) => W / 2 + Math.sin(n * 0.62) * W * 0.27;
 const regionOf = n => [...MAP_REGIONS].reverse().find(r => n >= r.from);
 let mapNodes = [];
 
+let mapHop = null; // { from, to, t0 } Pofi'nin bir önceki levelden yenisine zıplaması
+
 function openMap() {
   renderMapHead();
-  const sc = $('mapScroll');
+  const sc = $('mapScroll'), cur = Math.min(P.level, mapMax());
+  // yeni açılan levele zıplama (yalnızca birkaç level ilerlendiyse; ilk açılışta ya da çok ilerideyse doğrudan)
+  if (P.mapSeen && P.mapSeen < cur && cur - P.mapSeen <= 3) mapHop = { from: P.mapSeen, to: cur, t0: performance.now() + 450 };
+  if (P.mapSeen !== cur) { P.mapSeen = cur; persist(); }
   requestAnimationFrame(() => {
     $('mapSpacer').style.height = `${Math.max(0, mapH() - sc.clientHeight)}px`;
-    sc.scrollTop = Math.max(0, nodeY(Math.min(P.level, mapMax())) - sc.clientHeight * 0.62);
+    sc.scrollTop = Math.max(0, nodeY(mapHop ? mapHop.from : cur) - sc.clientHeight * 0.62);
   });
 }
 
@@ -1686,7 +1713,22 @@ function drawMap(t) {
       ctx.textAlign = 'left';
       ctx.fillText(label, lx + 6, y + 0.5);
     }
-    if (cur) drawPofi(ctx, x, y - R + 4 - Math.abs(Math.sin(t * 3)) * 4, 50, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.4)) * 0.6, blink: (t % 3.3) < 0.12 });
+    if (cur && !mapHop) drawPofi(ctx, x, y - R + 4 - Math.abs(Math.sin(t * 3)) * 4, 50, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.4)) * 0.6, blink: (t % 3.3) < 0.12 });
+  }
+  // zıplama: her level arası bir sıçrayış, sonunda kar tozu
+  if (mapHop) {
+    const per = 0.55, k = (performance.now() - mapHop.t0) / 1000 / per, steps = mapHop.to - mapHop.from;
+    if (k >= steps) { sfx.land(); mapHop = null; }
+    else {
+      const i = Math.max(0, Math.floor(k)), f = Math.max(0, k - i), a = mapHop.from + i;
+      if (f > 0 && !mapHop.played?.[i]) { (mapHop.played = mapHop.played || {})[i] = 1; sfx.jump(); }
+      const x0 = nodeX(a, W), y0 = nodeY(a) - MAP.R, x1 = nodeX(a + 1, W), y1 = nodeY(a + 1) - MAP.R - 4;
+      const e = f * f * (3 - 2 * f), x = x0 + (x1 - x0) * e, y = y0 + (y1 - y0) * e - Math.sin(f * Math.PI) * 60;
+      drawPofi(ctx, x, y + 4, 50, { outfit: P.outfit, happy: true, wave: 1 });
+      // kamera Pofi'yi izler
+      const want = y - H * 0.62;
+      if (Math.abs(sc.scrollTop - want) > 2) sc.scrollTop += (want - sc.scrollTop) * 0.12;
+    }
   }
   if (max < 1000 && nHi === max) {
     ctx.fillStyle = '#5a6f8c';

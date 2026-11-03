@@ -30,6 +30,7 @@ function defaults() {
     ach: { fish: 0, cups: 0, nohint: 0, events: 0, streak: 0 }, // başarım sayaçları (ilk bitirişler)
     achClaimed: {}, // { başarımId: alınmış kademe sayısı }
     starChests: 0, // açılmış yıldız sandığı sayısı
+    mapSeen: 0, // haritada en son gösterilen level (Pofi'nin yeni levele zıplaması için)
     hintLadder: null, // { day, n } — bugün coin'le alınan tek ipucu sayısı (fiyat merdiveni)
     villageName: null, // köy ekranına ilk girişte sorulur; ilk isim ücretsiz, değiştirmek VILLAGE_RENAME_PRICE
     task: null, // { day, type, need, have, giver, claimed } — köylünün günlük işi
