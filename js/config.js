@@ -5,14 +5,15 @@ export const TIER_LABEL = { easy: '', medium: '', hard: 'ZOR', veryhard: 'ÇOK Z
 export const ECON = {
   coin: { easy: 20, medium: 25, hard: 35, veryhard: 50 },
   coinPerStar: 5,
-  hintCost: 60,
+  hintBase: 50, // level içinde coin'le alınan ipucu: 50, 100, 200, 400… (her alımda 2 katı, her level baştan)
+  hintAdAmount: 10, // ödüllü reklam bu kadar ipucu verir
   continueCost: 80,
   continueMoves: 5,
   startCoins: 100,
   startHints: 3,
   freeCoinAmount: 50,
   freeCoinPerDay: 5,
-  hintPack5Cost: 250,
+  hintPack5Cost: 200,
   starFlake: 1, // 3 yıldıza ek kar tanesi
 };
 

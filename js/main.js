@@ -213,7 +213,7 @@ function startLevel(n, daily = false) {
   const { L, S } = parseLevel(def);
   // Kardan adam: hamle limitli levellerde ek hamle.
   const limit = def.limit ? def.limit + buff(P, 'hardMoves') : null;
-  run = { def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0 };
+  run = { def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintBuys: 0, hintLock: false };
   showScreen('game');
   board.outfit = P.outfit;
   board.setLevel(L, S);
@@ -257,6 +257,7 @@ function renderHud() {
   }
   const hints = P.hints + freeLeft('hints');
   $('hintCount').textContent = hints > 0 ? hints : '+';
+  $('btnHint').disabled = run.hintLock;
   $('btnUndo').disabled = run.history.length === 0;
 }
 
@@ -275,6 +276,7 @@ board.onMove = dir => {
   run.st = r.state;
   run.moves++;
   run.stuck = false;
+  run.hintLock = false;
   run.fishSound = popcount(run.history[run.history.length - 1].fish);
   sealSounded = false;
   board.play(r, run.history[run.history.length - 1]);
@@ -319,10 +321,32 @@ function undo() {
   run.st = run.history.pop();
   run.moves = Math.max(0, run.moves - 1);
   run.stuck = false;
+  run.hintLock = false;
+  board.hintDir = -1; // eski durumun ipucu artık geçersiz
   board.setState(run.st);
   if (!run.daily && run.def.n <= 2) board.tutorialDir = solve(run.L, run.st)?.[0] ?? -1;
   renderHud();
   renderGoal();
+  nudgeHint();
+}
+
+// Geri al ya da baştan başla: oyuncu zorlanıyor demektir, ipucu düğmesini bir el ile göster.
+// Her level için oturumda bir kez; ipucu zaten gösteriliyorsa gösterilmez.
+const nudged = new Set();
+function nudgeHint() {
+  if (!run || run.finished || run.hintLock || nudged.has(run.def.n) || overlayOpen()) return;
+  nudged.add(run.def.n);
+  const btn = $('btnHint'), r = btn.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'hint-nudge';
+  el.innerHTML = '<span class="bubble">İpucu kullanmayı dene</span><span class="hand">👇</span>';
+  el.style.left = `${r.left + r.width / 2}px`;
+  el.style.top = `${r.top}px`;
+  document.body.appendChild(el);
+  const off = () => { el.remove(); document.removeEventListener('pointerdown', off, true); };
+  setTimeout(() => document.addEventListener('pointerdown', off, true), 0);
+  setTimeout(off, 4000);
+  track('hint_nudge', { level: run.def.n });
 }
 
 function win() {
@@ -483,8 +507,13 @@ function fail() {
   $('fRetry').onclick = () => { closeOverlay(); startLevel(run.def.n, run.daily); };
 }
 
+// İpucu bir hamleyi gösterir; oyuncu hamle yapana (ya da geri alana) kadar düğme kilitli kalır,
+// böylece arka arkaya basıp ipucu harcanmaz.
+const hintPrice = () => ECON.hintBase * 2 ** run.hintBuys;
+
 function useHint() {
-  if (!run || run.finished || board.anim) return;
+  if (!run || run.finished || board.anim || run.hintLock) return;
+  document.querySelector('.hint-nudge')?.remove();
   const sol = solve(run.L, run.st, 150000);
   if (!sol) { toast('Bu durumdan çıkış yok. Önce geri al.'); return; }
   const free = freeLeft('hints') > 0;
@@ -495,23 +524,35 @@ function useHint() {
     track('booster_used', { type: 'hint', level: run.def.n });
     board.hintDir = sol[0];
     board.hintT = 2.6;
+    run.hintLock = true;
     sfx.fish(5);
     renderHud();
     return;
   }
+  const price = hintPrice();
   openOverlay(`
     <h2>İpucu</h2>
     <p>İpucun kalmadı. İpucu, bulunduğun yerden en kısa çözümün sıradaki hamlesini gösterir.</p>
-    <button id="hAd" class="btn primary big ad">+1 ipucu</button>
-    <button id="hCoin" class="btn secondary">+1 ipucu · ${ECON.hintCost} coin</button>
+    <button id="hAd" class="btn primary big ad">+${ECON.hintAdAmount} ipucu</button>
+    <button id="hCoin" class="btn secondary">+1 ipucu · ${price} coin</button>
+    <small class="breakdown">Bu levelde her alımda fiyat iki katına çıkar.</small>
     <button id="hClose" class="btn link">Vazgeç</button>`);
-  $('hCoin').disabled = P.coins < ECON.hintCost;
+  $('hCoin').disabled = P.coins < price;
   $('hAd').onclick = async () => {
     const ok = await showRewarded('free_hint');
     closeOverlay();
-    if (ok) { P.hints++; useHint(); }
+    if (ok) { P.hints += ECON.hintAdAmount; toast(`+${ECON.hintAdAmount} ipucu`); useHint(); }
   };
-  $('hCoin').onclick = () => { P.coins -= ECON.hintCost; P.hints++; closeOverlay(); useHint(); };
+  $('hCoin').onclick = () => {
+    if (P.coins < price) return;
+    P.coins -= price;
+    P.hints++;
+    run.hintBuys++;
+    track('hint_buy', { level: run.def.n, price });
+    closeOverlay();
+    updateWallet();
+    useHint();
+  };
   $('hClose').onclick = closeOverlay;
 }
 
@@ -1219,8 +1260,8 @@ function renderShop() {
       `<button id="btnFreeCoin" class="btn primary ad" ${left <= 0 ? 'disabled' : ''}>+${ECON.freeCoinAmount}</button>`),
     '<h3>İpucu</h3>',
     item(['hint', '×1'], 'İpucu', 'Sıradaki doğru hamleyi gösterir',
-      `<button class="btn green" data-hints="1" data-cost="${ECON.hintCost}" ${P.coins < ECON.hintCost ? 'disabled' : ''}>${coinIco}${ECON.hintCost}</button>`),
-    item(['hint', '×5'], 'İpucu paketi', `Tek tek almaktan ${ECON.hintCost * 5 - ECON.hintPack5Cost} coin ucuz`,
+      `<button class="btn green" data-hints="1" data-cost="${ECON.hintBase}" ${P.coins < ECON.hintBase ? 'disabled' : ''}>${coinIco}${ECON.hintBase}</button>`),
+    item(['hint', '×5'], 'İpucu paketi', `Tek tek almaktan ${ECON.hintBase * 5 - ECON.hintPack5Cost} coin ucuz`,
       `<button class="btn green" data-hints="5" data-cost="${ECON.hintPack5Cost}" ${P.coins < ECON.hintPack5Cost ? 'disabled' : ''}>${coinIco}${ECON.hintPack5Cost}</button>`),
     '<h3>Paketler</h3>',
     item(['noads', 'VIP'], 'Reklamsız ödüller', 'Ödüllü reklam izlemeden x2 ödülleri ve çarpanı doğrudan al',
@@ -1505,7 +1546,7 @@ $('btnBack').onclick = () => {
   showScreen('home');
 };
 $('btnUndo').onclick = undo;
-$('btnRestart').onclick = () => { if (run && !overlayOpen()) startLevel(run.def.n, run.daily); };
+$('btnRestart').onclick = () => { if (run && !overlayOpen()) { startLevel(run.def.n, run.daily); nudgeHint(); } };
 $('btnHint').onclick = useHint;
 $('btnCocoa').onclick = () => sellCocoa(1);
 $('btnRecipes').onclick = showRecipes;
