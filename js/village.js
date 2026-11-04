@@ -972,6 +972,7 @@ export class VillageView {
   // o: { cups, coins, pier, done } — done, yolculara servis anında çağrılır.
   playSale(o) {
     if (this.sale || !this.W) return false;
+    this.heroHome = false;
     const h = this.walkers[0], py = promenadeY;
     const spot = o.pier ? [0.165, 0.928] : [0.205, py(0.205)];
     const wp = [
@@ -989,7 +990,7 @@ export class VillageView {
 
   // Pofi iglo kapısına yürüyüp içeri girer; bitince done çağrılır. Yürünemiyorsa (kakao satışı sürüyor) false döner.
   walkIn(done) {
-    if (this.sale || this.door || !this.W) return false;
+    if (this.sale || this.door || this.heroHome || !this.W) return false;
     const h = this.walkers[0], far = 0.3, x = Math.max(HOME[0] - far, Math.min(HOME[0] + far, h.x));
     this.door = { x, y: promenadeY(x) + h.lane, wp: [[HOME[0], promenadeY(HOME[0])], [HOME[0], HOME[1]]], i: 0, face: Math.sign(HOME[0] - x) || 1, alpha: 1, done };
     return true;
@@ -999,9 +1000,34 @@ export class VillageView {
   walkOut() {
     const h = this.walkers[0];
     h.x = h.tx = HOME[0];
-    this.sx = this.sxT = 0;
+    this.heroHome = false;
     this.door = { x: HOME[0], y: HOME[1], wp: [[HOME[0], promenadeY(HOME[0])]], i: 0, face: 1, alpha: 0, out: true };
     this.petCheer = (this.clock || 0) + 2.5;
+  }
+
+  // Gece Pofi iglosuna girip uyur, sabah kapıdan çıkar. İglo yoksa dışarıda kalır.
+  // Geceleyin odadan çıkınca bir süre dışarıda dolaşır (nightStay), sonra yine içeri girer.
+  stepHeroHome(phase, village, time) {
+    const want = phase === 'night' && !!village.igloo;
+    if (this.heroHome === undefined) this.heroHome = want; // ilk açılışta yürümeden yerinde başlar
+    if (this.sale || this.door) return;
+    if (this.heroHome && !want) this.walkOut();
+    else if (want && !this.heroHome && time > (this.nightStay || 0)) this.walkIn(() => { this.heroHome = true; });
+  }
+
+  // Yapı kurulunca köylüler koşup sevinir (yakındakiler yapıya gider, uzaktakiler yerinde zıplar), Pofi dans eder.
+  // Gece uyuyanlar uyandırılmaz.
+  celebrate(id) {
+    const [fx] = AT[id], list = [...this.vs.values()].filter(st => !st.hidden && st.act !== 'sleep'), [x0, x1] = walkRange(this.land);
+    list.forEach((st, i) => {
+      st.cheer = this.clock + 3; // yerinde zıplayan için; yürüyenin süresi aşağıda varış kadar uzar
+      if (Math.abs(st.x - fx) > 0.6) return;
+      const x = Math.max(x0, Math.min(x1, fx + (i - (list.length - 1) / 2) * 0.05)), y = promenadeY(x) + (i % 3) * 0.012, y0 = promenadeY(st.x);
+      st.route = Math.abs(st.y - y0) > 0.012 ? [[st.x, y0], [x, y]] : [[x, y]];
+      st.cheer += (Math.abs(st.y - y0) + Math.abs(x - st.x)) / 0.18;
+    });
+    if (!this.heroHome && !this.sale && !this.door) this.emote = { id: 'dance', t0: this.clock };
+    this.petCheer = this.clock + 3;
   }
 
   stepDoor(dt) {
@@ -1211,7 +1237,9 @@ export class VillageView {
         st = { x, y: spot ? spot[1] : py(x) + lane, route: [], wait: Math.random() * 2, face: spot ? spot[2] : 1, phase, act: spot?.[3] || null, wander: !spot, hidden: phase === 'night' };
         this.vs.set(v.id, st);
       }
-      if (st.phase !== phase) {
+      // sevinç bitti: bir sonraki adımda eski yerine yürür
+      if (st.cheer && this.clock > st.cheer) { st.cheer = 0; st.phase = null; st.route = []; }
+      if (st.phase !== phase && !st.cheer) {
         // yeni saat dilimi: ana yola in, yol boyunca git, hedefe çık
         st.phase = phase;
         st.act = null;
@@ -1225,14 +1253,15 @@ export class VillageView {
         }
       }
       if (st.route.length) {
-        const [tx, ty] = st.route[0], dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy), step = 0.07 * dt;
+        const [tx, ty] = st.route[0], dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy), step = (st.cheer ? 0.18 : 0.07) * dt;
         if (d > step) { st.x += (dx / d) * step; st.y += (dy / d) * step; if (Math.abs(dx) > 0.001) st.face = Math.sign(dx); return; }
         st.x = tx;
         st.y = ty;
         st.route.shift();
-        if (!st.route.length && spot) { st.act = spot[3]; st.face = spot[2]; if (spot[3] === 'sleep') st.hidden = true; }
+        if (!st.route.length && spot && !st.cheer) { st.act = spot[3]; st.face = spot[2]; if (spot[3] === 'sleep') st.hidden = true; }
         return;
       }
+      if (st.cheer) return;
       if (!st.wander) return;
       // gezinme: ana yolda rastgele noktalara yürür, arada durur
       if (st.wait > 0) { st.wait -= dt; return; }
@@ -1361,7 +1390,8 @@ export class VillageView {
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null }) {
+  // photo: fotoğraf karesi (ok, kar yağışı ve panel düğmesi çizilmez)
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     this.clock = time;
@@ -1512,6 +1542,13 @@ export class VillageView {
     // penguenler yalnızca ana yolda yürür
     for (const w of this.walkers) {
       const hero = w === this.walkers[0];
+      if (hero) this.stepHeroHome(phase, village, time);
+      if (hero && this.heroHome) {
+        // gece iglosunda uyuyor; köylüler de uyuyorsa onların "z"si zaten çizilir
+        this.heroPos = null;
+        if (!villagers.length) items.push([AT.igloo[1] * H, () => zzz(ctx, AT.igloo[0] * W, AT.igloo[1] * H - u * 0.2, u, time)]);
+        continue;
+      }
       if (hero && this.sale) this.stepSale(dt);
       else if (hero && this.door) this.stepDoor(dt);
       else if (w.wait > 0) w.wait -= dt;
@@ -1614,15 +1651,16 @@ export class VillageView {
         const size = u * (v.kid ? 0.068 : 0.088), x = st.x * W, y = st.y * H;
         this.vpos.push([v.id, x, y - size * 0.45, size * 0.6]);
         items.push([y, () => {
-          const moving = !!st.route.length || (st.wander && st.wait <= 0);
-          const bob = moving ? Math.abs(Math.sin(time * 8 + i)) * u * 0.008 : 0;
+          const cheer = !!st.cheer && !st.route.length;
+          const moving = !!st.route.length || (st.wander && st.wait <= 0 && !st.cheer);
+          const bob = cheer ? Math.abs(Math.sin(time * 8 + i)) * u * 0.03 : moving ? Math.abs(Math.sin(time * 8 + i)) * u * 0.008 : 0;
           drawPofi(ctx, x, y - bob, size, {
-            face: moving ? st.face : st.act === 'fish' || st.act === 'warm' || st.act === 'queue' ? st.face : 0,
-            outfit: v.outfit, blink: ((time + i) % 3.3) < 0.12,
+            face: cheer ? 0 : moving ? st.face : st.act === 'fish' || st.act === 'warm' || st.act === 'queue' ? st.face : 0,
+            outfit: v.outfit, blink: ((time + i) % 3.3) < 0.12, happy: cheer,
             lean: moving ? Math.sin(time * 8 + i) * 0.08 : st.act === 'warm' ? 0.08 * st.face : 0,
             wave: st.act === 'warm' ? Math.max(0, Math.sin(time * 2 + i)) * 0.5 : 0,
           });
-          if (st.act === 'fish' && !moving) rod(ctx, x, y, size, st.face, st.x > 1, time + i);
+          if (st.act === 'fish' && !moving && !cheer) rod(ctx, x, y, size, st.face, st.x > 1, time + i);
           if (task?.giver === v.id) taskMark(ctx, x, y - size * 1.05 - bob, u, time, task.done);
         }]);
       });
@@ -1643,7 +1681,10 @@ export class VillageView {
     if (pet) this.stepPet(dt, time, pet, items, W, H, u, land, phase);
     if (merchant && land >= 2) {
       const [sx, sy] = [MC_STALL[0] * W, MC_STALL[1] * H], [wx2, wy2] = [MC_WALRUS[0] * W, MC_WALRUS[1] * H];
-      items.push([MC_BOAT[1] * H, () => drawMerchantBoat(ctx, MC_BOAT[0] * W, MC_BOAT[1] * H, u, time)]);
+      // Liman ilk kez görününce tekne sağdan yelkenle gelir, sonra iskelede sallanır.
+      if (this.boatT === undefined && this.sx > W * 0.4) this.boatT = time;
+      const boatK = this.boatT === undefined ? 0 : Math.min(1, (time - this.boatT) / 5), boatX = MC_BOAT[0] + (1 - boatK) ** 3 * 0.3;
+      items.push([MC_BOAT[1] * H, () => drawMerchantBoat(ctx, boatX * W, MC_BOAT[1] * H, u, time)]);
       items.push([sy, () => drawStall(ctx, sx, sy, u, time)]);
       items.push([wy2, () => {
         drawWalrus(ctx, wx2, wy2, u * 0.16, time, 1);
@@ -1678,13 +1719,13 @@ export class VillageView {
     if (vl >= 12) this.lanterns(ctx, W, H, u, time);
     if (night > 0) {
       ctx.fillStyle = `rgba(20,24,60,${night * 0.25})`;
-      ctx.fillRect(-W, -H, W * 3, H * 3);
+      ctx.fillRect(-W, -H, W * (DISTRICTS.length + 2), H * 3);
     }
     ctx.restore();
 
-    if (vl >= 2) this.snowfall(ctx, W, H, time);
+    if (vl >= 2 && !photo) this.snowfall(ctx, W, H, time);
     if (event && EVENT_FALL[event.id]) eventFall(ctx, W, H, time, EVENT_FALL[event.id], event.color);
-    if (!this.focus && n > 1) this.panelNav(ctx, W, H, u, time);
+    if (!this.focus && n > 1 && !photo) this.panelNav(ctx, W, H, u, time);
 
     this.parts = this.parts.filter(p => (p.life -= dt) > 0);
     ctx.save();

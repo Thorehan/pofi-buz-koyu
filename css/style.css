@@ -393,7 +393,8 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .ev-step .btn { padding: 5px 12px; font-size: 14px; }
 .ev-step .check { color: var(--green-d); font-weight: 700; }
 .share-row { display: flex; gap: 8px; flex: none; }
-.share-row .btn { flex: 1; padding: 10px; font-size: 15px; }
+.share-row .btn { flex: 1; padding: 10px 6px; font-size: 14px; }
+.map-head .mh-top > .mh-btns { flex-direction: row; gap: 6px; }
 .code-box { width: 100%; font: 500 13px 'Fredoka', sans-serif; padding: 10px; border: 2px solid #e1ecf7; border-radius: 12px; color: var(--ink); background: #fff; user-select: text; -webkit-user-select: text; resize: none; }
 
 /* ---------- oyun ---------- */
@@ -837,6 +838,11 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .gz p { margin: 0; font-size: 14px; color: #4f4436; line-height: 1.35; }
 .gz .btn { align-self: flex-start; padding: 6px 12px; font-size: 14px; }
 .gz-ans b { color: var(--primary); }
+.vtab { position: relative; flex: 1; border: none; background: none; border-radius: 10px; padding: 8px 4px; font: 600 15px 'Fredoka', sans-serif; color: var(--ink-soft); }
+.vtab.active { background: #fff; color: var(--ink); box-shadow: 0 2px 0 rgba(29, 53, 87, .1); }
+.vtab .dot { top: -3px; right: 2px; width: 12px; height: 12px; border-width: 2px; }
+.card .code-box { min-height: 74px; resize: none; }
+.photo-prev { width: 100%; border-radius: 12px; display: block; }
 .pet-cv { align-self: center; width: 160px; height: 110px; }
 .pet-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .pet-kind { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; padding: 4px 2px 6px; border: 2px solid #dde7f1; border-radius: 12px; background: #fff; font: 500 12px 'Fredoka', sans-serif; color: var(--ink); }

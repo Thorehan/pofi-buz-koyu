@@ -10,6 +10,7 @@ import {
   petFedToday, fishToday, petUnlocked, projectSpent, projectStage, projectBonus, rareChance, gazetteIssue,
 } from './town.js';
 import { drawPet, drawToy } from './townart.js';
+import { statAdd, statBest, statSummary, statCsv } from './stats.js';
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
   buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone, cupPrice, nextRecipe,
@@ -283,6 +284,10 @@ function startLevel(n, daily = false, evk = null, master = null) {
   playFromMap = false;
   run.rare = rollRare();
   board.rare = run.rare;
+  // oynanış verisi yalnızca sabit leveller için (günlük bulmaca ve etkinlik levelleri her hafta üretilir)
+  run.statKey = master !== null ? `U${master + 1}` : !ev && !daily ? def.n : null;
+  run.statT = performance.now();
+  statAdd(run.statKey, { tries: 1 }, { tier: def.tier, min: def.min });
   showScreen('game');
   board.dark = !!ev?.rule?.dark;
   board.outfit = P.outfit;
@@ -426,6 +431,7 @@ board.onSettled = () => {
   setTimeout(() => {
     if (!run || run.finished || run.st !== snapshot) return;
     run.stuck = solve(run.L, run.st, 100000) === null;
+    if (run.stuck) statAdd(run.statKey, { stuck: 1 });
     if (run.stuck) { renderGoal(); track('stuck', { level: run.def.n, moves: run.moves }); }
   }, 30);
 };
@@ -464,10 +470,19 @@ function nudgeHint() {
   track('hint_nudge', { level: run.def.n });
 }
 
+// O ana kadar geçen süre (bir kez sayılsın diye saat sıfırlanır)
+function statTime() {
+  const s = (performance.now() - run.statT) / 1000;
+  run.statT = performance.now();
+  return s;
+}
+
 function win() {
   run.finished = true;
   board.tutorialDir = -1;
   const stars = starsFor(run.def.min, run.moves);
+  statAdd(run.statKey, { wins: 1, moves: run.moves, secs: statTime() });
+  statBest(run.statKey, run.moves, stars);
   let raw;
   if (run.daily) {
     P.dailyPuzzleStreak = (P.dailyPuzzleDay === yesterdayKey() ? P.dailyPuzzleStreak : 0) + 1;
@@ -685,6 +700,7 @@ function countUp(el, from, to) {
 
 function fail() {
   if (won(run.L, run.st)) return;
+  statAdd(run.statKey, { fails: 1 });
   track('level_fail', { level: run.def.n, fish: popcount(run.st.fish) });
   sfx.fail();
   const free = freeLeft('cont'), contPrice = boostPrice(BOOSTERS.find(b => b.id === 'moves5'));
@@ -698,7 +714,7 @@ function fail() {
     <button id="fRetry" class="btn link">Baştan başla</button>`);
   $('fCoin').disabled = P.coins < contPrice;
   // Ek hamle nereden gelirse gelsin yardım sayılır (Yardımsız usta başarımı).
-  const resume = () => { run.limit += ECON.continueMoves; run.boosts = (run.boosts || 0) + 1; run.finished = false; closeOverlay(); renderHud(); };
+  const resume = () => { statAdd(run.statKey, { extra: 1 }); run.limit += ECON.continueMoves; run.boosts = (run.boosts || 0) + 1; run.finished = false; closeOverlay(); renderHud(); };
   if (free > 0) $('fFree').onclick = () => { P.daily.cont++; persist(); resume(); };
   if ($('fBoost')) $('fBoost').onclick = () => { P.boosters.moves5--; persist(); track('booster_used', { type: 'moves5', level: run.def.n }); resume(); };
   $('fAd').onclick = async () => { if (await showRewarded('continue')) resume(); };
@@ -746,6 +762,7 @@ function useHint() {
     if (free) P.daily.hints++; else P.hints--;
     run.hintsUsed++;
     persist();
+    statAdd(run.statKey, { hints: 1 });
     track('booster_used', { type: 'hint', level: run.def.n });
     // gölge penguen hamleyi önden gösterir; ok, ters kontrolde kaydırılacak yönü gösterir
     board.showHint(run.reverse ? flip(sol[0]) : sol[0], simulate(run.L, run.st, sol[0]));
@@ -881,6 +898,7 @@ function spendBoost(kind) {
   run.hintLock = false;
   run.stuck = false;
   persist();
+  statAdd(run.statKey, kind === 'route' ? { routes: 1 } : { extra: 1 });
   track('booster_used', { type: kind, level: run.def.n });
   $('boostBar').classList.add('hidden');
   renderHud();
@@ -1045,6 +1063,8 @@ function showDistrict(i) {
   };
 }
 
+let villageTab = 'build';
+
 function renderVillage() {
   renderZoneTag();
   renderVlCard();
@@ -1054,7 +1074,7 @@ function renderVillage() {
   const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
   const slotsOpen = DECOR_SLOTS.filter(s => Math.floor(s.at[0]) < (P.land || 1));
   const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event && !d.merchant).map(d => discounted(P, d.price)))}+</span></button>`;
-  $('buildList').innerHTML = dCard + townCards() + vCard + dcCard + projectCards() + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
+  const buildCards = () => dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
       return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
@@ -1064,6 +1084,24 @@ function renderVillage() {
     const buffNow = BUFF_TEXT[b.buff](b.values[Math.max(0, lv - 1)]);
     return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}"><b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span>${ready ? '<i class="dot"></i>' : ''}</button>`;
   }).join('');
+  // Sekmeler: Köy hayatı ilk yapıdan sonra, Projeler Çam Ormanı açılınca görünür. Seçili sekme yoksa Yapılar açılır.
+  const tabs = { build: true, life: Object.keys(P.village).length > 0, proj: (P.land || 1) >= 3 };
+  if (!tabs[villageTab]) villageTab = 'build';
+  const lifeCount = Object.keys(P.village).length;
+  $('vTabs').classList.toggle('hidden', lifeCount === 0);
+  // Kakao satış düğmesi Köy hayatı'nda: stant yarıdan fazla dolunca sekmede işaret çıkar.
+  const cocoaFull = cocoaRate() > 0 && cocoaNow() >= cocoaCap() / 2;
+  const dotsOn = { build: canAffordAny(P) || districtReady(), life: cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || !!(P.pet && !petFedToday(P) && fishToday(P) >= PET.feedFish), proj: false };
+  $('vTabs').querySelectorAll('.vtab').forEach(b => {
+    const k = b.dataset.vt;
+    b.classList.toggle('hidden', !tabs[k]);
+    b.classList.toggle('active', k === villageTab);
+    b.querySelector('.dot').classList.toggle('hidden', k === villageTab || !dotsOn[k]);
+    b.onclick = () => { villageTab = k; renderVillage(); };
+  });
+  document.querySelector('#screenVillage .share-row').classList.toggle('hidden', villageTab !== 'life');
+  document.querySelector('#screenVillage .honey').classList.toggle('hidden', villageTab !== 'life');
+  $('buildList').innerHTML = villageTab === 'build' ? buildCards() : villageTab === 'life' ? townCards() + vCard + dcCard : projectCards();
   $('buildList').querySelectorAll('[data-b]').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.b); });
   $('buildList').querySelectorAll('[data-d]').forEach(btn => { btn.onclick = () => { village.goPanel(+btn.dataset.d); showDistrict(+btn.dataset.d); }; });
   $('buildList').querySelector('[data-vill]')?.addEventListener('click', showVillagers);
@@ -1234,6 +1272,7 @@ function upgrade(id) {
   bankCocoa();
   P.flakes -= cost;
   questProgress('build', 1);
+  village.celebrate(id);
   if (!P.village[id]) {
     P.village[id] = { lv: 1, style: 0, color: null };
     P.styles[id] = [0];
@@ -1726,6 +1765,8 @@ function exitRoom() {
 function leaveRoom() {
   room = null;
   showScreen('village');
+  village.sx = village.sxT = 0;
+  village.nightStay = village.clock + 8;
   village.walkOut();
 }
 $('roomExit').onclick = exitRoom;
@@ -1808,7 +1849,7 @@ const gazetteUnread = () => P.gazette.read !== gazetteIssue();
 function townCards() {
   const land = P.land || 1, cards = [];
   const nm = nextMerchant(), here = !!merchantToday();
-  cards.push(`<button class="b-card district town" data-town="gazette"><b>📰 Köy Gazetesi · Sayı ${gazetteIssue()}</b><small>${land >= 2 ? (here ? 'Gezgin tüccar bugün limanda' : nm ? `Tüccar ${dayName(nm)} günü geliyor` : '') : 'Haftanın haberleri, zor leveli ve bilmecesi'}</small><span class="act">${gazetteUnread() ? 'Yeni sayı!' : 'Oku'}</span>${gazetteUnread() ? '<i class="dot"></i>' : ''}</button>`);
+  if (P.level > 5) cards.push(`<button class="b-card district town" data-town="gazette"><b>📰 Köy Gazetesi · Sayı ${gazetteIssue()}</b><small>${land >= 2 ? (here ? 'Gezgin tüccar bugün limanda' : nm ? `Tüccar ${dayName(nm)} günü geliyor` : '') : 'Haftanın haberleri, zor leveli ve bilmecesi'}</small><span class="act">${gazetteUnread() ? 'Yeni sayı!' : 'Oku'}</span>${gazetteUnread() ? '<i class="dot"></i>' : ''}</button>`);
   if (land >= 2) cards.push(`<button class="b-card district town${here ? ' ready' : ''}" data-town="merchant"><b>⛵ Gezgin tüccar</b><small>${here ? 'Kaptan Mors limanda! Nadir kıyafet, süs ve gizemli paket' : 'Haftada 1-2 gün limana uğrar; günü gazetede'}</small><span class="act">${here ? 'Tezgâha git' : nm ? `${dayName(nm)} gelir` : 'Yolda'}</span>${here ? '<i class="dot"></i>' : ''}</button>`);
   if (P.village.market) cards.push(`<button class="b-card district town" data-town="market"><b>🐟 Balık pazarı · kar tanesi</b><small>Coin ile kar tanesi; fiyat bugün aldıkça artar</small><span class="act">1 ${flakeIco} = ${coinIco}${fmt(flakePrice(tradeN(P)))}</span></button>`);
   const vl = villageLevel(P);
@@ -2458,6 +2499,9 @@ function openMap() {
 function renderMapHead() {
   const tot = totalStars(), base = P.starChests * STAR_CHEST.every, ready = Math.floor(tot / STAR_CHEST.every) > P.starChests;
   $('mapStars').textContent = `⭐ ${tot} yıldız · ${Object.keys(P.stars).length} level`;
+  const miss = missingLevels().length;
+  $('mapMissing').classList.toggle('hidden', !miss);
+  $('mapMissing').textContent = `↻ Eksik yıldız · ${miss}`;
   $('mapBar').style.width = `${Math.min(100, ((tot - base) / STAR_CHEST.every) * 100)}%`;
   $('mapChest').disabled = !ready;
   $('mapChest').classList.toggle('ready', ready);
@@ -3370,11 +3414,16 @@ $('btnBack').onclick = () => {
   if (screen === 'visit') { leaveVisit(); return; }
   if (screen === 'interior') { exitRoom(); return; }
   const back = screen === 'game' && run?.event !== null && run?.event !== undefined ? 'event' : screen === 'game' && run?.fromMap ? 'map' : 'home';
+  if (screen === 'game' && run && !run.finished) statAdd(run.statKey, { quits: 1, secs: statTime() });
   run = null;
   showScreen(back);
 };
 $('btnUndo').onclick = undo;
-const restartRun = () => { playFromMap = !!run.fromMap; startLevel(run.def.n, run.daily, run.event, run.master); };
+const restartRun = () => {
+  if (!run.finished) statAdd(run.statKey, { restarts: 1, secs: statTime() });
+  playFromMap = !!run.fromMap;
+  startLevel(run.def.n, run.daily, run.event, run.master);
+};
 $('btnRestart').onclick = () => { if (run && !overlayOpen()) { restartRun(); nudgeHint(); } };
 $('btnHint').onclick = useHint;
 $('btnBoost').onclick = () => { if (board.target) { endTarget(); return; } if ($('boostBar').classList.contains('hidden')) showBoostBar(); else { $('boostBar').classList.add('hidden'); endTarget(); } };
@@ -3393,6 +3442,169 @@ window.addEventListener('keydown', e => {
   if (screen === 'game' && (e.code === 'KeyZ' || e.code === 'Backspace')) { e.preventDefault(); undo(); }
 });
 
+// Köy sahnesinin oyun ekranı ve fotoğrafta ortak olan bilgileri
+const villageScene = () => ({
+  village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS, land: P.land || 1,
+  villagers: villagersHere(), hour: hourNow(), decor: P.decor, event: eventVillage(),
+  pet: P.pet ? { kind: P.pet.kind, collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
+  projects: (P.land || 1) >= 3 ? PROJECTS.map(p => ({ p, stage: projectStage(P, p) })) : null,
+});
+
+// Köy fotoğrafı: açık bütün araziler tek karede, altta köyün adı. Oyun içi işaretler (oklar, balonlar) çizilmez.
+let photoView = null;
+function shootVillage() {
+  if (!photoView) {
+    const wrap = document.createElement('div');
+    wrap.style.display = 'none'; // görünmez: VillageView ölçüsünü kendisi almasın diye
+    wrap.appendChild(document.createElement('canvas'));
+    document.body.appendChild(wrap);
+    photoView = new VillageView(wrap.firstChild);
+  }
+  const land = P.land || 1, PW = 720, PH = 648, strip = 92, v = photoView;
+  v.W = PW;
+  v.H = PH;
+  v.dpr = 1;
+  v.c.width = PW * land;
+  v.c.height = PH;
+  v.cam = { x: PW / 2, y: PH / 2, z: 1 };
+  v.heroHome = undefined;
+  v.draw(performance.now() / 1000, 0, { ...villageScene(), plots: [], ready: [], teaser: false, photo: true });
+  const out = document.createElement('canvas');
+  out.width = PW * land;
+  out.height = PH + strip;
+  const x = out.getContext('2d');
+  x.fillStyle = '#ffffff';
+  x.fillRect(0, 0, out.width, out.height);
+  x.drawImage(v.c, 0, 0);
+  x.textBaseline = 'middle';
+  x.fillStyle = '#1d3557';
+  x.font = "700 34px Fredoka, sans-serif";
+  x.fillText(P.villageName || 'Pofi\'nin köyü', 28, PH + 34);
+  x.fillStyle = '#5a6f8c';
+  x.font = "500 22px Fredoka, sans-serif";
+  x.fillText(`Köy seviyesi ${villageLevel(P)} · Pofi: Buz Köyü`, 28, PH + 68);
+  return out;
+}
+
+async function showPhoto() {
+  // dosya baştan hazırlanır: paylaşım penceresi yalnızca dokunuşun hemen ardından açılabilir
+  const cv = shootVillage(), url = cv.toDataURL('image/jpeg', 0.9);
+  const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.9)), file = new File([blob], 'pofi-koyum.jpg', { type: 'image/jpeg' });
+  const canShare = !!navigator.canShare?.({ files: [file] });
+  openOverlay(`
+    <span class="new-tag">KÖY FOTOĞRAFI</span>
+    <h2>Köyün hazır!</h2>
+    <img class="photo-prev" src="${url}" alt="Köy fotoğrafı">
+    <button id="phShare" class="btn primary big">${canShare ? 'Paylaş' : 'İndir'}</button>
+    <button id="phClose" class="btn link">Kapat</button>`);
+  $('phClose').onclick = closeOverlay;
+  $('phShare').onclick = async () => {
+    track('village_photo', { land: P.land || 1 });
+    if (!canShare) { downloadFile(blob, file.name); return; }
+    try { await navigator.share({ files: [file], title: 'Pofi köyüm' }); } catch { /* paylaşım iptal edildi */ }
+  };
+}
+
+function downloadFile(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast('Dosya indirildi');
+}
+$('btnPhoto').onclick = showPhoto;
+
+// Kayıt yedeği: kayıt sıkıştırılıp metin koduna çevrilir, başka cihaza yapıştırılır. Sunucu yok.
+function b64(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+async function streamBytes(bytes, stream) {
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+}
+async function backupEncode() {
+  const raw = new TextEncoder().encode(JSON.stringify(P));
+  if (typeof CompressionStream === 'undefined') return `PF0.${b64(raw)}`;
+  return `PF1.${b64(await streamBytes(raw, new CompressionStream('gzip')))}`;
+}
+// Geçersizse null. Kodun içinde HTML olamaz: isimler ekranda gösterildiği için başkasının kodu da güvenli kalsın.
+async function backupDecode(code) {
+  const m = /^PF([01])\.([\w-]+)$/.exec(code.replace(/\s+/g, ''));
+  if (!m) return null;
+  try {
+    const bytes = m[1] === '1' ? await streamBytes(unb64(m[2]), new DecompressionStream('gzip')) : unb64(m[2]);
+    const text = new TextDecoder().decode(bytes);
+    if (/[<>]/.test(text)) return null;
+    const s = JSON.parse(text);
+    return Number.isInteger(s.level) && Number.isFinite(s.coins) && s.stars && s.village ? s : null;
+  } catch { return null; }
+}
+
+async function showBackup() {
+  const code = await backupEncode();
+  openOverlay(`
+    <span class="new-tag">KAYIT YEDEĞİ</span>
+    <h2>İlerlemeni taşı</h2>
+    <p>Bu kodu sakla. Başka cihazda oyunu açıp aşağıya yapıştırınca ilerlemen gelir.</p>
+    <textarea id="bkCode" class="code-box" rows="3" readonly>${code}</textarea>
+    <button id="bkCopy" class="btn primary big">Kodu kopyala</button>
+    <div class="sheet-sec"><b>Yedeği yükle</b><small>Bu cihazdaki ilerlemenin yerini alır</small></div>
+    <textarea id="bkIn" class="code-box" rows="2" placeholder="Yedek kodunu buraya yapıştır"></textarea>
+    <button id="bkLoad" class="btn secondary" disabled>Yedeği yükle</button>
+    <button id="bkClose" class="btn link">Kapat</button>`);
+  $('bkCode').onclick = e => e.target.select();
+  $('bkClose').onclick = closeOverlay;
+  $('bkCopy').onclick = async () => {
+    try { await navigator.clipboard.writeText(code); toast('Kod kopyalandı'); track('backup_copy'); }
+    catch { $('bkCode').select(); toast('Kodu seçip kopyala'); }
+  };
+  $('bkIn').oninput = () => { $('bkLoad').disabled = !$('bkIn').value.trim(); };
+  $('bkLoad').onclick = async () => {
+    const s = await backupDecode($('bkIn').value);
+    if (!s) { toast('Bu kod geçersiz', 2400); return; }
+    openOverlay(`
+      <span class="new-tag">YEDEĞİ YÜKLE</span>
+      <h2>Emin misin?</h2>
+      <p>Yedekte level ${s.level}, ${fmt(s.coins)} coin var. Bu cihazdaki ilerleme (level ${P.level}, ${fmt(P.coins)} coin) silinip yedekle değiştirilecek.</p>
+      <button id="bkYes" class="btn primary big">Evet, yükle</button>
+      <button id="bkNo" class="btn link">Vazgeç</button>`);
+    $('bkNo').onclick = showBackup;
+    $('bkYes').onclick = () => { save(s); track('backup_load'); location.reload(); };
+  };
+}
+$('btnBackup').onclick = showBackup;
+
+// Oynanış verisi: cihazda toplanır, yalnızca oyuncu isteyince dosya olur.
+function showStats() {
+  const s = statSummary();
+  openOverlay(`
+    <span class="new-tag">OYNANIŞ VERİSİ</span>
+    <h2>Level istatistikleri</h2>
+    <p>Bu cihazda ${s.levels} level, ${fmt(s.tries)} deneme kaydedildi. Veri yalnızca bu cihazda durur; denge çalışması için dosya olarak alabilirsin.</p>
+    ${s.hard.length ? `<small class="breakdown">En çok zorlanılan: ${s.hard.map(h => `Level ${h.k} (bitirme başına ${h.rate.toFixed(1).replace('.', ',')} deneme)`).join(' · ')}</small>` : ''}
+    <button id="stDown" class="btn primary big" ${s.levels ? '' : 'disabled'}>Dosyayı indir (CSV)</button>
+    <button id="stClose" class="btn link">Kapat</button>`);
+  $('stClose').onclick = closeOverlay;
+  $('stDown').onclick = () => downloadFile(new Blob([statCsv()], { type: 'text/csv;charset=utf-8' }), `pofi-oynanis-${dateKey()}.csv`);
+}
+$('btnStats').onclick = showStats;
+
+// Harita: 3 yıldızı eksik leveller arasında sırayla atlar (tekrar oynayıp yıldız sandıklarını doldurmak için).
+let missingAt = 0;
+const missingLevels = () => { const out = []; for (let n = 1; n < P.level; n++) if ((P.stars[n] || 0) < 3) out.push(n); return out; };
+$('mapMissing').onclick = () => {
+  const list = missingLevels();
+  if (!list.length) return;
+  const n = list.find(k => k > missingAt) || list[0];
+  missingAt = n;
+  const sc = $('mapScroll');
+  sc.scrollTop = Math.max(0, nodeY(n) - sc.clientHeight * 0.5);
+  showLevelPopup(n);
+};
+
 let last = performance.now(), slowTick = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -3403,13 +3615,11 @@ function frame(now) {
   else if (screen === 'village') {
     const open = BUILDINGS.filter(b => isUnlocked(P, b) && !P.village[b.id]);
     village.draw(t, dt, {
-      village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS,
+      ...villageScene(),
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
-      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1, homeReady: homesReady(),
-      villagers: villagersHere(), hour: hourNow(), task: taskMarker(), decor: P.decor, event: eventVillage(),
-      pet: P.pet ? { kind: P.pet.kind, collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
-      merchant: !!merchantToday(), projects: (P.land || 1) >= 3 ? PROJECTS.map(p => ({ p, stage: projectStage(P, p) })) : null,
+      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, homeReady: homesReady(), task: taskMarker(),
+      merchant: !!merchantToday(),
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
     if (village.panel !== shownPanel) renderZoneTag();

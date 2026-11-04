@@ -39,7 +39,7 @@
     <img class="brand-logo small" src="assets/funday-morning-logo.webp" alt="Funday Morning Games">
     <div class="login-card">
       <h2>Hoş geldin!</h2>
-      <p>İlerlemen bu cihazda saklanır. Hesap bağlarsan cihaz değiştirdiğinde de kaybolmaz.</p>
+      <p>İlerlemen bu cihazda saklanır. Ayarlar'dan yedek kodu alıp başka cihaza taşıyabilirsin.</p>
       <label class="field"><span>Oyuncu adın</span><input id="playerName" maxlength="16" placeholder="Kaşif" autocomplete="nickname"></label>
       <button id="btnGuest" class="btn primary big">Misafir olarak oyna</button>
       <div class="or"><span>veya</span></div>
@@ -143,8 +143,14 @@
   <section id="screenVillage" class="screen page hidden">
     <div class="garden-wrap"><canvas id="village"></canvas><span id="zoneName" class="zone-tag"></span></div>
     <div id="vlCard" class="vl-card"></div>
+    <div id="vTabs" class="seg" role="tablist">
+      <button class="vtab" data-vt="build">Yapılar<i class="dot hidden"></i></button>
+      <button class="vtab" data-vt="life">Köy hayatı<i class="dot hidden"></i></button>
+      <button class="vtab" data-vt="proj">Projeler<i class="dot hidden"></i></button>
+    </div>
     <div class="share-row">
-      <button id="btnShare" class="btn secondary">Köyümü paylaş</button>
+      <button id="btnShare" class="btn secondary">Paylaş</button>
+      <button id="btnPhoto" class="btn secondary">Fotoğraf</button>
       <button id="btnVisit" class="btn green">Arkadaş köyü</button>
     </div>
     <div class="honey">
@@ -204,7 +210,7 @@
   <!-- Harita: geçmiş levellere dönüş -->
   <section id="screenMap" class="screen hidden">
     <div class="map-head">
-      <div class="mh-top"><div><b>Harita</b><small id="mapStars"></small></div><button id="mapChest" class="map-chest"></button></div>
+      <div class="mh-top"><div><b>Harita</b><small id="mapStars"></small></div><div class="mh-btns"><button id="mapMissing" class="map-chest"></button><button id="mapChest" class="map-chest"></button></div></div>
       <div class="progress"><div id="mapBar"></div></div>
     </div>
     <div id="mapScroll" class="map-scroll"><canvas id="mapCanvas"></canvas><div id="mapSpacer"></div></div>
@@ -241,6 +247,8 @@
     </div>
     <div class="set-group">
       <button id="btnInstall" class="set-row action">Ana ekrana ekle <small class="muted">(uygulama gibi aç)</small></button>
+      <button id="btnBackup" class="set-row action">Kayıt yedeği <small class="muted">(başka cihaza taşı)</small></button>
+      <button id="btnStats" class="set-row action">Oynanış verisi <small class="muted">(level istatistikleri)</small></button>
       <button id="btnReplayIntro" class="set-row action">Tanıtımı tekrar izle</button>
       <button id="btnReset" class="set-row action danger">İlerlemeyi sıfırla</button>
     </div>
