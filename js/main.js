@@ -49,7 +49,7 @@ let LEVELS = []; // data/levels.json — sonrası çalışma anında üretilir
 const board = new BoardView($('board'));
 const village = new VillageView($('village'));
 const visitView = new VillageView($('visitCanvas'));
-village.onSelect = id => (sheet?.id === id && INTERIOR[id] && P.village[id] ? enterInterior(id) : openSheet(id));
+village.onSelect = id => (sheet?.id === id && INTERIOR[id] && P.village[id] ? goInside(id) : openSheet(id));
 village.onDistrict = i => showDistrict(i);
 village.onVillager = id => talkTo(id);
 village.onEvent = kind => { sfx.ui(); if (kind === 'tent') showScreen('event'); else showGuest(); };
@@ -110,6 +110,7 @@ function showScreen(name) {
   $('tabbar').classList.toggle('hidden', !TAB_SCREENS.includes(name));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   if (name !== 'village' && sheet) closeSheet();
+  if (name !== 'village') village.door = null; // yarım kalan kapı yürüyüşü sonradan içeri sokmasın
   if (name !== 'village' && village.decorMode) exitDecor();
   if (name !== 'wardrobe') { wardrobeDraft = null; dyeDraft = undefined; }
   if (name !== 'game') { $('hintBar').classList.add('hidden'); $('boostBar').classList.add('hidden'); board.target = null; }
@@ -676,9 +677,10 @@ function fail() {
     <button id="fCoin" class="btn secondary">+${ECON.continueMoves} hamle · ${contPrice} coin</button>
     <button id="fRetry" class="btn link">Baştan başla</button>`);
   $('fCoin').disabled = P.coins < contPrice;
-  const resume = () => { run.limit += ECON.continueMoves; run.finished = false; closeOverlay(); renderHud(); };
+  // Ek hamle nereden gelirse gelsin yardım sayılır (Yardımsız usta başarımı).
+  const resume = () => { run.limit += ECON.continueMoves; run.boosts = (run.boosts || 0) + 1; run.finished = false; closeOverlay(); renderHud(); };
   if (free > 0) $('fFree').onclick = () => { P.daily.cont++; persist(); resume(); };
-  if ($('fBoost')) $('fBoost').onclick = () => { P.boosters.moves5--; run.boosts = (run.boosts || 0) + 1; persist(); track('booster_used', { type: 'moves5', level: run.def.n }); resume(); };
+  if ($('fBoost')) $('fBoost').onclick = () => { P.boosters.moves5--; persist(); track('booster_used', { type: 'moves5', level: run.def.n }); resume(); };
   $('fAd').onclick = async () => { if (await showRewarded('continue')) resume(); };
   $('fCoin').onclick = () => { P.coins -= contPrice; rampUp('moves5'); persist(); resume(); };
   $('fRetry').onclick = () => { closeOverlay(); restartRun(); };
@@ -1182,7 +1184,7 @@ function renderSheet() {
 
   $('shX').onclick = closeSheet;
   $('shUp').onclick = () => upgrade(b.id);
-  if ($('shIn')) $('shIn').onclick = () => enterInterior(b.id);
+  if ($('shIn')) $('shIn').onclick = () => goInside(b.id);
   if ($('shTrade')) $('shTrade').onclick = showMarket;
   if (!st) return;
   $('sheet').querySelectorAll('[data-style]').forEach(btn => { btn.onclick = () => { sheet.draft.style = +btn.dataset.style; renderSheet(); }; });
@@ -1290,6 +1292,7 @@ function renderNextCard() {
 let wardrobeCat = 'hat';
 let wardrobeDraft = null; // denenen kıyafet (bu kategoride)
 
+let wardrobeCheer = 0; // Pofi yeni kıyafetine bu ana kadar sevinir
 let emoteDraft = null; // İfade sekmesinde denenen ifade
 let dyeDraft; // undefined: boya denenmiyor; null: kendi rengi; yoksa COLORS kimliği
 const dyeKey = (cat, id) => `${cat}:${id}`;
@@ -1323,7 +1326,8 @@ function emotePose(id, t) {
   if (id === 'spin') return { face: [1, 0, -1, 0][Math.floor(t * 8) % 4], happy: true };
   return { wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 };
 }
-const emoteBob = t => (wardrobeCat === 'emote' && emoteDraft === 'dance' ? Math.abs(Math.sin(t * 11)) * 8 : 0);
+const emoteBob = t => (wardrobeCat === 'emote' && emoteDraft === 'dance' ? Math.abs(Math.sin(t * 11)) * 8 : t < wardrobeCheer ? Math.abs(Math.sin(t * 8)) * 14 : 0);
+const cheerWardrobe = () => { wardrobeCheer = performance.now() / 1000 + 1.6; };
 
 let wardrobeRedraw = 0;
 onArtLoad(id => {
@@ -1373,6 +1377,7 @@ function renderWardrobe() {
     wear(wardrobeCat, it.id);
     wardrobeDraft = null;
     dyeDraft = undefined;
+    cheerWardrobe();
     persist();
     toast(`${it.name} giyildi`);
     renderWardrobe();
@@ -1400,6 +1405,7 @@ function renderDye() {
     else delete P.dyes[key];
     if (P.outfit[wardrobeCat] === id) wear(wardrobeCat, id);
     dyeDraft = undefined;
+    cheerWardrobe();
     persist();
     cost ? sfx.coin() : sfx.ui();
     track('outfit_dye', { slot: wardrobeCat, item: id, color: sel, price: cost });
@@ -1683,6 +1689,32 @@ function renderDecor() {
 let room = null; // { id, slot, draft: önizlenen kademe ya da null }
 const homesReady = () => Object.keys(INTERIOR).filter(id => interiorReady(P, id));
 
+// Pofi önce köyde kapıya yürür, sonra içeride kapıdan odaya girer.
+function goInside(id) {
+  if (!INTERIOR[id] || !P.village[id]) return;
+  if (!village.walkIn(() => enterInterior(id))) enterInterior(id);
+}
+
+// Çıkış: Pofi odada tünele yürür, köyde kapıdan çıkar.
+function exitRoom() {
+  if (!room || room.anim?.out) return;
+  const t = performance.now() / 1000;
+  room.draft = null;
+  room.anim = { out: true, t0: t, x0: 0.56 + 0.08 * Math.sin(t * 0.5) };
+  sfx.ui();
+}
+function leaveRoom() {
+  room = null;
+  showScreen('village');
+  village.walkOut();
+}
+$('roomExit').onclick = exitRoom;
+// kapı tünelinin kendisine dokunmak da dışarı çıkarır
+$('roomCanvas').addEventListener('click', e => {
+  const r = $('roomCanvas').getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+  if (fx > 0.87 && fy > 0.44 && fy < 0.8) exitRoom();
+});
+
 function enterInterior(id) {
   if (!INTERIOR[id] || !P.village[id]) return;
   closeSheet();
@@ -1690,7 +1722,7 @@ function enterInterior(id) {
   // coin'i yeten ilk yuvadan, yoksa ilk boş yuvadan başla
   const first = slots.find(s => { const t = slotTier(P, id, s.id); return t < 3 && P.coins >= discounted(P, s.items[t].price); })
     || slots.find(s => slotTier(P, id, s.id) < 3) || slots[0];
-  room = { id, slot: first.id, draft: null };
+  room = { id, slot: first.id, draft: null, anim: { out: false, t0: performance.now() / 1000 } };
   showScreen('interior');
   renderInterior();
   track('interior_enter', { id });
@@ -1736,6 +1768,7 @@ function renderInterior() {
     P.coins -= price;
     P.interior[room.id] = { ...(P.interior[room.id] || {}), [slot.id]: d };
     room.draft = null;
+    room.cheer = performance.now() / 1000 + 1.6;
     persist();
     sfx.reward();
     track('interior_buy', { id: room.id, slot: slot.id, tier: d, price });
@@ -2008,7 +2041,7 @@ function showPet() {
       <canvas id="petCv" class="pet-cv"></canvas>
       <p>Köyde Pofi'nin peşinden yürür, iglonun önünde uyur. Günde bir kez levellerde topladığın balıklardan ${PET.feedFish} tane verirsen o gün sana küçük bir hediye getirir.</p>
       <small class="breakdown">Beslemezsen yalnızca uykulu olur; hiçbir şey kaybetmezsin.</small>
-      <label class="field light"><input id="petName" maxlength="12" value="${PET.name}" autocomplete="off"></label>
+
       <button id="petAdopt" class="btn green big" ${!ok || P.coins < PET.price ? 'disabled' : ''}>${!ok ? `Köy Lv${PET.vl} ya da level ${PET.level}'dan sonra` : P.coins < PET.price ? `Yetersiz coin · ${coinIco}${fmt(PET.price)}` : `Sahiplen · ${coinIco}${fmt(PET.price)}`}</button>
       <button id="petClose" class="btn link">Kapat</button>`);
     petLoop(() => ({ pose: 'happy' }));
@@ -2016,12 +2049,11 @@ function showPet() {
     $('petAdopt').onclick = () => {
       if (!ok || P.coins < PET.price) return;
       P.coins -= PET.price;
-      P.pet = { name: cleanName($('petName').value).slice(0, 12) || PET.name, fur: 'snow', collar: null, bed: 0, toys: [], toy: null, furs: ['snow'], collars: [], fedDay: '' };
+      P.pet = { name: PET.name, named: false, fur: 'snow', collar: null, bed: 0, toys: [], toy: null, furs: ['snow'], collars: [], fedDay: '' };
       persist();
       sfx.reward();
       track('pet_adopt', { price: PET.price });
-      toast(`${P.pet.name} artık köyde! Balık topla, besle.`, 2600);
-      showPet();
+      showPetName();
       if (screen === 'village') renderVillage();
     };
     return;
@@ -2046,7 +2078,7 @@ function showPet() {
     ${bedNext ? `<button id="petBed" class="btn secondary" ${P.coins < bedNext.price ? 'disabled' : ''}>${bedNext.name} · ${coinIco}${fmt(bedNext.price)}</button>` : '<small class="breakdown">En güzel yatak onda ✓</small>'}
     <div class="sheet-sec"><b>Oyuncak</b><small>Gezgin tüccar getirir</small></div>
     ${p.toys.length ? `<div class="chips">${p.toys.map(id => `<button class="chip-btn${p.toy === id ? ' sel' : ''}" data-toy="${id}">${PET_TOYS.find(t => t.id === id).name}</button>`).join('')}</div>` : '<small class="breakdown">Henüz oyuncağı yok.</small>'}
-    <div class="sheet-actions"><button id="petRename" class="btn link">İsim değiştir · ${coinIco}${PET.renamePrice}</button><button id="petClose" class="btn green">Kapat</button></div>`);
+    <div class="sheet-actions"><button id="petRename" class="btn link">${p.named ? `İsim değiştir · ${coinIco}${PET.renamePrice}` : 'İsim ver · ücretsiz'}</button><button id="petClose" class="btn green">Kapat</button></div>`);
   petLoop(() => ({ pose: fed ? 'happy' : 'stand', sleepy: !fed, fur: PET.furs.find(f => f.id === d.fur).hex, collar: d.collar ? COLORS.find(c => c.id === d.collar).hex : null, toy: p.toy }));
   $('petClose').onclick = () => { petDraft = null; closeOverlay(); };
   $('petFeed').onclick = () => {
@@ -2095,13 +2127,43 @@ function showPet() {
     toast(`${bedNext.name} iglonun önüne kondu`);
     showPet();
   };
-  $('petRename').onclick = () => {
-    const name = cleanName(prompt('Yeni isim', p.name) || '').slice(0, 12);
-    if (!name || name === p.name || P.coins < PET.renamePrice) return;
-    P.coins -= PET.renamePrice;
+  $('petRename').onclick = showPetName;
+}
+
+// Tilkinin ismi: ilk isim ücretsiz, sonradan değiştirmek PET.renamePrice coin (köy ismiyle aynı kural).
+function showPetName() {
+  const p = P.pet, first = !p.named, price = first ? 0 : PET.renamePrice;
+  openOverlay(`
+    <span class="new-tag">${first ? 'YENİ DOST' : 'İSİM DEĞİŞTİR'}</span>
+    <h2>${first ? 'Dostuna bir isim ver' : `${esc(p.name)} için yeni isim`}</h2>
+    <canvas id="petCv" class="pet-cv"></canvas>
+    <p>${first ? `İlk isim ücretsiz. Sonradan değiştirmek ${coinIco}${PET.renamePrice}.` : `İsmi değiştirmek ${coinIco}${price}.`}</p>
+    <label class="field light"><input id="pnInput" maxlength="12" placeholder="${esc(PET.name)}" value="${esc(p.name)}" autocomplete="off"></label>
+    <small class="breakdown">2-12 karakter</small>
+    <button id="pnSave" class="btn green" ${P.coins < price ? 'disabled' : ''}>${first ? 'Kaydet' : P.coins < price ? `Yetersiz coin · ${coinIco}${price}` : `Değiştir · ${coinIco}${price}`}</button>
+    <button id="pnClose" class="btn link">${first ? 'Sonra' : 'Vazgeç'}</button>`);
+  petLoop(() => ({ pose: 'happy' }));
+  const input = $('pnInput');
+  const check = () => {
+    const name = cleanName(input.value).slice(0, 12);
+    // ilk isimde varsayılan isim de seçilebilir; sonradan aynı isme para ödetilmez
+    const ok = name.length >= 2 && (first || name !== p.name) && P.coins >= price;
+    $('pnSave').disabled = !ok;
+    return ok ? name : null;
+  };
+  input.oninput = check;
+  check();
+  $('pnClose').onclick = showPet;
+  $('pnSave').onclick = () => {
+    const name = check();
+    if (!name) return;
+    P.coins -= price;
     p.name = name;
+    p.named = true;
     persist();
-    sfx.coin();
+    sfx.reward();
+    track('pet_name', { first, price });
+    toast(first ? `${name} artık köyde! Balık topla, besle.` : `Yeni adı: ${name}`, 2600);
     showPet();
     if (screen === 'village') renderVillage();
   };
@@ -2145,10 +2207,18 @@ function showProject(id) {
       persist();
       sfx.coin();
       track('project_invest', { id: p.id, amount: n, total: P.projects[p.id] });
-      if (st2 === 3) { sfx.win(); toast(`${p.name} tamamlandı! ${p.text}`, 3200); }
-      else if (st2 > st) { sfx.reward(); toast(`${p.name}: ${st2 === 1 ? 'temeli atıldı' : 'yarıya geldi'}`, 2400); }
-      showProject(id);
       if (screen === 'village') renderVillage();
+      if (st2 === 3) {
+        // bitince pencere kapanır, kamera yapıya döner ve yapının üstünde parıltı patlar
+        sfx.win();
+        toast(`${p.name} tamamlandı! ${p.text}`, 3200);
+        closeOverlay();
+        village.goPanel(2);
+        village.sparkleAt(p.at[0], p.at[1] - 0.08);
+        return;
+      }
+      if (st2 > st) { sfx.reward(); toast(`${p.name}: ${st2 === 1 ? 'temeli atıldı' : 'yarıya geldi'}`, 2400); }
+      showProject(id);
     };
   });
 }
@@ -3106,9 +3176,11 @@ function renderEventScreen() {
 
   // dükkân
   const decorId = `ev_${ev.id}`, decorItem = DECOR_ITEMS.find(d => d.id === decorId);
-  $('evShop').innerHTML = EVENT_SHOP.filter(it => (!it.prize || prize) && (!it.decor || (ev.art && decorItem))).map(it => {
+  const shopItems = EVENT_SHOP.filter(it => (!it.prize || prize) && (!it.decor || (ev.art && decorItem)));
+  const shopOwned = it => (it.prize && P.owned[prize.slot].includes(prize.id)) || (it.decor && P.decorOwned.includes(decorId));
+  $('evShop').innerHTML = shopItems.map(it => {
     const n = E.bought[it.id] || 0, price = shopPrice(it);
-    const owned = (it.prize && P.owned[prize.slot].includes(prize.id)) || (it.decor && P.decorOwned.includes(decorId));
+    const owned = shopOwned(it);
     const left = it.max - n;
     const label = it.prize ? prize.name : it.decor ? `${it.name}: ${decorItem.name}` : it.name;
     const act = owned ? '<span class="check">Sahipsin</span>' : left <= 0 ? '<span class="check">Tükendi</span>'
@@ -3132,6 +3204,24 @@ function renderEventScreen() {
       updateWallet();
     };
   });
+  // Jeton bozdurma: dükkândaki her şey alınınca kalan jeton hafta sonunu beklemeden coin'e çevrilir (aynı oran).
+  const shopDone = shopItems.every(it => shopOwned(it) || (E.bought[it.id] || 0) >= it.max);
+  const exCoins = E.tokens * EVENT_TOKENS.coinRate;
+  $('evExchange').innerHTML = shopDone
+    ? `<div class="ev-step ev-exchange${E.tokens ? ' ready' : ''}"><span class="rw ev-ex-text"><b>Jeton bozdur</b><small>Dükkân tamam · 1 jeton = ${EVENT_TOKENS.coinRate} coin</small></span><button id="evEx" class="btn green" ${E.tokens ? '' : 'disabled'}>${tokenHtml(ev, 'tok sm')} ${E.tokens} → ${coinIco}${exCoins}</button></div>`
+    : '<small class="ev-ex-note">Dükkândaki her şeyi alınca kalan jetonunu burada coin\'e çevirebilirsin.</small>';
+  if ($('evEx')) $('evEx').onclick = () => {
+    if (!E.tokens) return;
+    const tokens = E.tokens, coins = tokens * EVENT_TOKENS.coinRate;
+    E.tokens = 0;
+    P.coins += coins;
+    persist();
+    sfx.coin();
+    track('event_exchange', { event: ev.id, tokens, coins });
+    toast(`${tokens} jeton ${coins} coin oldu`);
+    renderEventScreen();
+    updateWallet();
+  };
   const pv = $('evPrize');
   if (prize) drawPofi(fitCanvas(pv, 64, 64), 32, 62, 50, { outfit: { ...P.outfit, [prize.slot]: prize.id } });
   pv.classList.toggle('hidden', !prize);
@@ -3230,7 +3320,7 @@ document.querySelectorAll('[data-tab]').forEach(b => { b.onclick = () => showScr
 $('btnBack').onclick = () => {
   closeOverlay();
   if (screen === 'visit') { leaveVisit(); return; }
-  if (screen === 'interior') { room = null; showScreen('village'); return; }
+  if (screen === 'interior') { exitRoom(); return; }
   const back = screen === 'game' && run?.event !== null && run?.event !== undefined ? 'event' : screen === 'game' && run?.fromMap ? 'map' : 'home';
   run = null;
   showScreen(back);
@@ -3286,14 +3376,17 @@ function frame(now) {
       // Önizlenen kademe odada gerçekmiş gibi görünür; satın alınmadan kaydedilmez.
       const items = { ...(P.interior[room.id] || {}) };
       if (room.draft) items[room.slot] = room.draft;
-      drawRoom(fitCanvas($('roomCanvas'), r.width, r.height), r.width, r.height, t, { items, highlight: room.slot, highlightTier: items[room.slot] || 0, outfit: P.outfit });
+      const a = room.anim, p = a ? (t - a.t0) / 0.85 : 0;
+      const door = a && p < 1 ? { k: a.out ? p : 1 - p, x0: a.out ? a.x0 : 0.56 + 0.08 * Math.sin(t * 0.5), face: a.out ? 1 : -1 } : null;
+      drawRoom(fitCanvas($('roomCanvas'), r.width, r.height), r.width, r.height, t, { items, highlight: a?.out ? null : room.slot, highlightTier: items[room.slot] || 0, outfit: P.outfit, door, cheer: t < (room.cheer || 0) });
+      if (a && p >= 1) { if (a.out) leaveRoom(); else room.anim = null; }
     }
   } else if (screen === 'wardrobe') {
     const r = $('wardrobePofi').getBoundingClientRect();
     if (r.width) {
       const ctx = fitCanvas($('wardrobePofi'), r.width, r.height);
       // Denenen (henüz alınmamış) parça burada görünür: önce dene, sonra satın al. İfade sekmesinde seçili ifade oynar.
-      drawPofi(ctx, r.width / 2, r.height - 12 - emoteBob(t), r.height * 0.8, { outfit: previewOutfit(), ...emotePose(wardrobeCat === 'emote' ? emoteDraft || 'wave' : null, t) });
+      drawPofi(ctx, r.width / 2, r.height - 12 - emoteBob(t), r.height * 0.8, { outfit: previewOutfit(), ...emotePose(wardrobeCat === 'emote' ? emoteDraft || 'wave' : null, t), ...(t < wardrobeCheer ? { happy: true } : {}) });
       // Büyük önizleme kaydırınca görünmez olursa küçük önizleme sağ üstte takip eder (denenen parça anlık görünür).
       const off = r.bottom < $('screenWardrobe').getBoundingClientRect().top + 70;
       $('wardrobeFloat').classList.toggle('hidden', !off);

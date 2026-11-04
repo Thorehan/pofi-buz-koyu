@@ -32,13 +32,14 @@ function itemArt(ctx, W, H, slot, tier) {
   return true;
 }
 
-export function drawRoom(ctx, W, H, t, { items = {}, highlight = null, highlightTier = 0, outfit = {} } = {}) {
+// door: { k, x0, face } Pofi kapıyla oda arasında yürürken (k 0: odada, 1: tünelde); cheer: eşya alınca sevinir.
+export function drawRoom(ctx, W, H, t, { items = {}, highlight = null, highlightTier = 0, outfit = {}, door = null, cheer = false } = {}) {
   ctx.clearRect(0, 0, W, H);
   const bg = art('room_igloo_bg');
   if (bg) ctx.drawImage(bg, 0, 0, W, H);
   else drawShell(ctx, W, H);
   drawItems(ctx, W, H, t, items);
-  finishRoom(ctx, W, H, t, items, highlight, highlightTier, outfit);
+  finishRoom(ctx, W, H, t, items, highlight, highlightTier, outfit, door, cheer);
 }
 
 // Kodla çizilen boş oda (görsel yoksa): buz kubbe, zemin, kapı tüneli.
@@ -94,13 +95,22 @@ function drawItems(ctx, W, H, t, items) {
   }
 }
 
-function finishRoom(ctx, W, H, t, items, highlight, highlightTier, outfit) {
+function finishRoom(ctx, W, H, t, items, highlight, highlightTier, outfit, door, cheer) {
   const tier = s => items[s] || 0;
   const u = Math.min(W, H);
 
   const px = W * (0.56 + 0.08 * Math.sin(t * 0.5)), face = Math.cos(t * 0.5) > 0 ? 1 : -1;
   const moving = Math.abs(Math.cos(t * 0.5)) > 0.2;
-  drawPofi(ctx, px, H * 0.92 - (moving ? Math.abs(Math.sin(t * 7)) * u * 0.01 : 0), u * 0.25, { face: moving ? face : 0, outfit, blink: (t % 3.4) < 0.12 });
+  if (door) {
+    // kapı tüneli sağda: Pofi oraya doğru küçülerek yürür, tünelin karanlığında kaybolur
+    const k = door.k, bob = Math.abs(Math.sin(t * 9)) * u * 0.012;
+    ctx.globalAlpha = k > 0.7 ? Math.max(0, 1 - (k - 0.7) / 0.3) : 1;
+    drawPofi(ctx, W * (door.x0 + (0.93 - door.x0) * k), H * (0.92 - 0.14 * k) - bob, u * (0.25 - 0.08 * k), { face: door.face, outfit, lean: Math.sin(t * 9) * 0.08 });
+    ctx.globalAlpha = 1;
+  } else {
+    const hop = cheer ? Math.abs(Math.sin(t * 8)) * u * 0.05 : moving ? Math.abs(Math.sin(t * 7)) * u * 0.01 : 0;
+    drawPofi(ctx, px, H * 0.92 - hop, u * 0.25, { face: moving && !cheer ? face : 0, outfit, blink: (t % 3.4) < 0.12, happy: cheer });
+  }
 
   // lamba yanınca oda ısınır
   const lt = tier('lamp');

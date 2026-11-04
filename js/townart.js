@@ -39,16 +39,32 @@ const mixHex = (a, b, k) => {
 // (x, y) taban ortası, size ≈ ayakta boy. o: { pose: stand|walk|sleep|happy, face: 1|-1, t, fur, collar, sleepy }
 export function drawFox(ctx, x, y, size, o = {}) {
   const pose = o.pose || 'stand', face = o.face || 1, t = o.t || 0;
-  const im = multiplied(`pet_fox_${pose}`, o.fur);
+  // Yürürken ayakta ve yürüme kareleri sırayla çizilir (kare görselleri gelene kadar basit iki kareli yürüyüş).
+  const framePose = pose === 'walk' && Math.floor(t * 7) % 2 ? 'stand' : pose;
+  const im = multiplied(`pet_fox_${framePose}`, o.fur);
   if (im) {
     const k = size / FOX_H;
+    // Tek görselden kodla canlandırma: nefes, yürürken sekme ve yalpalama, sevinçte zıplama (yere inince basılır).
+    const wave = Math.sin(t * (pose === 'sleep' ? 1.6 : 2.4));
+    let bob = 0, rot = 0, sq = wave * (pose === 'sleep' ? 0.03 : 0.015);
+    if (pose === 'walk') { bob = Math.abs(Math.sin(t * 11)) * size * 0.05; rot = Math.sin(t * 11) * 0.05; sq = 0; }
+    else if (pose === 'happy') {
+      const hop = Math.abs(Math.sin(t * 7));
+      bob = hop * size * 0.24;
+      rot = Math.sin(t * 7) * 0.08;
+      sq = hop < 0.2 ? 0.08 * (1 - hop / 0.2) : -0.03;
+    }
     ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(face * k, k);
+    ctx.fillStyle = 'rgba(29,53,87,.12)';
+    ellipse(ctx, x, y, size * 0.32 * (1 - bob / size), size * 0.05);
+    ctx.fill();
+    ctx.translate(x, y - bob);
+    ctx.rotate(face * rot);
+    ctx.scale(face * k * (1 + sq), k * (1 - sq));
     ctx.drawImage(im, -256, -FOX_FOOT, 512, 512);
     ctx.restore();
-    const nk = FOX_NECK[pose];
-    if (o.collar && nk) collarBand(ctx, x + face * size * nk[0], y - size * nk[1], size, o.collar, face);
+    const nk = FOX_NECK[framePose];
+    if (o.collar && nk) collarBand(ctx, x + face * size * nk[0], y - bob - size * nk[1], size, o.collar, face);
     return;
   }
   const fur = o.fur || '#f7fbff', shade = o.fur ? mixHex(o.fur.startsWith('#') ? o.fur : '#f7fbff', '#7d8aa3', 0.25) : '#dfe8f3', s = size;

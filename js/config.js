@@ -426,7 +426,7 @@ export const ACHIEVEMENTS = [
   { id: 'perfect', name: 'Kusursuz', icon: '✨', stat: 'perfect', text: n => `${n} leveli 3 yıldızla bitir`, tiers: [10, 50, 100, 300, 600, 1000] },
   { id: 'fish', name: 'Balıkçı', icon: '🐟', stat: 'fish', text: n => `${n} balık topla`, tiers: [50, 250, 1000, 3000, 8000] },
   { id: 'nohint', name: 'Kendi başına', icon: '🧠', stat: 'nohint', text: n => `İpucu kullanmadan ${n} level bitir`, tiers: [25, 100, 300, 600] },
-  // ipucu, rota ve güçlendirici olmadan ilk kez 3 yıldız alınan level sayısı (tekrar oynayıp 3 yıldıza çıkarmak da sayılır)
+  // ipucu, rota, güçlendirici ve ek +5 hamle olmadan ilk kez 3 yıldız alınan level sayısı (tekrar oynayıp 3 yıldıza çıkarmak da sayılır)
   { id: 'clean', name: 'Yardımsız usta', icon: '🏔️', stat: 'clean', text: n => `Yardım almadan ${n} leveli 3 yıldızla bitir`, tiers: [10, 50, 150, 400, 800] },
   { id: 'village', name: 'Köy kurucusu', icon: '🏘️', stat: 'vl', text: n => `Köy seviyesi ${n} ol`, tiers: [3, 5, 8, 10, 12] },
   { id: 'cocoa', name: 'Kakao ustası', icon: '☕', stat: 'cups', text: n => `${n} fincan kakao sat`, tiers: [50, 250, 1000, 5000] },

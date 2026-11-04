@@ -985,6 +985,46 @@ export class VillageView {
     return true;
   }
 
+  // Pofi iglo kapısına yürüyüp içeri girer; bitince done çağrılır. Yürünemiyorsa (kakao satışı sürüyor) false döner.
+  walkIn(done) {
+    if (this.sale || this.door || !this.W) return false;
+    const h = this.walkers[0], far = 0.3, x = Math.max(HOME[0] - far, Math.min(HOME[0] + far, h.x));
+    this.door = { x, y: promenadeY(x) + h.lane, wp: [[HOME[0], promenadeY(HOME[0])], [HOME[0], HOME[1]]], i: 0, face: Math.sign(HOME[0] - x) || 1, alpha: 1, done };
+    return true;
+  }
+
+  // İglodan çıkış: Pofi kapıda belirir, ana yola iner; tilki onu sevinçle karşılar.
+  walkOut() {
+    const h = this.walkers[0];
+    h.x = h.tx = HOME[0];
+    this.sx = this.sxT = 0;
+    this.door = { x: HOME[0], y: HOME[1], wp: [[HOME[0], promenadeY(HOME[0])]], i: 0, face: 1, alpha: 0, out: true };
+    this.petCheer = (this.clock || 0) + 2.5;
+  }
+
+  stepDoor(dt) {
+    const d = this.door, [tx, ty] = d.wp[d.i] || [d.x, d.y];
+    if (d.out) d.alpha = Math.min(1, d.alpha + dt * 4);
+    if (d.i < d.wp.length) {
+      const dx = tx - d.x, dy = ty - d.y, dist = Math.hypot(dx, dy), step = 0.4 * dt;
+      if (dist > step) { d.x += (dx / dist) * step; d.y += (dy / dist) * step; if (Math.abs(dx) > 0.001) d.face = Math.sign(dx); return; }
+      d.x = tx;
+      d.y = ty;
+      d.i++;
+      return;
+    }
+    if (d.out) {
+      const h = this.walkers[0];
+      h.x = h.tx = d.x;
+      h.wait = 1.2;
+      this.door = null;
+      return;
+    }
+    // kapıya vardı: içeri girerken silinir
+    d.alpha -= dt * 5;
+    if (d.alpha <= 0) { this.door = null; d.done?.(); }
+  }
+
   stepSale(dt) {
     const s = this.sale;
     if (s.wait > 0) { s.wait -= dt; return; }
@@ -1307,8 +1347,8 @@ export class VillageView {
     return best;
   }
 
-  sparkle(id) {
-    const [fx, fy] = AT[id];
+  sparkle(id) { this.sparkleAt(...AT[id]); }
+  sparkleAt(fx, fy) {
     for (let k = 0; k < 36; k++) {
       const a = Math.random() * Math.PI * 2, v = 40 + Math.random() * 150;
       this.parts.push({ x: fx * this.W, y: fy * this.H - 20, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 70, life: 0.8 + Math.random() * 0.7 });
@@ -1473,18 +1513,19 @@ export class VillageView {
     for (const w of this.walkers) {
       const hero = w === this.walkers[0];
       if (hero && this.sale) this.stepSale(dt);
+      else if (hero && this.door) this.stepDoor(dt);
       else if (w.wait > 0) w.wait -= dt;
       else {
         const d = w.tx - w.x;
         if (Math.abs(d) < 0.01) { w.wait = 1 + Math.random() * 2.5; const wr = walkRange(land); w.tx = wr[0] + Math.random() * (wr[1] - wr[0]); }
         else { w.x += Math.sign(d) * dt * w.speed; w.face = Math.sign(d); }
       }
-      const sale = hero ? this.sale : null;
-      const wx = sale ? sale.x : w.x, y = (sale ? sale.y : promenadeY(w.x) + w.lane) * H;
-      const moving = sale ? sale.wait <= 0 : w.wait <= 0;
-      const face = moving ? (sale ? sale.face : w.face) : 0;
+      const sale = hero ? this.sale : null, walk = hero ? this.sale || this.door : null;
+      const wx = walk ? walk.x : w.x, y = (walk ? walk.y : promenadeY(w.x) + w.lane) * H;
+      const moving = sale ? sale.wait <= 0 : walk ? true : w.wait <= 0;
+      const face = moving ? (walk ? walk.face : w.face) : 0;
       items.push([y, () => {
-        const em = hero && !sale && this.emote && time - this.emote.t0 < 3 ? this.emote.id : null;
+        const em = hero && !walk && this.emote && time - this.emote.t0 < 3 ? this.emote.id : null;
         const festive = (!!sale && moving) || em === 'dance';
         const bob = festive ? Math.abs(Math.sin(time * 11)) * u * 0.022 : moving ? Math.abs(Math.sin(time * 8)) * u * 0.01 : 0;
         if (festive && (this.spark = (this.spark || 0) + dt) > 0.12) {
@@ -1494,11 +1535,13 @@ export class VillageView {
         }
         if (hero) this.heroPos = [wx * W, y - u * w.size * 0.5, u * w.size * 0.5];
         const spin = em === 'spin' ? Math.floor((time - this.emote.t0) * 8) % 4 : -1;
+        if (hero && this.door) ctx.globalAlpha = this.door.alpha;
         drawPofi(ctx, wx * W, y - bob, u * w.size, {
           face: spin >= 0 ? [1, 0, -1, 0][spin] : em ? 0 : face, lean: festive ? Math.sin(time * 11) * 0.14 : moving ? Math.sin(time * 8) * 0.08 : 0, squash: festive ? Math.max(0, Math.cos(time * 22)) * 0.12 : 0,
           outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, happy: em === 'dance' || em === 'spin',
           wave: em === 'wave' ? 0.6 + Math.sin(time * 14) * 0.5 : !moving && !w.outfit && !sale ? Math.sin(time * 6) * 0.4 : 0,
         });
+        ctx.globalAlpha = 1;
         if (sale?.tray) tray(ctx, wx * W + (face || 1) * u * w.size * 0.32, y - bob - u * w.size * 0.42, u * w.size * 0.42, time);
       }]);
     }

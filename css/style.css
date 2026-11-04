@@ -656,6 +656,13 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .wardrobe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .vill-face { width: 36px; height: 36px; flex: none; }
 .room-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.room-exit { position: absolute; top: 8px; right: 8px; padding: 6px 12px; font-size: 14px; }
+.ev-exchange { margin-top: 8px; }
+.ev-ex-text { flex-direction: column; align-items: flex-start !important; gap: 0 !important; }
+.ev-ex-text small { color: var(--ink-soft); font-weight: 500; font-size: 12px; }
+.ev-exchange .btn { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.ev-exchange .btn .ico { width: 15px; height: 15px; }
+.ev-ex-note { display: block; margin-top: 8px; color: var(--ink-soft); font-size: 12.5px; text-align: center; }
 .room-stage { flex: none; height: 34vh; min-height: 200px; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 4px 0 rgba(29, 53, 87, .1); }
 #roomCanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .room-slots .chip-btn { position: relative; }
