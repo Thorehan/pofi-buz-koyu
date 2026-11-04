@@ -435,6 +435,11 @@ export const ACHIEVEMENTS = [
   { id: 'wardrobe', name: 'Moda ikonu', icon: '🎩', stat: 'outfits', text: n => `${n} kıyafete sahip ol`, tiers: [3, 8, 15, 25] },
   { id: 'villagers', name: 'Kalabalık köy', icon: '🐧', stat: 'villagers', text: n => `${n} köylü davet et`, tiers: [1, 3, 6] },
   { id: 'masters', name: 'Usta', icon: '🏰', stat: 'masters', text: n => `${n} usta levelini bitir`, tiers: [1, 3, 6] },
+  { id: 'pets', name: 'Hayvan dostu', icon: '🐾', stat: 'pets', text: n => `${n} evcil dost sahiplen`, tiers: [1, 2, 3] },
+  { id: 'feeds', name: 'Can dostu', icon: '🦊', stat: 'feeds', text: n => `Evcil dostunu ${n} kez besle`, tiers: [7, 30, 100] },
+  { id: 'album', name: 'Balık koleksiyoncusu', icon: '🐠', stat: 'album', text: n => `Albüme ${n} nadir balık ekle`, tiers: [4, 12, 24] },
+  { id: 'projects', name: 'Köy mimarı', icon: '🏗️', stat: 'projects', text: n => `${n} köy projesi tamamla`, tiers: [1, 2, 3] },
+  { id: 'merchant', name: 'Tüccar dostu', icon: '⛵', stat: 'merchant', text: n => `Kaptan Mors'tan ${n} kez alışveriş yap`, tiers: [5, 20, 50] },
 ];
 // Günlük görevler: her gün tarihe göre 3 görev seçilir (herkeste aynı gün aynı görevler). needs: o özellik açık değilse seçilmez.
 export const DAILY_QUESTS = [
@@ -583,6 +588,10 @@ export const RIDDLES = [
   { q: 'Ne kadar alırsan o kadar büyür. Nedir?', a: 'Çukur' },
   { q: 'Hep önündedir ama göremezsin. Nedir?', a: 'Gelecek' },
 ];
+
+// Müzik: parçalar gelince buraya yazılır (ör. home: 'assets/music/home.mp3'). Boş bırakılan ekranda müzik çalmaz,
+// hiç parça yoksa Ayarlar'da Müzik satırı da görünmez. Aynı dosya birkaç ekrana verilirse parça kesilmeden sürer.
+export const MUSIC = { home: null, village: null, game: null, map: null, event: null };
 
 // Kıyafet boyama: sahip olunan bir şapka ya da atkı için renk başına bir kez ödenir (COLORS paleti).
 export const DYE_PRICE = 100;

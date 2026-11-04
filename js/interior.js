@@ -2,6 +2,7 @@
 // görseller gelene kadar geçerli. items: { yuvaId: kademe (0 = boş) }.
 import { roundRect, circle, ellipse, drawPofi } from './draw.js';
 import { art } from './art.js';
+import { drawPet } from './townart.js';
 
 // Yuvaların odadaki yeri (genişlik/yükseklik oranı). Lamba 3. kademede tavana asılır.
 const BOX = {
@@ -33,12 +34,14 @@ function itemArt(ctx, W, H, slot, tier) {
 }
 
 // door: { k, x0, face } Pofi kapıyla oda arasında yürürken (k 0: odada, 1: tünelde); cheer: eşya alınca sevinir.
-export function drawRoom(ctx, W, H, t, { items = {}, highlight = null, highlightTier = 0, outfit = {}, door = null, cheer = false } = {}) {
+export function drawRoom(ctx, W, H, t, { items = {}, highlight = null, highlightTier = 0, outfit = {}, door = null, cheer = false, pet = null } = {}) {
   ctx.clearRect(0, 0, W, H);
   const bg = art('room_igloo_bg');
   if (bg) ctx.drawImage(bg, 0, 0, W, H);
   else drawShell(ctx, W, H);
   drawItems(ctx, W, H, t, items);
+  // evcil dost de içeride: halının yanında oturur, karnı açsa uyur, Pofi sevinince o da sevinir
+  if (pet) drawPet(ctx, W * 0.27, H * 0.95, Math.min(W, H) * 0.2, { kind: pet.kind, pose: cheer ? 'happy' : pet.awake ? 'stand' : 'sleep', t, collar: pet.collar });
   finishRoom(ctx, W, H, t, items, highlight, highlightTier, outfit, door, cheer);
 }
 

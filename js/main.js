@@ -7,7 +7,7 @@ import {
 } from './live.js';
 import {
   tradeN, flakePrice, merchantToday, nextMerchant, merchantWeek, dayName, merchantStock, MERCHANT_OUTFITS, MERCHANT_DECOR,
-  petFedToday, fishToday, petUnlocked, projectSpent, projectStage, projectBonus, rareChance, gazetteIssue,
+  weatherNow, petFedToday, fishToday, petUnlocked, projectSpent, projectStage, projectBonus, rareChance, gazetteIssue,
 } from './town.js';
 import { drawPet, drawToy } from './townart.js';
 import { statAdd, statBest, statSummary, statCsv } from './stats.js';
@@ -27,9 +27,9 @@ import {
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
-  PIER_CATCH, AWAY_MIN, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
+  PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
-import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
+import { sfx, unlock, configure as configureSound, setAmbient, setMusic } from './sound.js';
 
 const $ = id => document.getElementById(id);
 const P = load(); // oyuncu kaydı
@@ -84,7 +84,7 @@ village.onTown = k => {
 };
 board.outfit = P.outfit;
 
-const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false });
+const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false, music: P.settings.music !== false });
 applySoundSettings();
 loadArt();
 setArtEnabled(P.settings.art !== false);
@@ -126,6 +126,7 @@ function showScreen(name) {
   $('app').dataset.screen = name;
   board.active = name === 'game';
   setAmbient(name === 'game' || name === 'village');
+  setMusic(MUSIC[name === 'interior' ? 'village' : name] ?? (['wardrobe', 'shop', 'settings', 'ach'].includes(name) ? MUSIC.home : null));
   $('btnBack').classList.toggle('hidden', !['game', 'visit', 'interior', 'event', 'map', 'ach'].includes(name));
   board.dark = false;
   $('tabbar').classList.toggle('hidden', !TAB_SCREENS.includes(name));
@@ -144,6 +145,7 @@ function showScreen(name) {
   if (name === 'wardrobe') renderWardrobe();
   if (name === 'event') renderEventScreen();
   if (name === 'map') openMap();
+  if (name === 'home' || name === 'village') setTimeout(() => { if (screen === name && !overlayOpen()) showUnlock(); }, 900);
   if (name === 'ach') renderAch();
   if (name === 'shop') renderShop();
   if (name === 'settings') renderSettings();
@@ -1085,7 +1087,8 @@ function renderVillage() {
   const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
   const slotsOpen = DECOR_SLOTS.filter(s => Math.floor(s.at[0]) < (P.land || 1));
   const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event && !d.merchant).map(d => discounted(P, d.price)))}+</span></button>`;
-  const buildCards = () => dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
+  const firstTip = Object.keys(P.village).length ? '' : `<p class="sheet-note first-tip">Level bitirdikçe kar tanesi kazanırsın. Kar tanesiyle ilk yapını kur: ${flakeIco} yetiyorsa kartta kırmızı nokta görünür.</p>`;
+  const buildCards = () => firstTip + dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
       return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
@@ -1894,6 +1897,38 @@ function openTown(k) {
 }
 
 // Ana ekranda tek satırlık köy haberi: tüccar limanda > yeni gazete > evcil dost acıktı
+// "Yeni" kartları: bir özellik açıldığında bir kez anlatılır. Oyuncu köy sekmelerinde ya da mağazada kendisi aramak zorunda kalmaz.
+const UNLOCKS = [
+  { id: 'album', when: () => P.level >= ALBUM.from, ico: '🐠', title: 'Nadir balıklar', text: 'Bazı levellerde parıltılı bir balık çıkar. Topla, Görevler ekranındaki albümüne girer; seti tamamlayınca ödül var.' },
+  { id: 'pet', when: () => !P.pet && petUnlocked(P, villageLevel(P)), ico: '🐾', title: 'Evcil dost', text: 'Artık bir dost sahiplenebilirsin. Köyde Pofi\'nin peşinden yürür, beslenince hediye getirir.', go: () => { showScreen('village'); showPet(); } },
+  { id: 'harbor', when: () => (P.land || 1) === 1 && villageLevel(P) >= DISTRICTS[1].vl, ico: '⚓', title: 'Buz Limanı', text: 'Köy büyüdü, yeni araziyi açabilirsin. Limana gezgin tüccar da uğrar.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(1); } },
+  { id: 'trade', when: () => !!P.village.market, ico: '🐟', title: 'Kar tanesi takası', text: 'Balık pazarında coin ile kar tanesi alabilirsin. Fiyat gün içinde aldıkça artar, ertesi gün başa döner.' },
+  { id: 'forest', when: () => (P.land || 1) === 2 && villageLevel(P) >= DISTRICTS[2].vl, ico: '🌲', title: 'Çam Ormanı', text: 'Yeni arazi açılabilir. Köy projelerine coin yatırırsın, biten proje kalıcı bonus verir.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(2); } },
+  { id: 'master', when: () => P.level > MASTER_LEVELS[0].after, ico: '🏰', title: 'Usta kalesi', text: 'Haritada bölge sonunda bir buz kalesi belirdi. Çok zor ama ödülü ve rozeti özel.', go: () => showScreen('map') },
+];
+// Eski kayıtlar: zaten açık olanlar için kart çıkmaz.
+if (P.unlocksSeen === null) { P.unlocksSeen = UNLOCKS.filter(u => u.when()).map(u => u.id); save(P); }
+// Bekleyen kart varsa gösterir ve true döner (aynı anda bir tane).
+function showUnlock() {
+  if (overlayOpen()) return false;
+  const u = UNLOCKS.find(x => !P.unlocksSeen.includes(x.id) && x.when());
+  if (!u) return false;
+  P.unlocksSeen.push(u.id);
+  save(P);
+  sfx.reward();
+  track('unlock_card', { id: u.id });
+  openOverlay(`
+    <span class="new-tag">YENİ</span>
+    <h2>${u.title}</h2>
+    <div class="unlock-ico">${u.ico}</div>
+    <p>${u.text}</p>
+    <button id="ulOk" class="btn green big">${u.go ? 'Göster' : 'Tamam'}</button>
+    ${u.go ? '<button id="ulLater" class="btn link">Sonra</button>' : ''}`);
+  $('ulOk').onclick = () => { closeOverlay(); u.go?.(); };
+  if (u.go) $('ulLater').onclick = closeOverlay;
+  return true;
+}
+
 // "Sen yokken": oyuna dönünce köyde biriken şeylerin özeti. Yeni para birimi yok, olanı görünür kılar.
 // Level ortasında ya da başka pencere açıkken çıkmaz; bir sonraki ana ekranda çıkar.
 let awayFrom = null;
@@ -2043,6 +2078,8 @@ function buyMerchant(it) {
   else if (it.kind === 'mystery') msg = openMystery();
   persist();
   sfx.coin();
+  P.ach.merchant = (P.ach.merchant || 0) + 1;
+  save(P);
   track('merchant_buy', { item: it.kind, id: it.id || null, price: it.price });
   toast(msg, 2600);
   showMerchant();
@@ -2104,7 +2141,7 @@ function gazetteNews() {
     P.level > 10 && `Pofi ${P.level - 1}. leveli geçti; ${vname} gurur duyuyor.`,
     vs.length > 1 && `${who(1)} ile ${who(2)} kardan adam yarışması için havuç biriktiriyor.`,
     P.village.lights && 'Fener dizisi geceleri köyü aydınlatıyor; gece yürüyüşleri çok sevildi.',
-    `Hava durumu: ${['bol kar', 'ayaz ve güneş', 'hafif tipi', 'kuzey ışıklı geceler'][issue % 4]}. Atkınızı unutmayın!`,
+    `Hava durumu: ${weatherNow().name}. Atkınızı unutmayın!`,
   ].filter(Boolean);
   // her sayıda farklı üç haber
   const out = [], n = Math.min(3, lines.length);
@@ -2243,6 +2280,8 @@ function showPet() {
     p.gift = text;
     persist();
     sfx.reward();
+    P.ach.feeds = (P.ach.feeds || 0) + 1;
+    save(P);
     track('pet_feed', { gift: text });
     village.petCheer = village.clock + 3;
     toast(`${info.name} karnını doyurdu ve sana ${text} getirdi!`, 2800);
@@ -2546,7 +2585,7 @@ function openMap() {
   if (mapNext) {
     mapNext = false;
     const wait = mapHop ? 450 + (mapHop.to - mapHop.from) * 550 + 250 : 500;
-    setTimeout(() => { if (screen === 'map' && $('overlay').classList.contains('hidden')) showLevelPopup(cur); }, wait);
+    setTimeout(() => { if (screen === 'map' && $('overlay').classList.contains('hidden') && !showUnlock()) showLevelPopup(cur); }, wait);
   }
   if (P.mapSeen !== cur) { P.mapSeen = cur; persist(); }
   requestAnimationFrame(() => {
@@ -2757,6 +2796,7 @@ function drawMap(t) {
       ctx.textAlign = 'left';
       ctx.fillText(label, lx + 6, y + 0.5);
     }
+    if (cur && !mapHop && P.pet) drawPet(ctx, x - 34, y - R + 6, 30, { kind: P.pet.kind, pose: 'stand', t, collar: collarHex() });
     if (cur && !mapHop) drawPofi(ctx, x, y - R + 4 - Math.abs(Math.sin(t * 3)) * 4, 50, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.4)) * 0.6, blink: (t % 3.3) < 0.12 });
   }
   // zıplama: her level arası bir sıçrayış, sonunda kar tozu
@@ -3105,6 +3145,9 @@ function achStat(stat) {
     case 'outfits': return P.owned.hat.length + P.owned.scarf.length - 2;
     case 'villagers': return P.villagers.length;
     case 'masters': return Object.keys(P.masters).length;
+    case 'pets': return P.pet?.kinds.length || 0;
+    case 'album': return ALL_FISH.filter(f => P.album[f.id]).length;
+    case 'projects': return PROJECTS.filter(p => projectStage(P, p) === 3).length;
     default: return P.ach[stat] || 0;
   }
 }
@@ -3184,6 +3227,8 @@ function renderSettings() {
   $('setHaptics').checked = !!P.settings.haptics;
   $('setSfx').checked = P.settings.sfx !== false;
   $('setAmbient').checked = P.settings.ambient !== false;
+  $('setMusic').checked = P.settings.music !== false;
+  $('setMusic').closest('.set-row').classList.toggle('hidden', !Object.values(MUSIC).some(Boolean));
   $('setArt').checked = P.settings.art !== false;
   $('setAccount').textContent = { guest: 'Misafir', google: 'Google', apple: 'Apple' }[P.profile?.method] || 'Misafir';
 }
@@ -3228,6 +3273,7 @@ $('setHaptics').onchange = () => {
 };
 $('setSfx').onchange = () => { P.settings.sfx = $('setSfx').checked; persist(); applySoundSettings(); sfx.ui(); };
 $('setArt').onchange = () => { P.settings.art = $('setArt').checked; persist(); setArtEnabled(P.settings.art); };
+$('setMusic').onchange = () => { P.settings.music = $('setMusic').checked; persist(); applySoundSettings(); };
 $('setAmbient').onchange = () => { P.settings.ambient = $('setAmbient').checked; persist(); applySoundSettings(); };
 $('btnReplayIntro').onclick = runIntro;
 $('btnReset').onclick = () => {
@@ -3504,7 +3550,7 @@ window.addEventListener('keydown', e => {
 // Köy sahnesinin oyun ekranı ve fotoğrafta ortak olan bilgileri
 const villageScene = () => ({
   village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS, land: P.land || 1,
-  villagers: villagersHere(), hour: hourNow(), decor: P.decor, event: eventVillage(),
+  villagers: villagersHere(), hour: hourNow(), decor: P.decor, event: eventVillage(), weather: weatherNow().id,
   pet: P.pet ? { kind: P.pet.kind, collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
   projects: (P.land || 1) >= 3 ? PROJECTS.map(p => ({ p, stage: projectStage(P, p) })) : null,
 });
@@ -3686,7 +3732,8 @@ function frame(now) {
     visitView.draw(t, dt, { village: visit.village, vl: villageLevel({ village: visit.village }), outfit: visit.outfit, colors: COLORS, plots: [], ready: [], land: landOf(visit.village), teaser: false });
   } else if (screen === 'home') {
     const ctx = fitCanvas($('homePofi'), 120, 120);
-    drawPofi(ctx, 60, 117, 94, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+    drawPofi(ctx, P.pet ? 46 : 60, 117, 94, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+    if (P.pet) drawPet(ctx, 94, 117, 40, { kind: P.pet.kind, pose: petFedToday(P) ? 'stand' : 'sleep', t, collar: collarHex() });
   } else if (screen === 'interior' && room) {
     const r = $('roomCanvas').getBoundingClientRect();
     if (r.width) {
@@ -3695,7 +3742,7 @@ function frame(now) {
       if (room.draft) items[room.slot] = room.draft;
       const a = room.anim, p = a ? (t - a.t0) / 0.85 : 0;
       const door = a && p < 1 ? { k: a.out ? p : 1 - p, x0: a.out ? a.x0 : 0.56 + 0.08 * Math.sin(t * 0.5), face: a.out ? 1 : -1 } : null;
-      drawRoom(fitCanvas($('roomCanvas'), r.width, r.height), r.width, r.height, t, { items, highlight: a?.out ? null : room.slot, highlightTier: items[room.slot] || 0, outfit: P.outfit, door, cheer: t < (room.cheer || 0) });
+      drawRoom(fitCanvas($('roomCanvas'), r.width, r.height), r.width, r.height, t, { items, highlight: a?.out ? null : room.slot, highlightTier: items[room.slot] || 0, outfit: P.outfit, door, cheer: t < (room.cheer || 0), pet: P.pet ? { kind: P.pet.kind, collar: collarHex(), awake: petFedToday(P) } : null });
       if (a && p >= 1) { if (a.out) leaveRoom(); else room.anim = null; }
     }
   } else if (screen === 'wardrobe') {

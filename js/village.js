@@ -1391,7 +1391,7 @@ export class VillageView {
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
   // photo: fotoğraf karesi (ok, kar yağışı ve panel düğmesi çizilmez)
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy' }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     this.clock = time;
@@ -1440,7 +1440,7 @@ export class VillageView {
       const span = W * DISTRICTS.length;
       ctx.drawImage(skyPano, 0, 0, span, H);
       if (vl >= 5 && aurora) {
-        ctx.globalAlpha = Math.min(1, (vl >= 9 ? 0.75 : 0.5) + night * 0.4) * (0.85 + 0.15 * Math.sin(time * 0.8));
+        ctx.globalAlpha = Math.min(1, (vl >= 9 ? 0.75 : 0.5) + night * 0.4 + (weather === 'aurora' ? 0.25 : 0)) * (0.85 + 0.15 * Math.sin(time * 0.8));
         for (let i = 0; i < n; i++) panelImage(ctx, aurora, i, W, H);
         ctx.globalAlpha = 1;
       }
@@ -1723,7 +1723,7 @@ export class VillageView {
     }
     ctx.restore();
 
-    if (vl >= 2 && !photo) this.snowfall(ctx, W, H, time);
+    if (vl >= 2 && !photo) this.snowfall(ctx, W, H, time, weather);
     if (event && EVENT_FALL[event.id]) eventFall(ctx, W, H, time, EVENT_FALL[event.id], event.color);
     if (!this.focus && n > 1 && !photo) this.panelNav(ctx, W, H, u, time);
 
@@ -2112,12 +2112,14 @@ export class VillageView {
     }
   }
 
-  snowfall(ctx, W, H, t) {
+  // Haftanın havası (gazetede yazar): bol kar, ayaz ve güneş (seyrek), hafif tipi (rüzgârlı), kuzey ışıkları (normal).
+  snowfall(ctx, W, H, t, weather = 'heavy') {
+    const count = { heavy: 70, clear: 10, blizzard: 60, aurora: 30 }[weather] ?? 40, wind = weather === 'blizzard' ? 60 : 0, fall = weather === 'blizzard' ? 1.5 : 1;
     ctx.fillStyle = 'rgba(255,255,255,.85)';
-    for (let k = 0; k < 40; k++) {
-      const sx = (k * 0.618) % 1, sp = 18 + (k % 5) * 6;
+    for (let k = 0; k < count; k++) {
+      const sx = (k * 0.618) % 1, sp = (18 + (k % 5) * 6) * fall;
       const y = (t * sp + k * 37) % (H + 10) - 5;
-      const x = sx * W + Math.sin(t + k) * 8;
+      const x = (((sx * W + Math.sin(t + k) * 8 + t * wind) % (W + 10)) + W + 10) % (W + 10) - 5;
       circle(ctx, x, y, 1.2 + (k % 3) * 0.6);
       ctx.fill();
     }

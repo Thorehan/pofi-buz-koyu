@@ -4,6 +4,7 @@
 const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];
 
 let ctx = null, master, sfxBus, ambBus, noiseBuf;
+let musicOn = true, musicTrack = null, musicAudio = null, musicFade = 0;
 let sfxOn = true, ambientOn = true, ambientWanted = false, ambientNodes = null, dropTimer = 0;
 
 function ac() {
@@ -30,6 +31,7 @@ function ac() {
 export function unlock() {
   const c = ac();
   if (c && c.state === 'suspended' && !document.hidden) c.resume().then(syncAmbient);
+  syncMusic();
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -37,11 +39,46 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) ctx.suspend();
   else ctx.resume();
 });
+document.addEventListener('visibilitychange', () => syncMusic());
 
-export function configure({ sfx, ambient }) {
+export function configure({ sfx, ambient, music = true }) {
   sfxOn = sfx;
   ambientOn = ambient;
+  musicOn = music;
   syncAmbient();
+  syncMusic();
+}
+
+// ---------- müzik: dosyadan çalar (ses efektleri gibi kodla üretilmez); ekran değişince yumuşak geçiş ----------
+const MUSIC_VOL = 0.55;
+function fadeTo(audio, to, then) {
+  clearInterval(musicFade);
+  musicFade = setInterval(() => {
+    const v = audio.volume + (to > audio.volume ? 0.05 : -0.05);
+    audio.volume = Math.max(0, Math.min(1, v));
+    if (Math.abs(audio.volume - to) < 0.051) { audio.volume = to; clearInterval(musicFade); then?.(); }
+  }, 40);
+}
+// src: bu ekranın parçası ya da null. Aynı parça sürüyorsa dokunulmaz.
+export function setMusic(src) {
+  if (src === musicTrack) { syncMusic(); return; }
+  musicTrack = src;
+  const old = musicAudio;
+  musicAudio = null;
+  if (old) fadeTo(old, 0, () => { old.pause(); syncMusic(); });
+  else syncMusic();
+}
+function syncMusic() {
+  if (!musicAudio && musicTrack) {
+    musicAudio = new Audio(musicTrack);
+    musicAudio.loop = true;
+    musicAudio.volume = 0;
+  }
+  if (!musicAudio) return;
+  if (!musicOn || document.hidden) { musicAudio.pause(); return; }
+  // tarayıcı ilk dokunuştan önce izin vermez; unlock() yeniden dener
+  const p = musicAudio.play();
+  if (p) p.then(() => fadeTo(musicAudio, MUSIC_VOL)).catch(() => {});
 }
 
 const ready = () => sfxOn && ctx && ctx.state === 'running';

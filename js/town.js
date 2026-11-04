@@ -17,6 +17,15 @@ const GZ0 = new Date(2026, 10, 2);
 export const weekIndex = (now = new Date()) => Math.round((weekStart(now) - GZ0) / (7 * DAY));
 export const gazetteIssue = (now = new Date()) => weekIndex(now) + 1;
 
+// Haftanın havası: gazete yazar, köyde de öyle görünür.
+export const WEATHERS = [
+  { id: 'heavy', name: 'bol kar' },
+  { id: 'clear', name: 'ayaz ve güneş' },
+  { id: 'blizzard', name: 'hafif tipi' },
+  { id: 'aurora', name: 'kuzey ışıklı geceler' },
+];
+export const weatherNow = (now = new Date()) => WEATHERS[((gazetteIssue(now) % 4) + 4) % 4];
+
 // ---------- pazar: coin → kar tanesi ----------
 export const tradeN = P => (P.flakeTrade?.day === dayKey() ? P.flakeTrade.n : 0);
 export const flakePrice = (n, k = 1) => Math.round((FLAKE_TRADE.base * FLAKE_TRADE.mult ** n * k) / FLAKE_TRADE.round) * FLAKE_TRADE.round;
