@@ -2,7 +2,7 @@
 import { roundRect, circle, ellipse, drawPofi, drawSeal } from './draw.js';
 import { art, tinted, BLD, BLD_Z2 } from './art.js';
 import { DISTRICTS, DECOR_SLOTS } from './config.js';
-import { drawFox, drawPetBed, drawToy, drawWalrus, drawStall, drawMerchantBoat, drawProject } from './townart.js';
+import { drawPet, drawPetBed, drawToy, drawWalrus, drawStall, drawMerchantBoat, drawProject } from './townart.js';
 
 // Yapı görseli (varsa). Çağıran tuvali SCALE[lvFull] ile büyütmüş olur; görselde seviye büyümesi
 // zaten çizili olduğundan burada geri alınır. Lv4-5 görseli yoksa Lv3 görseli kodun büyütmesiyle çizilir.
@@ -90,7 +90,7 @@ const QUEUE = [[0.29, 0.727], [0.29, 0.752]]; // kakao standına çıkan patikad
 // Haftalık etkinlik: meydanda (iglo ile ana yol arasındaki boş kar) çadır ve yanında konuk Foki.
 const EV_TENT = [0.598, 0.705];
 const EV_GUEST = [0.68, 0.728];
-// Evcil hayvan (kar tilkisi): yatağı iglonun kapısının önündeki patikada (kulübe çatısı ile etkinlik çadırı arasında).
+// Evcil dost: yatağı iglonun kapısının önündeki patikada (kulübe çatısı ile etkinlik çadırı arasında).
 // Uyurken yatağında, uyanıkken Pofi'nin peşinde.
 const PET_BED = [0.485, 0.64];
 // Gezgin tüccar (Buz Limanı): tezgâh rıhtımın sol ucunda, Kaptan Mors tezgâhın sol önünde (arkasında durunca
@@ -901,9 +901,9 @@ export class VillageView {
     this.vs = new Map(); // köylü durumları
     this.onVillager = null; // köylüye dokunulunca (id)
     this.onEvent = null; // etkinlik çadırına ('tent') ya da konuğa ('guest') dokunulunca
-    this.onTown = null; // tüccar ('merchant'), tilki ('pet'), Pofi ('hero') ya da projeye ('proj:<id>') dokunulunca
+    this.onTown = null; // tüccar ('merchant'), evcil dost ('pet'), Pofi ('hero') ya da projeye ('proj:<id>') dokunulunca
     this.emote = null; // { id, t0 } Pofi'nin ifadesi (el sallama, dans, piruet)
-    this.petSt = null; // tilkinin konumu ve hâli
+    this.petSt = null; // evcil dostun konumu ve hâli
     this.onDecorSlot = null; // süsleme modunda süs yerine dokunulunca (yer id)
     this.decorMode = false;
     this.decorSel = null; // seçili süs yeri
@@ -993,7 +993,7 @@ export class VillageView {
     return true;
   }
 
-  // İglodan çıkış: Pofi kapıda belirir, ana yola iner; tilki onu sevinçle karşılar.
+  // İglodan çıkış: Pofi kapıda belirir, ana yola iner; evcil dostu onu sevinçle karşılar.
   walkOut() {
     const h = this.walkers[0];
     h.x = h.tx = HOME[0];
@@ -1400,25 +1400,23 @@ export class VillageView {
     ctx.scale(this.cam.z, this.cam.z);
     ctx.translate(-this.cam.x, -this.cam.y);
 
-    const skyArt = art('bg_sky'), ground = art('bg_ground'), aurora = art('bg_aurora');
-    if (skyArt && ground) {
-      // Katmanlı görsel: gökyüzü, (Lv5'ten itibaren) kuzey ışıkları, yol ve temelleri çizili zemin.
-      // Zemin, AT konumlarına göre çizildiği için tuvale birebir oturtulur. Sonraki panellerde gökyüzü
-      // aynalanarak tekrarlanır (kenarlar dikişsiz birleşir), zemin kodla çizilir.
-      for (let i = 0; i < n; i++) {
-        panelImage(ctx, skyArt, i, W, H);
-        if (vl >= 5 && aurora) {
-          ctx.globalAlpha = Math.min(1, (vl >= 9 ? 0.75 : 0.5) + night * 0.4) * (0.85 + 0.15 * Math.sin(time * 0.8));
-          panelImage(ctx, aurora, i, W, H);
-          ctx.globalAlpha = 1;
-        }
+    const skyPano = art('bg_sky_pano'), pano = art('bg_village_pano'), aurora = art('bg_aurora');
+    if (skyPano && pano) {
+      // Tek parça görsel: gökyüzü, (Lv5'ten itibaren) kuzey ışıkları, sonra yol ve temelleri çizili zemin.
+      // Zemin AT ve PROMENADE konumlarına göre çizildiği için üç panelin toplam genişliğine birebir oturtulur;
+      // kilitli paneller zaten sisle örtülür. Kuzey ışıkları tek panellik, aynalanarak tekrarlanır.
+      const span = W * DISTRICTS.length;
+      ctx.drawImage(skyPano, 0, 0, span, H);
+      if (vl >= 5 && aurora) {
+        ctx.globalAlpha = Math.min(1, (vl >= 9 ? 0.75 : 0.5) + night * 0.4) * (0.85 + 0.15 * Math.sin(time * 0.8));
+        for (let i = 0; i < n; i++) panelImage(ctx, aurora, i, W, H);
+        ctx.globalAlpha = 1;
       }
       if (vl >= 11) this.fireworks(ctx, W, H, u, time);
-      ctx.drawImage(ground, 0, 0, W, H);
-      for (let i = 1; i < n; i++) this.districtGround(ctx, i, W, H, u, night, vl, sampleColor(ground, 0.99, 0.7, '#eef4fb'));
+      ctx.drawImage(pano, 0, 0, span, H);
       if (night > 0) {
         ctx.fillStyle = `rgba(20,26,70,${night * 0.35})`;
-        ctx.fillRect(0, 0, W * n, H);
+        ctx.fillRect(0, 0, span, H);
       }
     } else {
     if (vl >= 5) this.aurora(time, W, H, u, vl >= 9 ? Math.max(night, 0.7) : night);
@@ -1450,7 +1448,7 @@ export class VillageView {
     ctx.fill();
 
     this.paths(ctx, W, H, u, night, vl);
-    for (let i = 1; i < n; i++) this.districtGround(ctx, i, W, H, u, night, vl, null);
+    for (let i = 1; i < n; i++) this.districtGround(ctx, i, W, H, u, night);
     }
 
     if (vl >= 7) {
@@ -1721,7 +1719,7 @@ export class VillageView {
     ctx.globalAlpha = 1;
   }
 
-  // Kar tilkisi. pet: { collar, bed, toy, awake }. Uyanıkken Pofi'nin birkaç adım arkasından yürür,
+  // Evcil dost. pet: { kind, collar, bed, toy, awake }. Uyanıkken Pofi'nin birkaç adım arkasından yürür,
   // Pofi durunca yanında oturur, oyuncağı varsa ara ara zıplar. Uyurken (beslenmemiş ya da gece) yatağında kıvrılır.
   stepPet(dt, time, pet, items, W, H, u, land, phase) {
     const ctx = this.ctx, h = this.walkers[0], s = this.sale;
@@ -1743,15 +1741,15 @@ export class VillageView {
     else if (!asleep && pet.toy && (st.play -= dt) < -6) st.play = 1.6;
     const atBed = asleep && d < 0.02;
     const pose = atBed ? 'sleep' : moving ? 'walk' : st.play > 0 || this.petCheer > time ? 'happy' : 'stand';
-    const x = st.x * W, y = st.y * H, size = u * 0.075;
+    const x = st.x * W, y = st.y * H, size = u * 0.085;
     this.townPos.push(['pet', x, y - size * 0.4, size * 0.7]);
     items.push([y, () => {
-      drawFox(ctx, x, y, size, { pose, face: st.face, t: time, collar: pet.collar, sleepy: !pet.awake });
+      drawPet(ctx, x, y, size, { kind: pet.kind, pose, face: st.face, t: time, collar: pet.collar, sleepy: !pet.awake });
       if (atBed) zzz(ctx, x + size * 0.2, y - size * 0.45, u, time);
     }]);
   }
 
-  // Tüccar, tilki, Pofi ya da projeye dokunuş (ekran koordinatı)
+  // Tüccar, evcil dost, Pofi ya da projeye dokunuş (ekran koordinatı)
   townHit(sx, sy) {
     const { cam, W, H } = this, p = { x: (sx - W / 2) / cam.z + cam.x, y: (sy - H / 2) / cam.z + cam.y };
     for (const [k, x, y, r] of this.townPos || []) if (Math.hypot(p.x - x, p.y - y) < r) return k;
@@ -1815,49 +1813,9 @@ export class VillageView {
     ctx.restore();
   }
 
-  // Bölge zemini (i ≥ 1). snow verilirse görsel zeminin rengiyle kar ve yollar da çizilir;
-  // verilmezse (kod çizimi) yalnızca bölgeye özgü su eklenir, yollar paths() ile zaten çizilmiştir.
-  districtGround(ctx, i, W, H, u, night, vl, snow) {
+  // Görseller yokken (kod çizimi) bölgeye özgü su; yollar paths() ile zaten çizilmiştir.
+  districtGround(ctx, i, W, H, u, night) {
     const x0 = i * W;
-    // arazinin kendi zemin görseli varsa (yol, temeller ve deniz çizili) onu kullan
-    const img = snow && DISTRICTS[i]?.ground && art(`bg_ground_${DISTRICTS[i].id}`);
-    if (img) { ctx.drawImage(img, x0, 0, W, H); return; }
-    if (snow) {
-      ctx.fillStyle = mix(snow, '#c3cbe6', night);
-      ctx.fillRect(x0, H * 0.38, W, H * 0.62);
-      // önceki panelin görsel zeminiyle dikişi yumuşat
-      const sc = mix(snow, '#c3cbe6', night), seam = ctx.createLinearGradient(x0 - W * 0.08, 0, x0, 0);
-      seam.addColorStop(0, sc.replace('rgb(', 'rgba(').replace(')', ',0)'));
-      seam.addColorStop(1, sc);
-      ctx.fillStyle = seam;
-      ctx.fillRect(x0 - W * 0.08, H * 0.39, W * 0.08, H * 0.61);
-      ctx.fillStyle = 'rgba(255,255,255,.5)';
-      for (let k = 0; k < 5; k++) {
-        ellipse(ctx, x0 + W * (0.1 + k * 0.2), H * (0.47 + (k % 2) * 0.05), u * 0.06, u * 0.015);
-        ctx.fill();
-      }
-      this.paths(ctx, W, H, u, night, vl, i, i + 1);
-      // Çam Ormanı (zemin görseli gelene kadar): arkada ve kenarlarda karlı çamlar
-      if (DISTRICTS[i]?.id === 'forest') {
-        for (const [fx, fy, k] of [[0.04, 0.47, 1], [0.12, 0.44, 0.8], [0.36, 0.43, 0.7], [0.68, 0.42, 0.75], [0.9, 0.45, 0.9], [0.97, 0.52, 1.1], [0.05, 0.62, 1.2], [0.95, 0.9, 1.2]]) {
-          const px = x0 + W * fx, py = H * fy, h = u * 0.16 * k;
-          ctx.fillStyle = mix('#2f7d5b', '#1f3f4a', night);
-          for (let t = 0; t < 3; t++) {
-            ctx.beginPath();
-            ctx.moveTo(px - h * (0.34 - t * 0.07), py - h * t * 0.28);
-            ctx.lineTo(px, py - h * (0.45 + t * 0.28));
-            ctx.lineTo(px + h * (0.34 - t * 0.07), py - h * t * 0.28);
-            ctx.fill();
-          }
-          ctx.fillStyle = mix('#ffffff', '#c3cbe6', night);
-          ctx.beginPath();
-          ctx.moveTo(px - h * 0.12, py - h * 0.82);
-          ctx.lineTo(px, py - h * 1.01);
-          ctx.lineTo(px + h * 0.12, py - h * 0.82);
-          ctx.fill();
-        }
-      }
-    }
     if (DISTRICTS[i]?.id === 'harbor') {
       // liman: alt kenarda deniz, kıyıda buz kenarı ve yüzen buz parçaları
       ctx.fillStyle = mix('#3f93d9', '#2c4f86', night);
@@ -2309,24 +2267,6 @@ function panelImage(ctx, im, i, W, H) {
   ctx.restore();
 }
 
-// Görseldeki bir noktanın rengi (zemin katmanının kar rengiyle kodla çizilen bölgeyi eşlemek için).
-const colorCache = new Map();
-function sampleColor(im, fx, fy, fallback) {
-  const key = im.src + fx + fy;
-  if (!colorCache.has(key)) {
-    let col = fallback;
-    try {
-      const c = document.createElement('canvas');
-      c.width = c.height = 1;
-      const x = c.getContext('2d');
-      x.drawImage(im, Math.floor(im.width * fx), Math.floor(im.height * fy), 1, 1, 0, 0, 1, 1);
-      const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
-      col = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-    } catch { /* örneklenemezse varsayılan */ }
-    colorCache.set(key, col);
-  }
-  return colorCache.get(key);
-}
 
 // İçine coin'le eşya alınabilecek yapı: sarı daire içinde küçük ev.
 function homeMarker(ctx, x, y, u, t) {

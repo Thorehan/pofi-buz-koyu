@@ -51,7 +51,7 @@ function defaults() {
     flakeTrade: null, // { day, n } — pazarda bugün alınan kar tanesi (fiyat merdiveni)
     merchant: null, // { visit, bought: { ürün: adet } } — tüccarın son ziyareti
     bait: 0, // balık yeminin kalan level sayısı
-    pet: null, // { name, named, collar, bed, toys: [], toy, collars: [], fedDay }
+    pet: null, // { kind, kinds: [], names: { tür: { name, named } }, collar, bed, toys: [], toy, collars: [], fedDay }
     fishDay: null, // { day, n } — bugün levellerde toplanan balık (tilkiyi beslemek için)
     projects: {}, // { projeId: yatırılan coin }
     gazette: {}, // { read: sayı, hard: zor level ödülü alınan sayı, riddle: cevabı açılan sayı }

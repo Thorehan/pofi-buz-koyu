@@ -4,7 +4,7 @@
 const PRELOAD = [
   'pofi_stand_front', 'pofi_stand_side', 'pofi_slide_side', 'pofi_slide_front', 'pofi_slide_back', 'pofi_happy', 'pofi_recover',
   'tile_ice', 'tile_snow', 'tile_rock', 'tile_water', 'tile_crack', 'tile_ramp', 'tile_hole', 'tile_melt',
-  'bg_sky', 'bg_ground', 'bg_aurora', 'tile_bridge', 'obj_crate', 'obj_fish', 'obj_seal', 'obj_arrow',
+  'bg_sky_pano', 'bg_village_pano', 'bg_aurora', 'tile_bridge', 'obj_crate', 'obj_fish', 'obj_seal', 'obj_arrow',
   'booster_pick', 'booster_shovel', 'booster_whistle',
 ];
 

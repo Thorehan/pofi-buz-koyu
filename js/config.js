@@ -98,12 +98,12 @@ export const ZONES = [
   { name: 'Bölge 2 · Kuzey Işıkları', maxLevel: 5, fromVillageLevel: 8 },
 ];
 // Köy yana doğru genişler: her bölge ekran genişliğinde bir paneldir. İlki ücretsiz; sonrakiler köy
-// seviyesi şartıyla coin'le açılır (arazi), içindeki yapılar kar tanesiyle kurulur. soon: içeriği henüz yok;
-// ground: zemin görseli var (assets/art/bg_ground_<id>).
+// seviyesi şartıyla coin'le açılır (arazi), içindeki yapılar kar tanesiyle kurulur. soon: içeriği henüz yok.
+// Zemin ve gökyüzü tek parça görsel (bg_village_pano, bg_sky_pano): üç panelin toplam genişliğine çizilir.
 export const DISTRICTS = [
   { id: 'bay', name: 'Buzul Koyu', price: 0, vl: 1 },
-  { id: 'harbor', name: 'Buz Limanı', price: 2000, vl: 5, ground: true, text: 'Yolcu teknesi, liman kafesi, balık pazarı ve liman çanı' },
-  { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, projects: true, ground: true, text: 'Köy projeleri: sıcak kaplıca, saat kulesi ve telesiyej' },
+  { id: 'harbor', name: 'Buz Limanı', price: 2000, vl: 5, text: 'Yolcu teknesi, liman kafesi, balık pazarı ve liman çanı' },
+  { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, projects: true, text: 'Köy projeleri: sıcak kaplıca, saat kulesi ve telesiyej' },
 ];
 
 export const BUILDINGS = [
@@ -524,16 +524,22 @@ export const MERCHANT = {
 };
 // Tüccarın getirdiği kıyafetler WARDROBE'da merchant fiyatıyla durur; süsler DECOR_ITEMS'ta merchant fiyatıyla.
 
-// Evcil hayvan: kar tilkisi yavrusu. Köy Lv4 ya da level 30'dan sonra sahiplenilir. Günde bir kez levellerde
+// Evcil dostlar: her tür tek renk ve ayrı coin'le sahiplenilir; köyde biri Pofi'nin yanında gezer.
+// Köy Lv4 ya da level 30'dan sonra sahiplenilir. Günde bir kez levellerde
 // toplanan balıklardan verilerek beslenir; beslenince o gün küçük bir hediye getirir ve nadir balık şansı artar.
 // Ceza yok: beslenmezse yalnızca uykulu görünür, hiçbir şey kaybettirmez.
 export const PET = {
-  name: 'Pamuk', price: 1500, vl: 4, level: 30, feedFish: 5, rareBonus: 0.05, renamePrice: 300,
+  vl: 4, level: 30, feedFish: 5, rareBonus: 0.05, renamePrice: 300,
+  kinds: [
+    { id: 'fox', name: 'Kar tilkisi', ico: '🦊', price: 1500, petName: 'Pamuk' },
+    { id: 'rabbit', name: 'Kutup tavşanı', ico: '🐰', price: 2000, petName: 'Ponpon' },
+    { id: 'owl', name: 'Kar baykuşu', ico: '🦉', price: 3000, petName: 'Puhu' },
+  ],
   collarPrice: 150, // tasma rengi, COLORS paletinden
   beds: [{ name: 'Hasır minder', price: 400 }, { name: 'Yünlü sepet', price: 900 }, { name: 'Kubbeli yuva', price: 1500 }],
   gifts: [{ w: 5, coins: [100, 200] }, { w: 3, hints: 1 }, { w: 2, flakes: [1, 2] }],
 };
-// Oyuncaklar yalnızca gezgin tüccarda satılır; tilki köyde onunla oynar.
+// Oyuncaklar yalnızca gezgin tüccarda satılır; dostu köyde onunla oynar.
 export const PET_TOYS = [
   { id: 'ball', name: 'Kartopu oyuncağı', price: 300 },
   { id: 'yarn', name: 'Yün yumağı', price: 500 },

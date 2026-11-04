@@ -7,39 +7,47 @@ import { circle, ellipse, roundRect } from './draw.js';
 // ---------- kar tilkisi ----------
 // Görseller (pet_fox_<poz>): 512×512, ayak/taban çizgisi 470. satırda, ayakta boyu ≈ 300 px, yüzü sağa dönük.
 const FOX_FOOT = 470, FOX_H = 300;
-// Görsellerde boynun (çenenin hemen altı) yeri: boyun oranı cinsinden [sağa, yukarı] (pofi-r12 ölçümü)
-const FOX_NECK = { stand: [0.21, 0.32], walk: [0.25, 0.3], happy: [0.21, 0.28] };
+// Pozlar: [kare sayısı, kare/saniye] (pofi-r13). Dosyalar: pet_<tür>_<poz>_<kare>.
+const PET_FRAMES = { stand: [2, 0], walk: [4, 8], happy: [3, 7], sleep: [2, 1.5] };
+// Tavşanın 300 px'i kulak dahil, gövdesi küçük kalmasın diye biraz büyütülür.
+const PET_SCALE = { rabbit: 1.15 };
+// Tasmanın yeri (512'lik görselde çenenin altı). happy karesine göre değişir; uykuda tasma görünmez.
+const PET_NECK = {
+  fox: { stand: [325, 372], walk: [325, 372], happy: [[335, 408], [335, 362], [335, 400]] },
+  rabbit: { stand: [285, 372], walk: [285, 375], happy: [[285, 435], [300, 385], [295, 437]] },
+  owl: { stand: [265, 355], walk: [280, 345], happy: [[285, 403], [256, 335], [262, 364]] },
+};
+// Bir türün bütün kareleri ilk çizimde istenir; ilk oynatışta kare atlanmaz.
+const petAsked = new Set();
+function petPreload(kind) {
+  if (petAsked.has(kind)) return;
+  petAsked.add(kind);
+  for (const [pose, [n]] of Object.entries(PET_FRAMES)) for (let i = 1; i <= n; i++) art(`pet_${kind}_${pose}_${i}`);
+}
 
 
-// (x, y) taban ortası, size ≈ ayakta boy. o: { pose: stand|walk|sleep|happy, face: 1|-1, t, collar, sleepy }
-export function drawFox(ctx, x, y, size, o = {}) {
+// (x, y) taban ortası, size ≈ ayakta boy. o: { kind, pose: stand|walk|sleep|happy, face: 1|-1, t, collar, sleepy }
+// Görseller kapalıysa bütün türler kod çizimi tilki olarak görünür.
+export function drawPet(ctx, x, y, size, o = {}) {
   const pose = o.pose || 'stand', face = o.face || 1, t = o.t || 0;
-  // Yürürken ayakta ve yürüme kareleri sırayla çizilir (kare görselleri gelene kadar basit iki kareli yürüyüş).
-  const framePose = pose === 'walk' && Math.floor(t * 7) % 2 ? 'stand' : pose;
-  const im = art(`pet_fox_${framePose}`);
+  // Kareler sırayla oynar; zıplama ve yürüme hareketi karelerin içinde çizili, kod ayrıca oynatmaz.
+  // Duruşun ikinci karesi (göz kırpma, kulak oynatma) ara sıra ve kısa görünür; sürekli gidip gelse titreşim gibi durur.
+  const kind = o.kind || 'fox', [frames, fps] = PET_FRAMES[pose];
+  const fr = pose === 'stand' ? (t % 2.6 > 2.3 ? 1 : 0) : Math.floor(t * fps) % frames;
+  petPreload(kind);
+  const im = art(`pet_${kind}_${pose}_${fr + 1}`) || art(`pet_${kind}_stand_1`);
   if (im) {
-    const k = size / FOX_H;
-    // Tek görselden kodla canlandırma: nefes, yürürken sekme ve yalpalama, sevinçte zıplama (yere inince basılır).
-    const wave = Math.sin(t * (pose === 'sleep' ? 1.6 : 2.4));
-    let bob = 0, rot = 0, sq = wave * (pose === 'sleep' ? 0.03 : 0.015);
-    if (pose === 'walk') { bob = Math.abs(Math.sin(t * 11)) * size * 0.05; rot = Math.sin(t * 11) * 0.05; sq = 0; }
-    else if (pose === 'happy') {
-      const hop = Math.abs(Math.sin(t * 7));
-      bob = hop * size * 0.24;
-      rot = Math.sin(t * 7) * 0.08;
-      sq = hop < 0.2 ? 0.08 * (1 - hop / 0.2) : -0.03;
-    }
+    const sc = size * (PET_SCALE[kind] || 1), k = sc / FOX_H;
     ctx.save();
     ctx.fillStyle = 'rgba(29,53,87,.12)';
-    ellipse(ctx, x, y, size * 0.32 * (1 - bob / size), size * 0.05);
+    ellipse(ctx, x, y, sc * 0.3, sc * 0.05);
     ctx.fill();
-    ctx.translate(x, y - bob);
-    ctx.rotate(face * rot);
-    ctx.scale(face * k * (1 + sq), k * (1 - sq));
+    ctx.translate(x, y);
+    ctx.scale(face * k, k);
     ctx.drawImage(im, -256, -FOX_FOOT, 512, 512);
     ctx.restore();
-    const nk = FOX_NECK[framePose];
-    if (o.collar && nk) collarBand(ctx, x + face * size * nk[0], y - bob - size * nk[1], size, o.collar, face);
+    const nk = PET_NECK[kind]?.[pose], at = nk && (Array.isArray(nk[0]) ? nk[fr] : nk);
+    if (o.collar && at) collarBand(ctx, x + face * (at[0] - 256) * k, y + (at[1] - FOX_FOOT) * k, sc * (kind === 'owl' ? 1.25 : 1), o.collar, face);
     return;
   }
   const fur = '#f7fbff', shade = '#dfe8f3', s = size;
@@ -406,7 +414,7 @@ export function drawProject(ctx, x, y, u, p, stage, t = 0) {
   ctx.save();
   ctx.translate(x, y);
   // temel: zemin görselinde ped çizili; yalnızca kod zemininde çizilir
-  if (!art('bg_ground_forest')) {
+  if (!art('bg_village_pano')) {
     ctx.fillStyle = '#c7d3e0';
     ellipse(ctx, 0, -w * 0.03, w * 0.42, w * 0.1);
     ctx.fill();
