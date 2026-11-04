@@ -580,6 +580,54 @@ export class BoardView {
     window.addEventListener('resize', () => this.L && this.resize());
   }
 
+  // Hedefli levellerin işaretleri: kasa hedefi (kasa oturunca yeşil) ve iglo çıkışı (balıklar bitince parlar).
+  drawGoalMarks(ctx, s, time) {
+    const { L, S } = this;
+    for (const c of L.targets || []) {
+      const [x, y] = this.cellXY(c), cx = x + s / 2, cy = y + s / 2, on = S.crates.includes(c);
+      ctx.save();
+      ctx.strokeStyle = on ? '#2fb45a' : '#e5484d';
+      ctx.fillStyle = on ? 'rgba(63,174,90,.3)' : 'rgba(229,72,77,.14)';
+      ctx.lineWidth = Math.max(2, s * 0.06);
+      ctx.setLineDash([s * 0.12, s * 0.08]);
+      ctx.lineDashOffset = -time * s * 0.25;
+      roundRect(ctx, x + s * 0.14, y + s * 0.14, s * 0.72, s * 0.72, s * 0.14);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = Math.max(2, s * 0.07);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.12, cy - s * 0.12);
+      ctx.lineTo(cx + s * 0.12, cy + s * 0.12);
+      ctx.moveTo(cx + s * 0.12, cy - s * 0.12);
+      ctx.lineTo(cx - s * 0.12, cy + s * 0.12);
+      ctx.stroke();
+      ctx.restore();
+    }
+    if (L.exit >= 0) {
+      const [x, y] = this.cellXY(L.exit), cx = x + s / 2, by = y + s * 0.82, ready = S.fish === (1 << L.fishCells.length) - 1;
+      if (ready) {
+        ctx.fillStyle = `rgba(255,209,102,${0.35 + Math.sin(time * 4) * 0.15})`;
+        circle(ctx, cx, y + s / 2, s * 0.46);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#eaf5ff';
+      ctx.strokeStyle = '#2a5d8f';
+      ctx.lineWidth = Math.max(1.5, s * 0.035);
+      ctx.beginPath();
+      ctx.arc(cx, by, s * 0.34, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = ready ? '#ffb347' : '#2a4a6e';
+      ctx.beginPath();
+      ctx.arc(cx, by, s * 0.14, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
   // Döner tabladaki ok: dört kaydırma yönünü dener, Pofi'nin yolu tablaya uğruyorsa giriş yönünü alır. Hamle sürerken
   // bir önceki hâl kalır. Tek giriş varsa o gösterilir, birkaç giriş varsa sırayla; ulaşılamıyorsa -1 (dairesel ok).
   turnDir(c, time) {
@@ -889,6 +937,8 @@ export class BoardView {
         wind: (a ? this.prev : this.S).wind,
       });
     }
+
+    this.drawGoalMarks(ctx, s, time);
 
     // buz parıltısı: her buz karosu birkaç saniyede bir kısa süre ışıldar
     for (let c = 0; c < L.w * L.h; c++) {

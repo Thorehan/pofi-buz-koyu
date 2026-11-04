@@ -27,7 +27,7 @@ import {
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, FRIEND, VILLAGER_LIFE, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
-  PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
+  SIDE_LEVELS, SIDE_REWARD, GOALS, PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient, setMusic } from './sound.js';
 
@@ -263,10 +263,12 @@ function levelDef(n) {
   return n <= LEVELS.length ? LEVELS[n - 1] : generateLevel(n);
 }
 
-function startLevel(n, daily = false, evk = null, master = null) {
+function startLevel(n, daily = false, evk = null, master = null, side = null) {
   let def;
   const ev = evk !== null ? ensureEvent(P) : null;
-  if (master !== null) {
+  if (side !== null) {
+    def = { ...SIDES[side], n: 30000 + side };
+  } else if (master !== null) {
     def = masterDef(master);
   } else if (ev) {
     def = eventLevelDef(ev, evk, P.event.base);
@@ -281,13 +283,13 @@ function startLevel(n, daily = false, evk = null, master = null) {
   const limit = def.limit ? def.limit + buff(P, 'hardMoves') : null;
   run = {
     def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintLock: false,
-    event: ev ? evk : null, reverse: !!ev?.rule?.reverse, fromMap: playFromMap || master !== null, master,
+    event: ev ? evk : null, reverse: !!ev?.rule?.reverse, fromMap: playFromMap || master !== null || side !== null, master, side,
   };
   playFromMap = false;
   run.rare = rollRare();
   board.rare = run.rare;
   // oynanış verisi yalnızca sabit leveller için (günlük bulmaca ve etkinlik levelleri her hafta üretilir)
-  run.statKey = master !== null ? `U${master + 1}` : !ev && !daily ? def.n : null;
+  run.statKey = side !== null ? `Y${side + 1}` : master !== null ? `U${master + 1}` : !ev && !daily ? def.n : null;
   run.statT = performance.now();
   statAdd(run.statKey, { tries: 1 }, { tier: def.tier, min: def.min });
   showScreen('game');
@@ -297,6 +299,19 @@ function startLevel(n, daily = false, evk = null, master = null) {
   board.tutorialDir = !daily && !ev && master === null && def.n <= 2 ? solve(L, S)?.[0] ?? -1 : -1;
   renderHud();
   renderGoal();
+  if (side !== null) {
+    const g = GOALS[def.goal];
+    track('side_start', { side, goal: def.goal });
+    if (P.goalsSeen.includes(def.goal)) toast(`${g.title}: ${g.text}`, 3000);
+    else {
+      // tür ilk kez oynanıyor: kural bir kartla anlatılır
+      P.goalsSeen.push(def.goal);
+      save(P);
+      openOverlay(`<span class="new-tag">YENİ HEDEF</span><h2>${g.title}</h2><div class="unlock-ico">${g.ico}</div><p>${g.text}</p><button id="introOk" class="btn green big">Tamam</button>`);
+      $('introOk').onclick = closeOverlay;
+    }
+    return;
+  }
   if (master !== null) {
     track('master_start', { region: master });
     toast(`Usta leveli · ${run.limit} hamle hakkın var`, 2400);
@@ -331,7 +346,7 @@ function drawIntroIcon(cv, kind) {
 }
 
 function renderHud() {
-  $('hudLevel').textContent = run.master !== null ? `Usta · ${MAP_REGIONS[run.master].name}` : run.event !== null ? `Etkinlik ${run.event + 1}/${EVENT_LEVELS}` : run.daily ? 'Günlük bulmaca' : `Level ${run.def.n}`;
+  $('hudLevel').textContent = run.side !== null && run.side !== undefined ? GOALS[run.def.goal].title : run.master !== null ? `Usta · ${MAP_REGIONS[run.master].name}` : run.event !== null ? `Etkinlik ${run.event + 1}/${EVENT_LEVELS}` : run.daily ? 'Günlük bulmaca' : `Level ${run.def.n}`;
   const tl = run.daily ? '' : TIER_LABEL[run.def.tier];
   $('hudTier').textContent = tl;
   $('hudTier').className = `tier ${run.def.tier}${tl ? '' : ' hidden'}`;
@@ -358,10 +373,16 @@ function renderHud() {
 }
 
 function renderGoal() {
-  const n = run.L.fishCells.length, got = popcount(run.st.fish);
-  $('goal').innerHTML = `<span class="chip${got === n ? ' done' : ''}"><canvas id="goalFish"></canvas><b>${got}/${n}</b></span>`
+  const n = run.L.fishCells.length, got = popcount(run.st.fish), { L, st } = { L: run.L, st: run.st };
+  // hedefli levelde asıl hedef önce yazar; balık yoksa balık sayacı çıkmaz
+  const chip = (ok, ico, text) => `<span class="chip${ok ? ' done' : ''}">${ico}<b>${text}</b></span>`;
+  let extra = '';
+  if (L.targets) { const on = L.targets.filter(c => st.crates.includes(c)).length; extra = chip(on === L.targets.length, '📦', `${on}/${L.targets.length}`); }
+  if (L.exit >= 0) extra = chip(st.p === L.exit && got === n, '🏠', 'Eve dön');
+  if (L.breakAll) { const all = L.dynCells.filter(c => L.t[c] === T.CRACK), on = all.filter(c => st.dyn[L.dynIdx[c]] !== 0).length; extra = chip(on === all.length, '🧊', `${on}/${all.length}`); }
+  $('goal').innerHTML = extra + (n ? `<span class="chip${got === n ? ' done' : ''}"><canvas id="goalFish"></canvas><b>${got}/${n}</b></span>` : '')
     + (run.stuck ? '<span class="chip stuck">Sıkıştın! Geri al</span>' : '');
-  drawFish(fitCanvas($('goalFish'), 28, 20), 13, 10, 24, 0);
+  if (n) drawFish(fitCanvas($('goalFish'), 28, 20), 13, 10, 24, 0);
 }
 
 const flip = d => (d & 4) | (((d & 3) + 2) % 4);
@@ -492,6 +513,15 @@ function win() {
     P.ach.streak = Math.max(P.ach.streak || 0, P.dailyPuzzleStreak);
     raw = Math.round(dailyPuzzleCoins(P.dailyPuzzleStreak) * (1 + buff(P, 'puzzlePct')));
     track('daily_puzzle_complete', { streak: P.dailyPuzzleStreak, moves: run.moves });
+  } else if (run.side !== null) {
+    // yan yol: ilk bitirişte tam ödül, tekrarda yalnızca yeni yıldızlar (ana levellerle aynı kural)
+    const prev = P.sides[run.side] || 0;
+    run.replay = prev > 0;
+    run.gained = Math.max(0, stars - prev);
+    raw = run.replay ? REPLAY.coin + run.gained * REPLAY.perNewStar : ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
+    P.sides[run.side] = Math.max(prev, stars);
+    if (!run.replay) { giveReward(SIDE_REWARD); run.sideFirst = true; }
+    track('side_complete', { side: run.side, goal: run.def.goal, stars, first: !run.replay });
   } else if (run.master !== null) {
     raw = ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
     run.masterFirst = !P.masters[run.master];
@@ -564,6 +594,7 @@ function win() {
     !run.replay && lucky && 'Şanslı ağ +1 ❄',
     run.replay && (run.gained ? `Tekrar · yeni yıldız +${run.gained}` : 'Tekrar · yeni yıldız yok'),
     caught && caught.text,
+    run.sideFirst && `🪧 Yan yol ödülü: +${SIDE_REWARD.flakes} ❄, +${SIDE_REWARD.hints} ipucu`,
     run.hardBonus && `📰 Haftanın zor leveli +${GAZETTE.hardBonus} coin`,
     run.masterFirst && `🏰 ${MAP_REGIONS[run.master].name} rozeti · +${MASTER_REWARD.coins} coin, +${MASTER_REWARD.hints} ipucu, +${MASTER_REWARD.flakes} ❄`,
     `${ev.token} +${evPts} jeton`,
@@ -585,7 +616,7 @@ function multAt(zones, pos) {
 
 // Sonuç ekranında: yıldız sandığının dolması ve hazır başarım rozeti (normal levellerde).
 function resultProgress() {
-  if (run.daily || run.event !== null || run.master !== null) return run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : '';
+  if (run.daily || run.event !== null || run.master !== null || run.side !== null) return run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : '';
   const tot = totalStars(), base = P.starChests * STAR_CHEST.every, gain = run.starGain || 0;
   const ready = Math.floor(tot / STAR_CHEST.every) > P.starChests;
   const from = Math.max(0, Math.min(100, ((tot - gain - base) / STAR_CHEST.every) * 100)), to = ready ? 100 : ((tot - base) / STAR_CHEST.every) * 100;
@@ -669,7 +700,7 @@ function showResult(stars, base, flakes, notes) {
       if (run.event !== null) return showScreen('event');
       if (run.daily) return showScreen('home');
       // eski leveli tekrar oynadıysa haritada kalır; ilk kez bitirdiyse sıradaki levelin penceresi kendiliğinden açılır
-      mapNext = !run.replay && run.master === null;
+      mapNext = !run.replay && run.master === null && run.side === null;
       showScreen('map');
     });
     if ($('rsRetry2')) $('rsRetry2').onclick = () => leave(restartRun);
@@ -1991,6 +2022,7 @@ const UNLOCKS = [
   { id: 'harbor', when: () => (P.land || 1) === 1 && villageLevel(P) >= DISTRICTS[1].vl, ico: '⚓', title: 'Buz Limanı', text: 'Köy büyüdü, yeni araziyi açabilirsin. Limana gezgin tüccar da uğrar.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(1); } },
   { id: 'trade', when: () => !!P.village.market, ico: '🐟', title: 'Kar tanesi takası', text: 'Balık pazarında coin ile kar tanesi alabilirsin. Fiyat gün içinde aldıkça artar, ertesi gün başa döner.' },
   { id: 'forest', when: () => (P.land || 1) === 2 && villageLevel(P) >= DISTRICTS[2].vl, ico: '🌲', title: 'Çam Ormanı', text: 'Yeni arazi açılabilir. Köy projelerine coin yatırırsın, biten proje kalıcı bonus verir.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(2); } },
+  { id: 'sides', when: () => P.level > SIDE_LEVELS.every, ico: '🪧', title: 'Yan yollar', text: 'Haritada yolun kenarında tabelalar belirdi. Her biri farklı hedefli, isteğe bağlı bir bulmaca: eve dön, kasayı yerleştir, buzları kır.', go: () => showScreen('map') },
   { id: 'master', when: () => P.level > MASTER_LEVELS[0].after, ico: '🏰', title: 'Usta kalesi', text: 'Haritada bölge sonunda bir buz kalesi belirdi. Çok zor ama ödülü ve rozeti özel.', go: () => showScreen('map') },
 ];
 // Eski kayıtlar: zaten açık olanlar için kart çıkmaz.
@@ -2822,6 +2854,38 @@ function drawMap(t) {
     mapNodes.push([{ master: i }, cx, cy - 12, 34]);
   });
 
+  // yan yollar: ana yolun kenarında tabela; ilgili level bitince açılır, bitirilmezse yol kapanmaz
+  SIDES.forEach((d, i) => {
+    const after = (i + 1) * SIDE_LEVELS.every;
+    if (after < nLo - 2 || after > nHi + 2 || after > max) return;
+    // yol bir sonraki levele hangi yöne kıvrılıyorsa tabela tersine konur; yola binmez
+    const ax = nodeX(after, W), ay = nodeY(after), cx = Math.max(30, Math.min(W - 30, ax + (nodeX(after + 1, W) > ax ? -84 : 84))), cy = ay - MAP.G * 0.3, g = GOALS[d.goal];
+    const open = P.level > after, best = P.sides[i] || 0;
+    ctx.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([2, 8]);
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = open ? g.color : '#c9d6e3';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = best === 3 ? '#ffd166' : '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    if (open && !best) { ctx.strokeStyle = `rgba(255,255,255,${0.5 + Math.sin(t * 4) * 0.4})`; ctx.beginPath(); ctx.arc(cx, cy, 25, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.font = '19px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#000';
+    ctx.fillText(open ? g.ico : '🔒', cx, cy + 1);
+    if (best) for (let k = 0; k < best; k++) { starPath(ctx, cx + (k - (best - 1) / 2) * 12, cy + 26, 6); ctx.fillStyle = '#ffc23a'; ctx.fill(); }
+    mapNodes.push([{ side: i }, cx, cy, 20]);
+  });
+
   // level düğmeleri
   for (let n = nLo; n <= nHi; n++) {
     const x = nodeX(n, W), y = nodeY(n), st = P.stars[n] || 0, cur = n === Math.min(P.level, max), locked = n > P.level;
@@ -2966,7 +3030,7 @@ function mapTap(e) {
   const sc = $('mapScroll'), r = sc.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top + sc.scrollTop;
   const hit = mapNodes.find(([, nx, ny, R]) => Math.hypot(x - nx, y - ny) < R + 12);
   if (!hit) return;
-  if (typeof hit[0] === 'object') { sfx.ui(); showMasterPopup(hit[0].master); return; }
+  if (typeof hit[0] === 'object') { sfx.ui(); if (hit[0].side !== undefined) showSidePopup(hit[0].side); else showMasterPopup(hit[0].master); return; }
   const n = hit[0];
   if (n > P.level) { toast(`Önce Level ${P.level}'i bitir`); return; }
   sfx.ui();
@@ -2976,6 +3040,22 @@ function mapTap(e) {
 // ---------- usta levelleri ----------
 const masterCache = new Map();
 // data/masters.json önceden üretilir (tools/gen-masters.mjs); yoksa oyunda üretilir.
+// Yan yollar: farklı hedefli isteğe bağlı bulmacalar (önceden üretilmiş, dosya yoksa haritada çıkmaz).
+let SIDES = [];
+fetch('data/goals.json', { cache: 'no-cache' }).then(r => r.json()).then(j => { SIDES = j; }).catch(() => {});
+function showSidePopup(i) {
+  const d = SIDES[i], g = GOALS[d.goal], after = (i + 1) * SIDE_LEVELS.every, open = P.level > after, best = P.sides[i] || 0;
+  openOverlay(`
+    <span class="new-tag">YAN YOL</span>
+    <h2>${g.title}</h2>
+    <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= best ? ' on' : ''}">★</span>`).join('')}</div>
+    <p>${open ? g.text : `Level ${after}'i bitirince açılır.`}</p>
+    <small class="breakdown">${best ? `En iyi çözüm ${d.min} hamle · yeni yıldız için tekrar oynayabilirsin` : `İlk bitirişte: ${rewardHtml(SIDE_REWARD)}`}</small>
+    ${open ? `<button id="sdPlay" class="btn primary big">${best ? 'Tekrar oyna' : 'Oyna'}</button>` : ''}
+    <button id="sdClose" class="btn link">Kapat</button>`);
+  $('sdClose').onclick = closeOverlay;
+  if ($('sdPlay')) $('sdPlay').onclick = () => { closeOverlay(); startLevel(0, false, null, null, i); };
+}
 let MASTERS = [];
 fetch('data/masters.json', { cache: 'no-cache' }).then(r => r.json()).then(j => { MASTERS = j; }).catch(() => { /* anlık üretilir */ });
 function masterDef(i) {
@@ -3233,6 +3313,7 @@ function achStat(stat) {
     case 'outfits': return P.owned.hat.length + P.owned.scarf.length - 2;
     case 'villagers': return P.villagers.length;
     case 'masters': return Object.keys(P.masters).length;
+    case 'sides': return Object.keys(P.sides).length;
     case 'friends': return Object.values(P.friends).filter(f => f.ch >= 3).length;
     case 'pets': return P.pet?.kinds.length || 0;
     case 'album': return ALL_FISH.filter(f => P.album[f.id]).length;
@@ -3616,7 +3697,7 @@ $('btnUndo').onclick = undo;
 const restartRun = () => {
   if (!run.finished) statAdd(run.statKey, { restarts: 1, secs: statTime() });
   playFromMap = !!run.fromMap;
-  startLevel(run.def.n, run.daily, run.event, run.master);
+  startLevel(run.def.n, run.daily, run.event, run.master, run.side);
 };
 $('btnRestart').onclick = () => { if (run && !overlayOpen()) { restartRun(); nudgeHint(); } };
 $('btnHint').onclick = useHint;

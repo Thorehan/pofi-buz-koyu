@@ -502,6 +502,15 @@ export const FISH_SETS = [
     { id: 'rainbow', name: 'Gökkuşağı', color: '#b388ff' }, { id: 'king', name: 'Kral', color: '#3d7bd9' }] },
 ];
 export const ALBUM = { chance: 0.15, from: 12, dupCoins: 40, missingBias: 3 };
+// Yan yollar: haritada her "every" levelde bir, farklı hedefli isteğe bağlı bulmaca (data/goals.json, tools/gen-goals.mjs).
+// Ana yolu ve level dengesini etkilemez. İlk bitirişte SIDE_REWARD; tekrar oynayınca yalnızca yeni yıldızlar ödül verir.
+export const SIDE_LEVELS = { every: 15, count: 40 };
+export const SIDE_REWARD = { flakes: 2, hints: 1 };
+export const GOALS = {
+  home: { title: 'Eve dön', ico: '🏠', color: '#ff8c42', text: 'Balıkları topla, sonra Pofi\'yi iglonun üstünde durdur. Balık kalmışsa iglo yalnızca fren olur.' },
+  crate: { title: 'Kasayı yerleştir', ico: '📦', color: '#c98b4f', text: 'Kasaları işaretli yerlere it. Kasa bir şeye çarpana kadar kayar; tam işaretin üstünde durmalı.' },
+  crack: { title: 'Buzları kır', ico: '🧊', color: '#3d8fe0', text: 'Bütün çatlak buzların üstünden geç. Kırılan buz suya döner; sırayı iyi planla, mahsur kalma.' },
+};
 export const MASTER_REWARD = { coins: 1000, hints: 3, flakes: 10 }; // ilk bitirişte, rozetle birlikte
 
 // Başarımlar: her birinin kademeleri var; kademe ödülü ACH_REWARD[kademe]. stat, main.js'te hesaplanır.
@@ -524,6 +533,7 @@ export const ACHIEVEMENTS = [
   { id: 'feeds', name: 'Can dostu', icon: '🦊', stat: 'feeds', text: n => `Evcil dostunu ${n} kez besle`, tiers: [7, 30, 100] },
   { id: 'album', name: 'Balık koleksiyoncusu', icon: '🐠', stat: 'album', text: n => `Albüme ${n} nadir balık ekle`, tiers: [4, 12, 24] },
   { id: 'projects', name: 'Köy mimarı', icon: '🏗️', stat: 'projects', text: n => `${n} köy projesi tamamla`, tiers: [1, 2, 3] },
+  { id: 'sides', name: 'Yan yol kâşifi', icon: '🪧', stat: 'sides', text: n => `${n} yan yol bulmacası bitir`, tiers: [5, 15, 40] },
   { id: 'friends', name: 'Köyün sevgilisi', icon: '💛', stat: 'friends', text: n => `${n} köylünün hikâyesini bitir`, tiers: [1, 3, 6] },
   { id: 'merchant', name: 'Tüccar dostu', icon: '⛵', stat: 'merchant', text: n => `Kaptan Mors'tan ${n} kez alışveriş yap`, tiers: [5, 20, 50] },
 ];

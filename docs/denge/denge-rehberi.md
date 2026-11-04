@@ -119,3 +119,13 @@ Bunlar karar değil, bakılacak yerler.
 - **Tabloda not:** Tabloya bir "not" sütunu ekleyip işaretlediğin levelleri ve beklediğin değişikliği yazabilirsin.
 - **Doğrudan değişiklik:** Yukarıdaki değerleri doğrudan değiştirip levelleri yeniden üretebilirsin.
 - Bunlar için kod yazmak gerekirse ya da üreticiye yeni bir kural lazımsa (örneğin "çok zor levelden sonraki level en fazla 3 hamle kısa olsun"), ne istediğini yazman yeterli.
+
+## Yan yollar ve oynanış verisi
+
+Yan yollar haritada her 15 levelde bir çıkan isteğe bağlı bulmacalardır; ana yolu kapatmaz. Üç hedef türü var: Eve dön, Kasayı yerleştir, Buzları kır.
+
+- Leveller `data/goals.json` dosyasındadır, `node tools/gen-goals.mjs` ile yeniden üretilir. Adet, sıklık ve ödül `js/config.js` içindeki `SIDE_LEVELS` ve `SIDE_REWARD` değerleridir. Boyut ve en kısa çözüm bandı üretim aracının içindedir.
+- Şu anki 40 bulmaca yalnızca çözülebilirlik ve en kısa çözüm bandıyla doğrulandı. Eğlence ve zorluk açısından elden geçirilmedi.
+- Döner tablanın üstündeki ok artık bir sonraki hamlenin çıkışını gösteriyor. Döner tablalı levelleri biraz kolaylaştırmış olabilir.
+
+Oynanış verisi: test oyuncusu Ayarlar > Oynanış verisi'nden CSV indirir. Level başına deneme, bitirme, hamlesi biten, yarıda bırakma, baştan alma, ipucu, rota, ek hamle, çıkmaz, süre ve en iyi hamle içerir. Usta levelleri `U1`, yan yollar `Y1` gibi yazılır. Veri cihazda durur, kendiliğinden hiçbir yere gitmez.

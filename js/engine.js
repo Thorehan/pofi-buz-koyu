@@ -34,6 +34,7 @@ export function rng(seed) {
 //              P Pofi  f balık  F kar üstünde balık  x y z w sıralı balık (1-4)  B kasa  S yatay fok  Z dikey fok
 //              _ basınç plakası  H plaka kapısı  r döner tabla  k kırılgan kaya  i sarkıt  o kar topu
 //              j anahtar balık  l buz kilidi  R su üstünde buz salı  W rüzgâr bayrağı  Q Pipi (ikinci penguen)
+//              X kasa hedefi (zemini buz)  E iglo çıkışı (zemini kar, Pofi orada durur); hedefli levellerde (def.goal)
 export function parseLevel(def) {
   const h = def.rows.length, w = def.rows[0].length, size = w * h;
   const t = new Uint8Array(size);
@@ -41,13 +42,16 @@ export function parseLevel(def) {
   const holePair = new Int16Array(size).fill(-1);
   const fishCells = [], fishOrder = [], dynCells = [], gateCells = [], crates = [], holes = [], seals = [];
   const plates = [], pgates = [], keys = [], balls = [], rafts = [];
-  let p = -1, gates = 0, q = -1, wind = -1;
+  const targets = [];
+  let p = -1, gates = 0, q = -1, wind = -1, exit = -1;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const ch = def.rows[y][x], i = y * w + x;
       let tile = T.ICE;
+      if (ch === 'X') targets.push(i);
+      if (ch === 'E') exit = i;
       if (ch === '#') tile = T.ROCK;
-      else if (ch === 's' || ch === 'F') tile = T.SNOW;
+      else if (ch === 's' || ch === 'F' || ch === 'E') tile = T.SNOW;
       else if (ch === '~' || ch === 'c' || ch === 'm' || ch === 'R' || ch === 'k' || ch === 'i') {
         tile = { '~': T.WATER, R: T.WATER, c: T.CRACK, m: T.MELT, k: T.FRAGILE, i: T.ICICLE }[ch];
         dynIdx[i] = dynCells.length;
@@ -76,7 +80,7 @@ export function parseLevel(def) {
     }
   }
   for (let k = 0; k + 1 < holes.length; k += 2) { holePair[holes[k]] = holes[k + 1]; holePair[holes[k + 1]] = holes[k]; }
-  const L = { w, h, t, fishCells, fishOrder, dynCells, gateCells, fishIdx, dynIdx, gateIdx, holePair, plates, pgates, keys, def };
+  const L = { w, h, t, fishCells, fishOrder, dynCells, gateCells, fishIdx, dynIdx, gateIdx, holePair, plates, pgates, keys, def, targets: targets.length ? targets : null, exit, breakAll: def.goal === 'crack' };
   const S = {
     p, fish: 0, gates, dyn: new Array(dynCells.length).fill(0), crates: crates.sort((a, b) => a - b), seals,
     balls: balls.sort((a, b) => a - b), drifts: [], rafts, key: 0, pg: 0, wind, q, frz: 0,
@@ -106,7 +110,11 @@ export function neighbor(L, c, d) {
   return x < 0 || y < 0 || x >= L.w || y >= L.h ? -1 : y * L.w + x;
 }
 
-export const won = (L, S) => S.fish === (1 << L.fishCells.length) - 1;
+// Kazanma: bütün balıklar; hedefli levellerde ayrıca kasalar hedefte, Pofi iglo çıkışında ya da bütün çatlak buzlar kırık.
+export const won = (L, S) => S.fish === (1 << L.fishCells.length) - 1
+  && (!L.targets || L.targets.every(c => S.crates.includes(c)))
+  && (L.exit < 0 || S.p === L.exit)
+  && (!L.breakAll || L.dynCells.every((c, i) => L.t[c] !== T.CRACK || S.dyn[i] !== 0));
 
 const sealAt = (n, c) => n.seals.some(s => s >> 2 === c);
 // Hücrede itilebilir ya da duran bir şey var mı: kasa, kar topu, öteki penguen.

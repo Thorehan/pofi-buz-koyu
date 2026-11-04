@@ -13,7 +13,7 @@ function store() {
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch { /* yer yoksa veri tutulmaz, oyun etkilenmez */ }
 }
 
-// key: level numarası ya da usta leveli için 'U1'. info: { tier, min } tabloda görünsün diye.
+// key: level numarası, usta leveli için 'U1', yan yol için 'Y1'. info: { tier, min } tabloda görünsün diye.
 export function statAdd(key, patch, info = null) {
   if (key === null || key === undefined) return;
   const d = all(), s = d[key] || (d[key] = {});
@@ -29,7 +29,7 @@ export function statBest(key, moves, stars) {
   store();
 }
 
-const order = k => (String(k).startsWith('U') ? 1e6 + +String(k).slice(1) : +k);
+const order = k => { const s = String(k); return s[0] === 'U' ? 1e6 + +s.slice(1) : s[0] === 'Y' ? 2e6 + +s.slice(1) : +k; };
 export const statKeys = () => Object.keys(all()).sort((a, b) => order(a) - order(b));
 
 // Özet: oynanan level, toplam deneme, en çok zorlanılan leveller (bitirme başına deneme).
