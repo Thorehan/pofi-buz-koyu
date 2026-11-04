@@ -467,8 +467,8 @@ export const MASTER_LEVELS = [
 // 2 yıldız alınır ve bu kartta açıkça yazar.
 // Rota göster çözümü yalnızca gösterir (hamleleri oyuncu yapar); +5 hamle yalnızca hamle sınırlı levellerde çalışır.
 export const BOOSTERS = [
-  { id: 'route', name: 'Rota göster', text: 'Çözümün tamamını gösterir', icon: '🧭', price: 250 },
-  { id: 'moves5', name: '+5 hamle', text: 'Hamle sınırlı levellerde', icon: '⏱️', price: 60, gamePrice: 80, limitOnly: true },
+  { id: 'route', ui: 'route', name: 'Rota göster', text: 'Çözümün tamamını gösterir', icon: '🧭', price: 250 },
+  { id: 'moves5', ui: 'moves', name: '+5 hamle', text: 'Hamle sınırlı levellerde', icon: '⏱️', price: 60, gamePrice: 80, limitOnly: true },
   { id: 'pick', name: 'Buz kazması', text: 'Bir kayayı kırar', icon: '⛏️', price: 150, suspended: true },
   { id: 'shovel', name: 'Kar küreği', text: 'Buza kar koyar (fren)', icon: '❄️', price: 120, suspended: true },
   { id: 'whistle', name: 'Fok düdüğü', text: 'Foklar 3 hamle uyur', icon: '🎵', price: 100, suspended: true },
@@ -507,35 +507,35 @@ export const ALBUM = { chance: 0.15, from: 12, dupCoins: 40, missingBias: 3 };
 export const SIDE_LEVELS = { every: 15, count: 40 };
 export const SIDE_REWARD = { flakes: 2, hints: 1 };
 export const GOALS = {
-  home: { title: 'Eve dön', ico: '🏠', color: '#ff8c42', text: 'Balıkları topla, sonra Pofi\'yi iglonun üstünde durdur. Balık kalmışsa iglo yalnızca fren olur.' },
-  crate: { title: 'Kasayı yerleştir', ico: '📦', color: '#c98b4f', text: 'Kasaları işaretli yerlere it. Kasa bir şeye çarpana kadar kayar; tam işaretin üstünde durmalı.' },
-  crack: { title: 'Buzları kır', ico: '🧊', color: '#3d8fe0', text: 'Bütün çatlak buzların üstünden geç. Kırılan buz suya döner; sırayı iyi planla, mahsur kalma.' },
+  home: { title: 'Eve dön', ico: '🏠', ui: 'tab_home', art: 'ui_tab_home', color: '#ff8c42', text: 'Balıkları topla, sonra Pofi\'yi iglonun üstünde durdur. Balık kalmışsa iglo yalnızca fren olur.' },
+  crate: { title: 'Kasayı yerleştir', ico: '📦', ui: 'crate', art: 'obj_crate', color: '#c98b4f', text: 'Kasaları işaretli yerlere it. Kasa bir şeye çarpana kadar kayar; tam işaretin üstünde durmalı.' },
+  crack: { title: 'Buzları kır', ico: '🧊', ui: 'crack', art: 'tile_crack', color: '#3d8fe0', text: 'Bütün çatlak buzların üstünden geç. Kırılan buz suya döner; sırayı iyi planla, mahsur kalma.' },
 };
 export const MASTER_REWARD = { coins: 1000, hints: 3, flakes: 10 }; // ilk bitirişte, rozetle birlikte
 
 // Başarımlar: her birinin kademeleri var; kademe ödülü ACH_REWARD[kademe]. stat, main.js'te hesaplanır.
 export const ACHIEVEMENTS = [
-  { id: 'levels', name: 'Kâşif', icon: '🧭', stat: 'levels', text: n => `${n} level bitir`, tiers: [10, 50, 100, 250, 500, 1000] },
+  { id: 'levels', ui: 'route', name: 'Kâşif', icon: '🧭', stat: 'levels', text: n => `${n} level bitir`, tiers: [10, 50, 100, 250, 500, 1000] },
   { id: 'stars', name: 'Yıldız avcısı', icon: '⭐', stat: 'stars', text: n => `${n} yıldız topla`, tiers: [30, 150, 300, 750, 1500, 3000] },
   { id: 'perfect', name: 'Kusursuz', icon: '✨', stat: 'perfect', text: n => `${n} leveli 3 yıldızla bitir`, tiers: [10, 50, 100, 300, 600, 1000] },
-  { id: 'fish', name: 'Balıkçı', icon: '🐟', stat: 'fish', text: n => `${n} balık topla`, tiers: [50, 250, 1000, 3000, 8000] },
-  { id: 'nohint', name: 'Kendi başına', icon: '🧠', stat: 'nohint', text: n => `İpucu kullanmadan ${n} level bitir`, tiers: [25, 100, 300, 600] },
+  { id: 'fish', ui: 'fish', name: 'Balıkçı', icon: '🐟', stat: 'fish', text: n => `${n} balık topla`, tiers: [50, 250, 1000, 3000, 8000] },
+  { id: 'nohint', ui: 'hint', name: 'Kendi başına', icon: '🧠', stat: 'nohint', text: n => `İpucu kullanmadan ${n} level bitir`, tiers: [25, 100, 300, 600] },
   // ipucu, rota, güçlendirici ve ek +5 hamle olmadan ilk kez 3 yıldız alınan level sayısı (tekrar oynayıp 3 yıldıza çıkarmak da sayılır)
   { id: 'clean', name: 'Yardımsız usta', icon: '🏔️', stat: 'clean', text: n => `Yardım almadan ${n} leveli 3 yıldızla bitir`, tiers: [10, 50, 150, 400, 800] },
-  { id: 'village', name: 'Köy kurucusu', icon: '🏘️', stat: 'vl', text: n => `Köy seviyesi ${n} ol`, tiers: [3, 5, 8, 10, 12] },
+  { id: 'village', ui: 'tab_village', name: 'Köy kurucusu', icon: '🏘️', stat: 'vl', text: n => `Köy seviyesi ${n} ol`, tiers: [3, 5, 8, 10, 12] },
   { id: 'cocoa', name: 'Kakao ustası', icon: '☕', stat: 'cups', text: n => `${n} fincan kakao sat`, tiers: [50, 250, 1000, 5000] },
-  { id: 'daily', name: 'Sadık dost', icon: '📅', stat: 'streak', text: n => `Günlük bulmacada ${n} günlük seri yap`, tiers: [3, 7, 14, 30] },
-  { id: 'events', name: 'Şenlik ruhu', icon: '🎉', stat: 'events', text: n => `${n} haftalık etkinliğin ödül yolunu bitir`, tiers: [1, 4, 12, 26, 52] },
-  { id: 'wardrobe', name: 'Moda ikonu', icon: '🎩', stat: 'outfits', text: n => `${n} kıyafete sahip ol`, tiers: [3, 8, 15, 25] },
-  { id: 'villagers', name: 'Kalabalık köy', icon: '🐧', stat: 'villagers', text: n => `${n} köylü davet et`, tiers: [1, 3, 6] },
-  { id: 'masters', name: 'Usta', icon: '🏰', stat: 'masters', text: n => `${n} usta levelini bitir`, tiers: [1, 3, 6] },
-  { id: 'pets', name: 'Hayvan dostu', icon: '🐾', stat: 'pets', text: n => `${n} evcil dost sahiplen`, tiers: [1, 2, 3] },
-  { id: 'feeds', name: 'Can dostu', icon: '🦊', stat: 'feeds', text: n => `Evcil dostunu ${n} kez besle`, tiers: [7, 30, 100] },
-  { id: 'album', name: 'Balık koleksiyoncusu', icon: '🐠', stat: 'album', text: n => `Albüme ${n} nadir balık ekle`, tiers: [4, 12, 24] },
-  { id: 'projects', name: 'Köy mimarı', icon: '🏗️', stat: 'projects', text: n => `${n} köy projesi tamamla`, tiers: [1, 2, 3] },
-  { id: 'sides', name: 'Yan yol kâşifi', icon: '🪧', stat: 'sides', text: n => `${n} yan yol bulmacası bitir`, tiers: [5, 15, 40] },
-  { id: 'friends', name: 'Köyün sevgilisi', icon: '💛', stat: 'friends', text: n => `${n} köylünün hikâyesini bitir`, tiers: [1, 3, 6] },
-  { id: 'merchant', name: 'Tüccar dostu', icon: '⛵', stat: 'merchant', text: n => `Kaptan Mors'tan ${n} kez alışveriş yap`, tiers: [5, 20, 50] },
+  { id: 'daily', ui: 'puzzle', name: 'Sadık dost', icon: '📅', stat: 'streak', text: n => `Günlük bulmacada ${n} günlük seri yap`, tiers: [3, 7, 14, 30] },
+  { id: 'events', ui: 'event', name: 'Şenlik ruhu', icon: '🎉', stat: 'events', text: n => `${n} haftalık etkinliğin ödül yolunu bitir`, tiers: [1, 4, 12, 26, 52] },
+  { id: 'wardrobe', ui: 'hat', name: 'Moda ikonu', icon: '🎩', stat: 'outfits', text: n => `${n} kıyafete sahip ol`, tiers: [3, 8, 15, 25] },
+  { id: 'villagers', ui: 'villagers', name: 'Kalabalık köy', icon: '🐧', stat: 'villagers', text: n => `${n} köylü davet et`, tiers: [1, 3, 6] },
+  { id: 'masters', ui: 'castle', name: 'Usta', icon: '🏰', stat: 'masters', text: n => `${n} usta levelini bitir`, tiers: [1, 3, 6] },
+  { id: 'pets', ui: 'pet', name: 'Hayvan dostu', icon: '🐾', stat: 'pets', text: n => `${n} evcil dost sahiplen`, tiers: [1, 2, 3] },
+  { id: 'feeds', ui: 'pet', name: 'Can dostu', icon: '🦊', stat: 'feeds', text: n => `Evcil dostunu ${n} kez besle`, tiers: [7, 30, 100] },
+  { id: 'album', ui: 'fish', name: 'Balık koleksiyoncusu', icon: '🐠', stat: 'album', text: n => `Albüme ${n} nadir balık ekle`, tiers: [4, 12, 24] },
+  { id: 'projects', ui: 'project', name: 'Köy mimarı', icon: '🏗️', stat: 'projects', text: n => `${n} köy projesi tamamla`, tiers: [1, 2, 3] },
+  { id: 'sides', ui: 'tab_village', name: 'Yan yol kâşifi', icon: '🪧', stat: 'sides', text: n => `${n} yan yol bulmacası bitir`, tiers: [5, 15, 40] },
+  { id: 'friends', ui: 'emote', name: 'Köyün sevgilisi', icon: '💛', stat: 'friends', text: n => `${n} köylünün hikâyesini bitir`, tiers: [1, 3, 6] },
+  { id: 'merchant', ui: 'merchant', name: 'Tüccar dostu', icon: '⛵', stat: 'merchant', text: n => `Kaptan Mors'tan ${n} kez alışveriş yap`, tiers: [5, 20, 50] },
 ];
 // Günlük görevler: her gün tarihe göre 3 görev seçilir (herkeste aynı gün aynı görevler). needs: o özellik açık değilse seçilmez.
 export const DAILY_QUESTS = [

@@ -99,6 +99,7 @@ let screen = 'splash';
 let run = null; // { def, L, st, history, moves, limit, finished, daily, stuck }
 
 // ---------- genel ----------
+const ui = id => `<i class="ui ui-${id}"></i>`; // çizilmiş ikon seti (css: .ui-<id>)
 const coinIco = '<i class="ico coin"></i>';
 const flakeIco = '<i class="ico flake"></i>';
 const hintIco = '<i class="ico hint"></i>';
@@ -309,7 +310,7 @@ function startLevel(n, daily = false, evk = null, master = null, side = null) {
       // tür ilk kez oynanıyor: kural bir kartla anlatılır
       P.goalsSeen.push(def.goal);
       save(P);
-      openOverlay(`<span class="new-tag">YENİ HEDEF</span><h2>${g.title}</h2><div class="unlock-ico">${g.ico}</div><p>${g.text}</p><button id="introOk" class="btn green big">Tamam</button>`);
+      openOverlay(`<span class="new-tag">YENİ HEDEF</span><h2>${g.title}</h2><div class="unlock-ico">${ui(g.ui)}</div><p>${g.text}</p><button id="introOk" class="btn green big">Tamam</button>`);
       $('introOk').onclick = closeOverlay;
     }
     return;
@@ -379,9 +380,9 @@ function renderGoal() {
   // hedefli levelde asıl hedef önce yazar; balık yoksa balık sayacı çıkmaz
   const chip = (ok, ico, text) => `<span class="chip${ok ? ' done' : ''}">${ico}<b>${text}</b></span>`;
   let extra = '';
-  if (L.targets) { const on = L.targets.filter(c => st.crates.includes(c)).length; extra = chip(on === L.targets.length, '📦', `${on}/${L.targets.length}`); }
-  if (L.exit >= 0) extra = chip(st.p === L.exit && got === n, '🏠', 'Eve dön');
-  if (L.breakAll) { const all = L.dynCells.filter(c => L.t[c] === T.CRACK), on = all.filter(c => st.dyn[L.dynIdx[c]] !== 0).length; extra = chip(on === all.length, '🧊', `${on}/${all.length}`); }
+  if (L.targets) { const on = L.targets.filter(c => st.crates.includes(c)).length; extra = chip(on === L.targets.length, ui('crate'), `${on}/${L.targets.length}`); }
+  if (L.exit >= 0) extra = chip(st.p === L.exit && got === n, ui('tab_home'), 'Eve dön');
+  if (L.breakAll) { const all = L.dynCells.filter(c => L.t[c] === T.CRACK), on = all.filter(c => st.dyn[L.dynIdx[c]] !== 0).length; extra = chip(on === all.length, ui('crack'), `${on}/${all.length}`); }
   $('goal').innerHTML = extra + (n ? `<span class="chip${got === n ? ' done' : ''}"><canvas id="goalFish"></canvas><b>${got}/${n}</b></span>` : '')
     + (run.stuck ? '<span class="chip stuck">Sıkıştın! Geri al</span>' : '');
   if (n) drawFish(fitCanvas($('goalFish'), 28, 20), 13, 10, 24, 0);
@@ -618,17 +619,17 @@ function multAt(zones, pos) {
 
 // Sonuç ekranında: yıldız sandığının dolması ve hazır başarım rozeti (normal levellerde).
 function resultProgress() {
-  if (run.daily || run.event !== null || run.master !== null || run.side !== null) return run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : '';
+  if (run.daily || run.event !== null || run.master !== null || run.side !== null) return run.achNew ? `<div class="rs-ach">${ui('quests')} Başarım ödülü hazır!</div>` : '';
   const tot = totalStars(), base = P.starChests * STAR_CHEST.every, gain = run.starGain || 0;
   const ready = Math.floor(tot / STAR_CHEST.every) > P.starChests;
   const from = Math.max(0, Math.min(100, ((tot - gain - base) / STAR_CHEST.every) * 100)), to = ready ? 100 : ((tot - base) / STAR_CHEST.every) * 100;
   return `<div class="rs-chest">
-      <span>🎁</span>
+      <span>${ui('gift')}</span>
       <div class="progress"><div id="rsChestBar" style="width:${from}%" data-to="${to}%" ${ready ? 'data-ready="1"' : ''}></div></div>
       <b>${ready ? 'Sandık hazır!' : `${tot - base}/${STAR_CHEST.every}`}</b>
     </div>
     ${gain ? `<small class="breakdown">+${gain} yıldız${ready ? ' · sandığı haritada aç' : ''}</small>` : ''}
-    ${run.achNew ? '<div class="rs-ach">🏆 Başarım ödülü hazır!</div>' : ''}`;
+    ${run.achNew ? `<div class="rs-ach">${ui('quests')} Başarım ödülü hazır!</div>` : ''}`;
 }
 
 function showResult(stars, base, flakes, notes) {
@@ -743,7 +744,7 @@ function fail() {
     <h2>Hamlen bitti!</h2>
     <p>Çok yaklaştın: ${popcount(run.st.fish)}/${run.L.fishCells.length} balık toplandı.</p>
     ${free > 0 ? `<button id="fFree" class="btn green big">Ücretsiz +${ECON.continueMoves} hamle</button><small class="breakdown">Deniz feneri · bugün ${free} hakkın var</small>` : ''}
-    ${P.boosters.moves5 > 0 ? `<button id="fBoost" class="btn green big">⏱️ +${ECON.continueMoves} hamle · elinde ${P.boosters.moves5}</button>` : ''}
+    ${P.boosters.moves5 > 0 ? `<button id="fBoost" class="btn green big">${ui('moves')} +${ECON.continueMoves} hamle · elinde ${P.boosters.moves5}</button>` : ''}
     <button id="fAd" class="btn primary big ad">+${ECON.continueMoves} hamle</button>
     <button id="fCoin" class="btn secondary">+${ECON.continueMoves} hamle · ${contPrice} coin</button>
     <button id="fRetry" class="btn link">Baştan başla</button>`);
@@ -813,7 +814,7 @@ function useHint() {
 // ---------- güçlendiriciler ----------
 // Güç düğmesi araç çubuğunun üstünde üç kart açar. Kazma ve kürek hedef ister (tahtada geçerli hücreler parlar),
 // düdük hemen etki eder. Güçlendirici bitince kartta coin'le alma ve ödüllü reklam (+1) çıkar.
-const boostIcon = b => (art(`booster_${b.id}`) ? `<img src="assets/art/booster_${b.id}.webp" alt="">` : b.icon);
+const boostIcon = b => (b.ui ? ui(b.ui) : art(`booster_${b.id}`) ? `<img src="assets/art/booster_${b.id}.webp" alt="">` : b.icon);
 const boostPrice = (b, inGame = true) => ramped(b.id, b.price, b.gamePrice ?? Math.round(b.price * ECON.hintGameMult), inGame);
 
 function boostCells(kind) {
@@ -1117,9 +1118,9 @@ function renderVillage() {
   const nd = nextDistrict(P);
   const dCard = nd ? `<button class="b-card district${districtReady() ? ' ready' : ''}" data-d="${P.land || 1}"><b>Yeni arazi: ${nd.name}</b><small>${nd.soon ? 'Yeni yapılar ve bonuslar' : `Köy Lv${nd.vl} · köy yana genişler`}</small><span class="act">${nd.soon ? 'Yakında' : `Aç ${coinIco}${nd.price}`}</span>${districtReady() ? '<i class="dot"></i>' : ''}</button>` : '';
   const vNext = VILLAGERS.find(v => v.price && !P.villagers.includes(v.id));
-  const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
+  const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>${ui('villagers')} Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
   const slotsOpen = DECOR_SLOTS.filter(s => Math.floor(s.at[0]) < (P.land || 1));
-  const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event && !d.merchant).map(d => discounted(P, d.price)))}+</span></button>`;
+  const dcCard = `<button class="b-card district" data-decor><b>${ui('decor')} Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event && !d.merchant).map(d => discounted(P, d.price)))}+</span></button>`;
   const firstTip = Object.keys(P.village).length ? '' : `<p class="sheet-note first-tip">Level bitirdikçe kar tanesi kazanırsın. Kar tanesiyle ilk yapını kur: ${flakeIco} yetiyorsa kartta kırmızı nokta görünür.</p>`;
   const buildCards = () => firstTip + dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
@@ -1268,7 +1269,7 @@ function renderSheet() {
       ${canColor ? `<div class="sheet-sec"><b>Renk</b><small>Yalnızca tente, çatı, bayrak gibi renkli kısmı boyar · açılan renk tüm yapılarda kullanılır</small></div>
       <div class="swatches">
         <button class="sw def${d.color === null ? ' sel' : ''}" data-color="" title="Stilin kendi rengi"></button>
-        ${COLORS.map(c => `<button class="sw${d.color === c.id ? ' sel' : ''}" data-color="${c.id}" title="${c.name}" style="background:${c.hex}">${P.colors.includes(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}
+        ${COLORS.map(c => `<button class="sw${d.color === c.id ? ' sel' : ''}" data-color="${c.id}" title="${c.name}" style="background:${c.hex}">${P.colors.includes(c.id) ? '' : `<span class="lock">${ui('lock')}</span>`}</button>`).join('')}
       </div>` : '<p class="sheet-note">Bu stilde boyanacak renkli bir kısım yok; görünümü stil belirler.</p>'}`;
     const label = !changed ? 'Şu anki görünüm' : total ? `Satın al · ${coinIco}${total}` : 'Uygula';
     action = `<div class="sheet-actions">
@@ -1280,7 +1281,7 @@ function renderSheet() {
 
   $('sheet').innerHTML = `
     <div class="sheet-head"><div><b>${b.name}</b><span class="lv-pill">${lv ? `Lv ${lv}/${max}` : 'Kurulmadı'}</span></div><button id="shX" class="sheet-x" aria-label="Kapat">×</button></div>
-    <div class="buff-box">${buffLine}${b.id === 'pier' && lv ? `<small>🐟 Sen yokken saatte ${lv * PIER_CATCH.perLevel} balık tutar (evcil dost için) · şu an ${Math.floor(pierNow())}/${pierCap()}</small>` : ''}</div>
+    <div class="buff-box">${buffLine}${b.id === 'pier' && lv ? `<small>${ui('market')} Sen yokken saatte ${lv * PIER_CATCH.perLevel} balık tutar (evcil dost için) · şu an ${Math.floor(pierNow())}/${pierCap()}</small>` : ''}</div>
     <button id="shUp" class="btn green big" ${cost === null || P.flakes < cost ? 'disabled' : ''}>${cost !== null && P.flakes < cost ? `${cost - P.flakes} kar tanesi daha gerekli` : upLabel}</button>
     ${INTERIOR[b.id] && st ? `<button id="shIn" class="btn secondary big in-btn">İçeri gir · eşya yerleştir${interiorReady(P, b.id) ? '<i class="dot"></i>' : ''}</button>` : ''}
     ${b.id === 'market' && st ? `<button id="shTrade" class="btn secondary big in-btn">Kar tanesi takası · ${coinIco}${flakePrice(tradeN(P))}</button>` : ''}
@@ -1503,7 +1504,7 @@ function renderDye() {
   const owned = c => P.dyeOwned.includes(`${key}:${c}`);
   const cost = sel && !owned(sel) ? DYE_PRICE : 0;
   box.innerHTML = `<div class="sheet-sec"><b>Boya · ${it.name}</b><small>Yalnızca renkli kısmı boyar · her renk bu parça için bir kez ${coinIco}${DYE_PRICE}</small></div>
-    <div class="swatches"><button class="sw def${sel === null ? ' sel' : ''}" data-dye="" title="Kendi rengi"></button>${COLORS.map(c => `<button class="sw${sel === c.id ? ' sel' : ''}" data-dye="${c.id}" title="${c.name}" style="background:${c.hex}">${owned(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}</div>
+    <div class="swatches"><button class="sw def${sel === null ? ' sel' : ''}" data-dye="" title="Kendi rengi"></button>${COLORS.map(c => `<button class="sw${sel === c.id ? ' sel' : ''}" data-dye="${c.id}" title="${c.name}" style="background:${c.hex}">${owned(c.id) ? '' : `<span class="lock">${ui('lock')}</span>`}</button>`).join('')}</div>
     ${sel !== cur ? `<button id="dyeApply" class="btn ${cost ? 'primary' : 'green'}" ${P.coins < cost ? 'disabled' : ''}>${cost ? `${P.coins < cost ? 'Yetersiz · ' : 'Boya · '}${coinIco}${cost}` : 'Uygula'}</button>` : ''}`;
   box.querySelectorAll('[data-dye]').forEach(b => { b.onclick = () => { dyeDraft = b.dataset.dye || null; renderDye(); }; });
   if ($('dyeApply')) $('dyeApply').onclick = () => {
@@ -1639,7 +1640,7 @@ function showFriend(id) {
     <small class="breakdown">${life.trait}</small>
     <div class="fr-hearts">${friendHearts(f)}</div>
     ${next ? `<div class="progress"><div style="width:${((f.pts - prev) / (next - prev)) * 100}%;height:100%;background:#ff5f8f"></div></div><small class="breakdown">Sonraki hikâyeye ${next - f.pts} dostluk puanı · günlük sohbet +${FRIEND.talkPts}, iş +${FRIEND.taskPts}, ikram +${FRIEND.giftPts}</small>` : '<small class="breakdown">En yakın dostun oldu</small>'}
-    <div class="fr-stories">${life.story.map((s, i) => (i < f.ch ? `<button class="chip-btn" data-st="${i}">${s.title}</button>` : i < lv ? `<button class="btn green" data-st="${i}">Yeni hikâye: ${s.title}</button>` : `<span class="chip-btn fr-lock">🔒 Hikâye ${i + 1}</span>`)).join('')}</div>
+    <div class="fr-stories">${life.story.map((s, i) => (i < f.ch ? `<button class="chip-btn" data-st="${i}">${s.title}</button>` : i < lv ? `<button class="btn green" data-st="${i}">Yeni hikâye: ${s.title}</button>` : `<span class="chip-btn fr-lock">${ui('lock')} Hikâye ${i + 1}</span>`)).join('')}</div>
     ${P.village.cocoa ? `<button id="frGift" class="btn secondary" ${gifted || cups < FRIEND.giftCups ? 'disabled' : ''}>${gifted ? 'Bugün kakao ikram ettin ✓' : `☕ Kakao ikram et · ${FRIEND.giftCups} fincan`}</button>` : ''}
     <button id="frClose" class="btn link">Kapat</button>`);
   drawPofi(fitCanvas($('frFace'), 84, 84), 42, 82, 64, { outfit: v.outfit, happy: friendReady(id) });
@@ -1985,15 +1986,15 @@ const gazetteUnread = () => P.gazette.read !== gazetteIssue();
 function townCards() {
   const land = P.land || 1, cards = [];
   const nm = nextMerchant(), here = !!merchantToday();
-  if (P.level > 5) cards.push(`<button class="b-card district town" data-town="gazette"><b>📰 Köy Gazetesi · Sayı ${gazetteIssue()}</b><small>${land >= 2 ? (here ? 'Gezgin tüccar bugün limanda' : nm ? `Tüccar ${dayName(nm)} günü geliyor` : '') : 'Haftanın haberleri, zor leveli ve bilmecesi'}</small><span class="act">${gazetteUnread() ? 'Yeni sayı!' : 'Oku'}</span>${gazetteUnread() ? '<i class="dot"></i>' : ''}</button>`);
-  if (land >= 2) cards.push(`<button class="b-card district town${here ? ' ready' : ''}" data-town="merchant"><b>⛵ Gezgin tüccar</b><small>${here ? 'Kaptan Mors limanda! Nadir kıyafet, süs ve gizemli paket' : 'Haftada 1-2 gün limana uğrar; günü gazetede'}</small><span class="act">${here ? 'Tezgâha git' : nm ? `${dayName(nm)} gelir` : 'Yolda'}</span>${here ? '<i class="dot"></i>' : ''}</button>`);
-  if (P.village.market) cards.push(`<button class="b-card district town" data-town="market"><b>🐟 Balık pazarı · kar tanesi</b><small>Coin ile kar tanesi; fiyat bugün aldıkça artar</small><span class="act">1 ${flakeIco} = ${coinIco}${fmt(flakePrice(tradeN(P)))}</span></button>`);
+  if (P.level > 5) cards.push(`<button class="b-card district town" data-town="gazette"><b>${ui('gazette')} Köy Gazetesi · Sayı ${gazetteIssue()}</b><small>${land >= 2 ? (here ? 'Gezgin tüccar bugün limanda' : nm ? `Tüccar ${dayName(nm)} günü geliyor` : '') : 'Haftanın haberleri, zor leveli ve bilmecesi'}</small><span class="act">${gazetteUnread() ? 'Yeni sayı!' : 'Oku'}</span>${gazetteUnread() ? '<i class="dot"></i>' : ''}</button>`);
+  if (land >= 2) cards.push(`<button class="b-card district town${here ? ' ready' : ''}" data-town="merchant"><b>${ui('merchant')} Gezgin tüccar</b><small>${here ? 'Kaptan Mors limanda! Nadir kıyafet, süs ve gizemli paket' : 'Haftada 1-2 gün limana uğrar; günü gazetede'}</small><span class="act">${here ? 'Tezgâha git' : nm ? `${dayName(nm)} gelir` : 'Yolda'}</span>${here ? '<i class="dot"></i>' : ''}</button>`);
+  if (P.village.market) cards.push(`<button class="b-card district town" data-town="market"><b>${ui('market')} Balık pazarı · kar tanesi</b><small>Coin ile kar tanesi; fiyat bugün aldıkça artar</small><span class="act">1 ${flakeIco} = ${coinIco}${fmt(flakePrice(tradeN(P)))}</span></button>`);
   const vl = villageLevel(P);
   if (P.pet) {
     const fed = petFedToday(P), canFeed = !fed && petFood() >= PET.feedFish;
-    cards.push(`<button class="b-card district town${canFeed ? ' ready' : ''}" data-town="pet"><b>${petKind().ico} ${esc(petInfo().name)}</b><small>${fed ? 'Karnı tok, Pofi\'nin peşinde' : canFeed ? 'Acıktı · balıklarından ver' : `Uykulu · ${petFood()}/${PET.feedFish} balığın var`}</small><span class="act">${canFeed ? 'Besle' : 'Bak'}</span>${canFeed ? '<i class="dot"></i>' : ''}</button>`);
+    cards.push(`<button class="b-card district town${canFeed ? ' ready' : ''}" data-town="pet"><b>${ui('pet')} ${esc(petInfo().name)}</b><small>${fed ? 'Karnı tok, Pofi\'nin peşinde' : canFeed ? 'Acıktı · balıklarından ver' : `Uykulu · ${petFood()}/${PET.feedFish} balığın var`}</small><span class="act">${canFeed ? 'Besle' : 'Bak'}</span>${canFeed ? '<i class="dot"></i>' : ''}</button>`);
   } else if (petUnlocked(P, vl)) {
-    cards.push(`<button class="b-card district town" data-town="pet"><b>🐾 Evcil dost</b><small>Tilki, tavşan ya da baykuş: Pofi'nin peşinden yürür, beslenince hediye getirir</small><span class="act">Sahiplen ${coinIco}${fmt(PET.kinds[0].price)}+</span></button>`);
+    cards.push(`<button class="b-card district town" data-town="pet"><b>${ui('pet')} Evcil dost</b><small>Tilki, tavşan ya da baykuş: Pofi'nin peşinden yürür, beslenince hediye getirir</small><span class="act">Sahiplen ${coinIco}${fmt(PET.kinds[0].price)}+</span></button>`);
   }
   return cards.join('');
 }
@@ -2002,7 +2003,7 @@ function projectCards() {
   if ((P.land || 1) < 3) return '';
   return PROJECTS.map(p => {
     const spent = projectSpent(P, p), st = projectStage(P, p);
-    return `<button class="b-card town${st === 3 ? '' : ' proj'}" data-town="proj:${p.id}"><b>${p.name}</b>
+    return `<button class="b-card town${st === 3 ? '' : ' proj'}" data-town="proj:${p.id}"><b>${ui('project')} ${p.name}</b>
       <div class="progress slim"><div style="width:${Math.min(100, (spent / p.cost) * 100)}%"></div></div>
       <small>${st === 3 ? `Tamamlandı · ${p.text}` : `${fmt(spent)}/${fmt(p.cost)} · bitince: ${p.text}`}</small>
       <span class="act">${st === 3 ? '✓' : st ? PROJECT_STAGES[st - 1] : 'Başla'}</span></button>`;
@@ -2020,13 +2021,13 @@ function openTown(k) {
 // Ana ekranda tek satırlık köy haberi: tüccar limanda > yeni gazete > evcil dost acıktı
 // "Yeni" kartları: bir özellik açıldığında bir kez anlatılır. Oyuncu köy sekmelerinde ya da mağazada kendisi aramak zorunda kalmaz.
 const UNLOCKS = [
-  { id: 'album', when: () => P.level >= ALBUM.from, ico: '🐠', title: 'Nadir balıklar', text: 'Bazı levellerde parıltılı bir balık çıkar. Topla, Görevler ekranındaki albümüne girer; seti tamamlayınca ödül var.' },
-  { id: 'pet', when: () => !P.pet && petUnlocked(P, villageLevel(P)), ico: '🐾', title: 'Evcil dost', text: 'Artık bir dost sahiplenebilirsin. Köyde Pofi\'nin peşinden yürür, beslenince hediye getirir.', go: () => { showScreen('village'); showPet(); } },
-  { id: 'harbor', when: () => (P.land || 1) === 1 && villageLevel(P) >= DISTRICTS[1].vl, ico: '⚓', title: 'Buz Limanı', text: 'Köy büyüdü, yeni araziyi açabilirsin. Limana gezgin tüccar da uğrar.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(1); } },
-  { id: 'trade', when: () => !!P.village.market, ico: '🐟', title: 'Kar tanesi takası', text: 'Balık pazarında coin ile kar tanesi alabilirsin. Fiyat gün içinde aldıkça artar, ertesi gün başa döner.' },
-  { id: 'forest', when: () => (P.land || 1) === 2 && villageLevel(P) >= DISTRICTS[2].vl, ico: '🌲', title: 'Çam Ormanı', text: 'Yeni arazi açılabilir. Köy projelerine coin yatırırsın, biten proje kalıcı bonus verir.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(2); } },
-  { id: 'sides', when: () => P.level > SIDE_LEVELS.every, ico: '🪧', title: 'Yan yollar', text: 'Haritada yolun kenarında tabelalar belirdi. Her biri farklı hedefli, isteğe bağlı bir bulmaca: eve dön, kasayı yerleştir, buzları kır.', go: () => showScreen('map') },
-  { id: 'master', when: () => P.level > MASTER_LEVELS[0].after, ico: '🏰', title: 'Usta kalesi', text: 'Haritada bölge sonunda bir buz kalesi belirdi. Çok zor ama ödülü ve rozeti özel.', go: () => showScreen('map') },
+  { id: 'album', when: () => P.level >= ALBUM.from, ico: 'fish', title: 'Nadir balıklar', text: 'Bazı levellerde parıltılı bir balık çıkar. Topla, Görevler ekranındaki albümüne girer; seti tamamlayınca ödül var.' },
+  { id: 'pet', when: () => !P.pet && petUnlocked(P, villageLevel(P)), ico: 'pet', title: 'Evcil dost', text: 'Artık bir dost sahiplenebilirsin. Köyde Pofi\'nin peşinden yürür, beslenince hediye getirir.', go: () => { showScreen('village'); showPet(); } },
+  { id: 'harbor', when: () => (P.land || 1) === 1 && villageLevel(P) >= DISTRICTS[1].vl, ico: 'merchant', title: 'Buz Limanı', text: 'Köy büyüdü, yeni araziyi açabilirsin. Limana gezgin tüccar da uğrar.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(1); } },
+  { id: 'trade', when: () => !!P.village.market, ico: 'market', title: 'Kar tanesi takası', text: 'Balık pazarında coin ile kar tanesi alabilirsin. Fiyat gün içinde aldıkça artar, ertesi gün başa döner.' },
+  { id: 'forest', when: () => (P.land || 1) === 2 && villageLevel(P) >= DISTRICTS[2].vl, ico: 'project', title: 'Çam Ormanı', text: 'Yeni arazi açılabilir. Köy projelerine coin yatırırsın, biten proje kalıcı bonus verir.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(2); } },
+  { id: 'sides', when: () => P.level > SIDE_LEVELS.every, ico: 'tab_village', title: 'Yan yollar', text: 'Haritada yolun kenarında tabelalar belirdi. Her biri farklı hedefli, isteğe bağlı bir bulmaca: eve dön, kasayı yerleştir, buzları kır.', go: () => showScreen('map') },
+  { id: 'master', when: () => P.level > MASTER_LEVELS[0].after, ico: 'castle', title: 'Usta kalesi', text: 'Haritada bölge sonunda bir buz kalesi belirdi. Çok zor ama ödülü ve rozeti özel.', go: () => showScreen('map') },
 ];
 // Eski kayıtlar: zaten açık olanlar için kart çıkmaz.
 if (P.unlocksSeen === null) { P.unlocksSeen = UNLOCKS.filter(u => u.when()).map(u => u.id); save(P); }
@@ -2042,7 +2043,7 @@ function showUnlock() {
   openOverlay(`
     <span class="new-tag">YENİ</span>
     <h2>${u.title}</h2>
-    <div class="unlock-ico">${u.ico}</div>
+    <div class="unlock-ico">${ui(u.ico)}</div>
     <p>${u.text}</p>
     <button id="ulOk" class="btn green big">${u.go ? 'Göster' : 'Tamam'}</button>
     ${u.go ? '<button id="ulLater" class="btn link">Sonra</button>' : ''}`);
@@ -2064,11 +2065,11 @@ function awayLines() {
   if (cups >= 1) lines.push(`☕ Kakao standında <b>${fmt(cups)} fincan</b> birikti${cups >= cocoaCap() ? ' (stant doldu)' : ''}`);
   if (P.pet && !petFedToday(P)) {
     const n = Math.floor(pierNow()), name = esc(petInfo().name);
-    if (n > 0) lines.push(`🐟 İskele <b>${n} balık</b> tuttu`);
-    lines.push(petFood() >= PET.feedFish ? `${petKind().ico} ${name} acıktı, besleyebilirsin` : `${petKind().ico} ${name} uyukluyor`);
+    if (n > 0) lines.push(`${ui('market')} İskele <b>${n} balık</b> tuttu`);
+    lines.push(petFood() >= PET.feedFish ? `${ui('pet')} ${name} acıktı, besleyebilirsin` : `${ui('pet')} ${name} uyukluyor`);
   }
-  if (merchantToday() && (P.land || 1) >= 2) lines.push('⛵ Gezgin tüccar bugün limanda');
-  if (P.level > 5 && gazetteUnread()) lines.push(`📰 Köy Gazetesi'nin ${gazetteIssue()}. sayısı çıktı`);
+  if (merchantToday() && (P.land || 1) >= 2) lines.push(`${ui('merchant')} Gezgin tüccar bugün limanda`);
+  if (P.level > 5 && gazetteUnread()) lines.push(`${ui('gazette')} Köy Gazetesi'nin ${gazetteIssue()}. sayısı çıktı`);
   return lines;
 }
 function showAway() {
@@ -2099,9 +2100,9 @@ function renderTownStrip() {
   $('dotGazette').classList.toggle('hidden', !gazetteUnread());
   const el = $('townStrip');
   let html = '', go = null;
-  if (merchantToday() && (P.land || 1) >= 2) { html = '⛵ <b>Gezgin tüccar bugün limanda</b>'; go = 'merchant'; }
-  else if (gazetteUnread() && P.level > 5) { html = `📰 <b>Köy Gazetesi · Sayı ${gazetteIssue()} çıktı</b>`; go = 'gazette'; }
-  else if (P.pet && !petFedToday(P) && petFood() >= PET.feedFish) { html = `${petKind().ico} <b>${esc(petInfo().name)} acıktı</b>`; go = 'pet'; }
+  if (merchantToday() && (P.land || 1) >= 2) { html = `${ui('merchant')} <b>Gezgin tüccar bugün limanda</b>`; go = 'merchant'; }
+  else if (gazetteUnread() && P.level > 5) { html = `${ui('gazette')} <b>Köy Gazetesi · Sayı ${gazetteIssue()} çıktı</b>`; go = 'gazette'; }
+  else if (P.pet && !petFedToday(P) && petFood() >= PET.feedFish) { html = `${ui('pet')} <b>${esc(petInfo().name)} acıktı</b>`; go = 'pet'; }
   el.classList.toggle('hidden', !go);
   if (!go) return;
   el.innerHTML = `${html}<span>›</span>`;
@@ -2147,7 +2148,7 @@ const MC_SUB = {
   mystery: 'Kar tanesi, ipucu, nadir süs ya da kıyafet',
   flakes: 'Pazardan ucuz, bu gelişe özel',
 };
-const MC_ICO = { bait: '🎣', mystery: '🎁', flakes: '❄️' };
+const MC_ICO = { bait: '🎣', mystery: '<i class="ui ui-gift"></i>', flakes: '<i class="ui ui-flake"></i>' };
 
 function showMerchant() {
   const m = merchantToday();
@@ -2381,7 +2382,7 @@ function showPet() {
     ${fed ? '' : `<button id="petFeed" class="btn green big" ${canFeed ? '' : 'disabled'}>Besle · ${PET.feedFish} 🐟</button>`}
 
     <div class="sheet-sec"><b>Tasma</b><small>Renk başına ${coinIco}${PET.collarPrice}</small></div>
-    <div class="swatches"><button class="sw def${d.collar === null ? ' sel' : ''}" data-collar="" title="Tasmasız"></button>${COLORS.map(c => `<button class="sw${d.collar === c.id ? ' sel' : ''}" data-collar="${c.id}" title="${c.name}" style="background:${c.hex}">${p.collars.includes(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}</div>
+    <div class="swatches"><button class="sw def${d.collar === null ? ' sel' : ''}" data-collar="" title="Tasmasız"></button>${COLORS.map(c => `<button class="sw${d.collar === c.id ? ' sel' : ''}" data-collar="${c.id}" title="${c.name}" style="background:${c.hex}">${p.collars.includes(c.id) ? '' : `<span class="lock">${ui('lock')}</span>`}</button>`).join('')}</div>
     ${changed ? `<button id="petLook" class="btn ${cost ? 'primary' : 'green'}" ${P.coins < cost ? 'disabled' : ''}>${cost ? `${P.coins < cost ? 'Yetersiz · ' : 'Satın al · '}${coinIco}${cost}` : 'Uygula'}</button>` : ''}
     <div class="sheet-sec"><b>Yatak</b><small>İglonun önünde · ${p.bed ? PET.beds[p.bed - 1].name : 'henüz yok'}</small></div>
     ${bedNext ? `<button id="petBed" class="btn secondary" ${P.coins < bedNext.price ? 'disabled' : ''}>${bedNext.name} · ${coinIco}${fmt(bedNext.price)}</button>` : '<small class="breakdown">En güzel yatak onda ✓</small>'}
@@ -2557,15 +2558,15 @@ function renderShop() {
   const item = (icon, title, sub, button) =>
     `<div class="shop-item"><div class="si-icon ${icon[0]}">${icon[1]}</div><div class="si-text"><b>${title}</b><small>${sub}</small></div>${button}</div>`;
   $('shopList').innerHTML = [
-    item(['coins', ''], 'Ücretsiz coin', `Video izle, ${ECON.freeCoinAmount} coin kazan · bugün ${left}/${ECON.freeCoinPerDay}`,
+    item(['coins', ui('coin')], 'Ücretsiz coin', `Video izle, ${ECON.freeCoinAmount} coin kazan · bugün ${left}/${ECON.freeCoinPerDay}`,
       `<button id="btnFreeCoin" class="btn primary ad" ${left <= 0 ? 'disabled' : ''}>+${ECON.freeCoinAmount}</button>`),
     '<h3>İpucu</h3>',
-    item(['hint', '×1'], 'İpucu', 'Sıradaki doğru hamleyi gösterir',
+    item(['hint', `${ui('hint')}<small>×1</small>`], 'İpucu', 'Sıradaki doğru hamleyi gösterir',
       `<button class="btn green" data-hints="1" data-cost="${hintPrice()}" ${P.coins < hintPrice() ? 'disabled' : ''}>${coinIco}${hintPrice()}</button>`),
-    item(['hint', '×5'], 'İpucu paketi', `Bugün aldıkça pahalanır · yarın ${ECON.hintPack5Cost} coin'den başlar`,
+    item(['hint', `${ui('hint')}<small>×5</small>`], 'İpucu paketi', `Bugün aldıkça pahalanır · yarın ${ECON.hintPack5Cost} coin'den başlar`,
       `<button class="btn green" data-hints="5" data-cost="${packPrice()}" ${P.coins < packPrice() ? 'disabled' : ''}>${coinIco}${packPrice()}</button>`),
     '<h3>Güçlendiriciler</h3>',
-    ...ACTIVE_BOOSTERS.map(b => item(['boost', b.icon], b.name, `${b.text} · elinde ${P.boosters[b.id] || 0} · bugün aldıkça pahalanır`,
+    ...ACTIVE_BOOSTERS.map(b => item(['boost', boostIcon(b)], b.name, `${b.text} · elinde ${P.boosters[b.id] || 0} · bugün aldıkça pahalanır`,
       `<button class="btn green" data-boost="${b.id}" ${P.coins < boostPrice(b, false) ? 'disabled' : ''}>${coinIco}${boostPrice(b, false)}</button>`)),
     '<h3>Paketler</h3>',
     item(['noads', 'VIP'], 'Reklamsız ödüller', 'Ödüllü reklam izlemeden x2 ödülleri ve çarpanı doğrudan al',
@@ -2734,7 +2735,7 @@ function renderMapHead() {
   $('mapChest').disabled = !ready;
   $('mapChest').classList.toggle('ready', ready);
   const n = Math.floor(tot / STAR_CHEST.every) - P.starChests;
-  $('mapChest').innerHTML = n > 1 ? `🎁 ${n} sandığı aç` : ready ? '🎁 Sandığı aç' : `🎁 ${tot - base}/${STAR_CHEST.every}`;
+  $('mapChest').innerHTML = n > 1 ? `${ui('gift')} ${n} sandığı aç` : ready ? `${ui('gift')} Sandığı aç` : `${ui('gift')} ${tot - base}/${STAR_CHEST.every}`;
 }
 
 // Ödülleri topla (coin, ipucu, kar tanesi)
@@ -2891,7 +2892,9 @@ function drawMap(t) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#000';
-    ctx.fillText(open ? g.ico : '🔒', cx, cy + 1);
+    const gim = art(open ? g.art : 'ui_lock');
+    if (gim) ctx.drawImage(gim, cx - 15, cy - 15, 30, 30);
+    else ctx.fillText(open ? g.ico : '🔒', cx, cy + 1);
     if (best) for (let k = 0; k < best; k++) { starPath(ctx, cx + (k - (best - 1) / 2) * 12, cy + 26, 6); ctx.fillStyle = '#ffc23a'; ctx.fill(); }
     mapNodes.push([{ side: i }, cx, cy, 20]);
   });
@@ -3118,7 +3121,9 @@ function drawCastle(ctx, x, y, i, open, best, t) {
   if (!open) {
     ctx.font = '18px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🔒', x, y + 4);
+    const lockIm = art('ui_lock');
+    if (lockIm) ctx.drawImage(lockIm, x - 13, y - 9, 26, 26);
+    else ctx.fillText('🔒', x, y + 4);
   } else if (best) {
     for (let k = 0; k < 3; k++) {
       starPath(ctx, x + (k - 1) * 15, y + 34, 7.5);
@@ -3286,7 +3291,7 @@ function renderQuests() {
       const act = it.claimed ? '<span class="check">✓</span>' : done ? `<button class="btn green" data-q="${i}">Al</button>` : `<span class="ach-rw">${rewardHtml(QUEST_REWARD)}</span>`;
       return `<div class="quest${it.claimed ? ' claimed' : ''}"><div class="q-body"><span>${d.text}</span><div class="progress"><div style="width:${(it.have / it.need) * 100}%"></div></div><small class="ach-rw">${it.have}/${it.need}</small></div>${act}</div>`;
     }).join('')}
-    <div class="qb-chest"><span>🎁 Üç görevi de bitir: ${rewardHtml(QUEST_CHEST)}</span>${q.chest ? '<span class="check">✓</span>' : `<button id="qChest" class="btn primary" ${allClaimed ? '' : 'disabled'}>Aç</button>`}</div>`;
+    <div class="qb-chest"><span>${ui('gift')} Üç görevi de bitir: ${rewardHtml(QUEST_CHEST)}</span>${q.chest ? '<span class="check">✓</span>' : `<button id="qChest" class="btn primary" ${allClaimed ? '' : 'disabled'}>Aç</button>`}</div>`;
   $('questBox').querySelectorAll('[data-q]').forEach(btn => {
     btn.onclick = () => {
       const it = q.list[+btn.dataset.q];
@@ -3374,7 +3379,7 @@ function renderAch() {
     const dots = a.tiers.map((_, k) => `<i class="${k < i.got ? 'on' : k < i.reached ? 'ready' : ''}"></i>`).join('');
     const act = i.claimable ? `<button class="btn green" data-ach="${a.id}">Al</button>` : i.max ? '<span class="check">✓</span>' : '';
     return `<div class="ach-card${i.claimable ? ' ready' : ''}${i.max ? ' done' : ''}">
-      <span class="ach-ico">${a.icon}</span>
+      <span class="ach-ico">${a.ui ? ui(a.ui) : a.icon}</span>
       <div class="ach-body">
         <div class="ach-top"><b>${a.name}</b><span class="dots">${dots}</span></div>
         <small>${i.max ? 'Bütün kademeler tamam' : a.text(target)} · ${Math.min(i.v, target)}/${target}</small>
@@ -3513,7 +3518,7 @@ function renderEventScreen() {
   $('evLevels').innerHTML = Array.from({ length: EVENT_LEVELS }, (_, k) => {
     const st = E.done[k] || 0, open = k <= firstOpen;
     return `<button class="ev-lv${st ? ' done' : ''}${open ? '' : ' locked'}${k === firstOpen ? ' next' : ''}" data-evl="${k}" ${open ? '' : 'disabled'}>
-      <b>${k + 1}</b><span>${st ? '★'.repeat(st) + '☆'.repeat(3 - st) : open ? `+${EVENT_TOKENS.eventLevel}` : '🔒'}</span></button>`;
+      <b>${k + 1}</b><span>${st ? '★'.repeat(st) + '☆'.repeat(3 - st) : open ? `+${EVENT_TOKENS.eventLevel}` : ui('lock')}</span></button>`;
   }).join('');
   $('evLevels').querySelectorAll('[data-evl]').forEach(b => {
     b.onclick = () => {

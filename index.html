@@ -20,7 +20,7 @@
 <body>
 <div id="app">
   <header class="topbar">
-    <button id="btnBack" class="icon-btn hidden" aria-label="Ana menü">‹</button>
+    <button id="btnBack" class="icon-btn hidden" aria-label="Geri"><i class="ui ui-back"></i></button>
     <div class="wallet">
       <span class="pill"><i class="ico coin"></i><b id="coins">0</b></span>
       <span class="pill"><i class="ico flake"></i><b id="flakes">0</b></span>
@@ -101,20 +101,20 @@
     <div class="board-wrap"><canvas id="board"></canvas><div id="hintBar" class="hint-bar hidden"></div><div id="boostBar" class="hint-bar boost-bar hidden"></div></div>
     <div class="toolbar">
       <button id="btnUndo" class="tool" aria-label="Geri al">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+        <i class="ui ui-undo"></i>
         <small>Geri al</small>
       </button>
       <button id="btnRestart" class="tool" aria-label="Baştan başla">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        <i class="ui ui-restart"></i>
         <small>Baştan</small>
       </button>
       <button id="btnBoost" class="tool" aria-label="Güçlendiriciler">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#8f5bd6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" fill="#d9c6ff"/></svg>
+        <i class="ui ui-power"></i>
         <small>Güç</small>
         <span id="boostCount" class="badge">5</span>
       </button>
       <button id="btnHint" class="tool" aria-label="İpucu">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" fill="#ffe08a"/></svg>
+        <i class="ui ui-hint"></i>
         <small>İpucu</small>
         <span id="hintCount" class="badge">3</span>
       </button>
@@ -126,14 +126,14 @@
     <div class="garden-wrap"><canvas id="village"></canvas><span id="zoneName" class="zone-tag"></span></div>
     <div id="vlCard" class="vl-card"></div>
     <div id="vTabs" class="seg" role="tablist">
-      <button class="vtab" data-vt="build">Yapılar<i class="dot hidden"></i></button>
-      <button class="vtab" data-vt="life">Köy hayatı<i class="dot hidden"></i></button>
-      <button class="vtab" data-vt="proj">Projeler<i class="dot hidden"></i></button>
+      <button class="vtab" data-vt="build"><i class="ui ui-tab_village"></i>Yapılar<i class="dot hidden"></i></button>
+      <button class="vtab" data-vt="life"><i class="ui ui-villagers"></i>Köy hayatı<i class="dot hidden"></i></button>
+      <button class="vtab" data-vt="proj"><i class="ui ui-project"></i>Projeler<i class="dot hidden"></i></button>
     </div>
     <div class="share-row">
-      <button id="btnShare" class="btn secondary">Paylaş</button>
-      <button id="btnPhoto" class="btn secondary">Fotoğraf</button>
-      <button id="btnVisit" class="btn green">Arkadaş köyü</button>
+      <button id="btnShare" class="btn secondary"><i class="ui ui-share"></i>Paylaş</button>
+      <button id="btnPhoto" class="btn secondary"><i class="ui ui-photo"></i>Fotoğraf</button>
+      <button id="btnVisit" class="btn green"><i class="ui ui-visit"></i>Arkadaş</button>
     </div>
     <div class="honey">
       <span class="honey-label">Kakao standı · <b id="cocoaAmt">0</b> fincan<small id="cocoaRate"></small></span>
@@ -158,9 +158,9 @@
     <div class="w-float-wrap"><div id="wardrobeFloat" class="w-float hidden"><canvas id="wardrobeFloatPofi"></canvas></div></div>
     <div class="wardrobe-stage"><canvas id="wardrobePofi"></canvas></div>
     <div class="seg" role="tablist">
-      <button class="seg-btn active" data-cat="hat">Şapka</button>
-      <button class="seg-btn" data-cat="scarf">Atkı</button>
-      <button class="seg-btn" data-cat="emote">İfade</button>
+      <button class="seg-btn active" data-cat="hat"><i class="ui ui-hat"></i>Şapka</button>
+      <button class="seg-btn" data-cat="scarf"><i class="ui ui-scarf"></i>Atkı</button>
+      <button class="seg-btn" data-cat="emote"><i class="ui ui-emote"></i>İfade</button>
     </div>
     <div id="wardrobeList" class="wardrobe-grid"></div>
     <div id="dyeBox" class="dye-box"></div>
@@ -221,11 +221,11 @@
     <h2 class="page-title">Ayarlar</h2>
     <div class="set-group">
       <label class="set-row"><span>Oyuncu adı</span><input id="setName" maxlength="16" autocomplete="nickname"></label>
-      <label class="set-row"><span>Ses efektleri</span><input type="checkbox" id="setSfx" class="switch"></label>
-      <label class="set-row"><span>Müzik</span><input type="checkbox" id="setMusic" class="switch"></label>
-      <label class="set-row"><span>Ortam sesi <small class="muted">(rüzgâr çanı)</small></span><input type="checkbox" id="setAmbient" class="switch"></label>
-      <label class="set-row"><span>Yeni görseller <small class="muted">(test)</small></span><input type="checkbox" id="setArt" class="switch"></label>
-      <label class="set-row"><span>Titreşim</span><input type="checkbox" id="setHaptics" class="switch"></label>
+      <label class="set-row"><span><i class="ui ui-sound"></i>Ses efektleri</span><input type="checkbox" id="setSfx" class="switch"></label>
+      <label class="set-row"><span><i class="ui ui-music"></i>Müzik</span><input type="checkbox" id="setMusic" class="switch"></label>
+      <label class="set-row"><span><i class="ui ui-sound"></i>Ortam sesi <small class="muted">(rüzgâr çanı)</small></span><input type="checkbox" id="setAmbient" class="switch"></label>
+      <label class="set-row"><span><i class="ui ui-photo"></i>Yeni görseller <small class="muted">(test)</small></span><input type="checkbox" id="setArt" class="switch"></label>
+      <label class="set-row"><span><i class="ui ui-vibrate"></i>Titreşim</span><input type="checkbox" id="setHaptics" class="switch"></label>
       <div class="set-row"><span>Hesap</span><span id="setAccount" class="muted">Misafir</span></div>
     </div>
     <div class="set-group">
@@ -243,23 +243,23 @@
 
   <nav id="tabbar" class="tabbar hidden">
     <button data-tab="shop">
-      <svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12H6.2L5 8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>
+      <i class="ui ui-tab_shop"></i>
       <span>Mağaza</span><i id="dotShop" class="dot hidden"></i>
     </button>
     <button data-tab="wardrobe">
-      <svg viewBox="0 0 24 24"><path d="M8 4l4 2 4-2 4 3-2 4-2-1v10H8V10l-2 1-2-4z"/></svg>
+      <i class="ui ui-tab_wardrobe"></i>
       <span>Gardırop</span>
     </button>
     <button data-tab="home">
-      <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg>
+      <i class="ui ui-tab_home"></i>
       <span>Ana sayfa</span>
     </button>
     <button data-tab="village">
-      <svg viewBox="0 0 24 24"><path d="M3 19h18"/><path d="M5 19a7 7 0 0 1 14 0"/><path d="M10.5 19v-3a1.5 1.5 0 0 1 3 0v3"/></svg>
+      <i class="ui ui-tab_village"></i>
       <span>Köy</span><i id="dotVillage" class="dot hidden"></i>
     </button>
     <button data-tab="settings">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M5.5 18.5l1.9-1.9M16.6 7.4l1.9-1.9"/></svg>
+      <i class="ui ui-tab_settings"></i>
       <span>Ayarlar</span>
     </button>
   </nav>

@@ -1017,10 +1017,8 @@ body { background: #8fbfe2; }
   .btn.play { font-size: 30px; padding: 6px 10px 6px 22px; }
   .home-actions .next-card, .home-actions .town-strip { min-height: 34px; padding: 3px 10px; }
 }
-/* ikon yeri: görsel gelene kadar yedek emoji */
+/* çizilmiş ikon seti (pofi-r15) */
 .ui { display: inline-block; width: 1.3em; height: 1.3em; background: center/contain no-repeat; font-style: normal; line-height: 1.3; text-align: center; }
-.ui-gift::before { content: '🎁'; } .ui-puzzle::before { content: '🧩'; } .ui-gazette::before { content: '📰'; }
-.ui-map::before { content: '🗺️'; } .ui-quests::before { content: '🏆'; }
 
 /* ---------- Köy Gazetesi: katlı kâğıt açılır, gerçek gazete ---------- */
 .card.news {
@@ -1078,3 +1076,90 @@ body { background: #8fbfe2; }
 .lv-pill { border: 2px solid var(--line); }
 /* mavi kar tanesi yeşil ve mavi düğmede kayboluyordu */
 .btn .ico.flake { background-color: #fff; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }
+
+/* ---------- ikon seti ---------- */
+.ui-ad { background-image: url(../assets/art/ui_ad.webp); }
+.ui-back { background-image: url(../assets/art/ui_back.webp); }
+.ui-close { background-image: url(../assets/art/ui_close.webp); }
+.ui-coin { background-image: url(../assets/art/ui_coin.webp); }
+.ui-decor { background-image: url(../assets/art/ui_decor.webp); }
+.ui-emote { background-image: url(../assets/art/ui_emote.webp); }
+.ui-event { background-image: url(../assets/art/ui_event.webp); }
+.ui-flake { background-image: url(../assets/art/ui_flake.webp); }
+.ui-gazette { background-image: url(../assets/art/ui_gazette.webp); }
+.ui-gift { background-image: url(../assets/art/ui_gift.webp); }
+.ui-hat { background-image: url(../assets/art/ui_hat.webp); }
+.ui-hint { background-image: url(../assets/art/ui_hint.webp); }
+.ui-lock { background-image: url(../assets/art/ui_lock.webp); }
+.ui-map { background-image: url(../assets/art/ui_map.webp); }
+.ui-market { background-image: url(../assets/art/ui_market.webp); }
+.ui-merchant { background-image: url(../assets/art/ui_merchant.webp); }
+.ui-moves { background-image: url(../assets/art/ui_moves.webp); }
+.ui-music { background-image: url(../assets/art/ui_music.webp); }
+.ui-pet { background-image: url(../assets/art/ui_pet.webp); }
+.ui-photo { background-image: url(../assets/art/ui_photo.webp); }
+.ui-power { background-image: url(../assets/art/ui_power.webp); }
+.ui-project { background-image: url(../assets/art/ui_project.webp); }
+.ui-puzzle { background-image: url(../assets/art/ui_puzzle.webp); }
+.ui-quests { background-image: url(../assets/art/ui_quests.webp); }
+.ui-restart { background-image: url(../assets/art/ui_restart.webp); }
+.ui-route { background-image: url(../assets/art/ui_route.webp); }
+.ui-scarf { background-image: url(../assets/art/ui_scarf.webp); }
+.ui-share { background-image: url(../assets/art/ui_share.webp); }
+.ui-sound { background-image: url(../assets/art/ui_sound.webp); }
+.ui-tab_home { background-image: url(../assets/art/ui_tab_home.webp); }
+.ui-tab_settings { background-image: url(../assets/art/ui_tab_settings.webp); }
+.ui-tab_shop { background-image: url(../assets/art/ui_tab_shop.webp); }
+.ui-tab_village { background-image: url(../assets/art/ui_tab_village.webp); }
+.ui-tab_wardrobe { background-image: url(../assets/art/ui_tab_wardrobe.webp); }
+.ui-undo { background-image: url(../assets/art/ui_undo.webp); }
+.ui-vibrate { background-image: url(../assets/art/ui_vibrate.webp); }
+.ui-villagers { background-image: url(../assets/art/ui_villagers.webp); }
+.ui-visit { background-image: url(../assets/art/ui_visit.webp); }
+.ui-fish { background-image: url(../assets/art/obj_fish.webp); }
+.ui-crate { background-image: url(../assets/art/obj_crate.webp); }
+.ui-crack { background-image: url(../assets/art/tile_crack.webp); border-radius: 6px; }
+.ui-castle { background-image: url(../assets/art/map_castle.webp); }
+.ui { vertical-align: -.3em; flex: none; }
+.ico.coin { background: url(../assets/art/ui_coin.webp) center/contain no-repeat; box-shadow: none; border-radius: 0; }
+.ico.flake { background: url(../assets/art/ui_flake.webp) center/contain no-repeat; box-shadow: none; border-radius: 0; }
+.ico.hint { width: 20px; height: 20px; margin: 0; background: url(../assets/art/ui_hint.webp) center/contain no-repeat; box-shadow: none; border-radius: 0; }
+.btn .ico.flake { background-color: transparent; box-shadow: none; }
+.pill .ico { width: 28px; height: 28px; }
+.icon-btn { background: var(--paper); display: grid; place-items: center; padding: 0; }
+.icon-btn .ui { width: 26px; height: 26px; }
+.tabbar .ui { width: 31px; height: 31px; }
+.tabbar .ui-tab_wardrobe { width: 34px; height: 34px; margin: -1px 0 -2px; }
+.tool .ui { width: 32px; height: 32px; }
+.tool:disabled .ui { filter: grayscale(.8); }
+.vtab, .seg-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.vtab .ui, .seg-btn .ui { width: 22px; height: 22px; }
+.share-row .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.share-row .ui { width: 22px; height: 22px; }
+.set-row .ui { width: 24px; height: 24px; margin-right: 6px; }
+.b-card b .ui { width: 22px; height: 22px; vertical-align: -5px; }
+.town-strip .ui { width: 24px; height: 24px; }
+.unlock-ico .ui { width: 76px; height: 76px; }
+.away-list .ui { width: 20px; height: 20px; vertical-align: -5px; }
+.si-icon { background: var(--paper-d) !important; box-shadow: none !important; position: relative; color: var(--wood-d); }
+.si-icon.noads, .si-icon.starter { background: var(--wood) !important; color: var(--paper); }
+.si-icon.coins { border-radius: 12px; }
+.si-icon .ui { width: 32px; height: 32px; }
+.si-icon small { position: absolute; right: 1px; bottom: 0; font-size: 12px; font-weight: 700; color: var(--navy); }
+.bb-card .bb-ico .ui { width: 30px; height: 30px; }
+.ach-ico .ui { width: 30px; height: 30px; vertical-align: middle; }
+.sw .lock .ui { width: 14px; height: 14px; vertical-align: top; }
+.ev-lv .ui { width: 16px; height: 16px; }
+.chip .ui { width: 20px; height: 20px; }
+.map-chest .ui { width: 20px; height: 20px; }
+.rs-ach .ui { width: 20px; height: 20px; }
+.qb-chest .ui { width: 20px; height: 20px; }
+.fr-lock .ui { width: 16px; height: 16px; }
+.b-card small .ui, .buff-box small .ui { width: 16px; height: 16px; vertical-align: -3px; }
+.btn .ui { width: 22px; height: 22px; }
+.sheet-x, .hb-x { font-size: 0 !important; background: var(--paper-d) url(../assets/art/ui_close.webp) center/18px no-repeat !important; }
+/* reklam düğmesi: film ikonu ve küçük yazı */
+.btn.ad::before { padding-left: 20px; background: rgba(0, 0, 0, .22) url(../assets/art/ui_ad.webp) 2px center/16px no-repeat; }
+.vtab { white-space: nowrap; font-size: 13.5px; padding-left: 4px; padding-right: 4px; }
+.vtab .ui { width: 20px; height: 20px; }
+.rs-chest .ui { width: 26px; height: 26px; }
