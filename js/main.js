@@ -1962,7 +1962,8 @@ function showGazette() {
   const monday = new Date(midnight);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
   const hard = gazetteHard(), hardDone = P.gazette.hard === issue, riddle = RIDDLES[issue % RIDDLES.length];
-  const head = art('gazette_header') ? '<img class="gz-img" src="assets/art/gazette_header.webp" alt="Köy Gazetesi">' : '<div class="gz-mast">Köy Gazetesi</div>';
+  // başlık bandı görseli yazısız; başlık kodla üstüne yazılır (Türkçe harfler görselde bozulmasın)
+  const head = art('gazette_header') ? '<div class="gz-band"><img src="assets/art/gazette_header.webp" alt=""><span>Köy Gazetesi</span></div>' : '<div class="gz-mast">Köy Gazetesi</div>';
   openOverlay(`
     <div class="gz">
       ${head}

@@ -822,7 +822,7 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .mc-ico { width: 44px; height: 44px; flex: none; background: #fff; border-radius: 12px; }
 .si-icon.mc { background: #fff; font-size: 24px; }
 .gz { display: flex; flex-direction: column; gap: 10px; text-align: left; background: #fbf7ee; border-radius: 16px; padding: 10px 12px 12px; }
-.gz-img { width: 100%; border-radius: 10px; }
+
 .gz-mast { font: 700 28px 'Fredoka', serif; text-align: center; color: #3b2f22; border-bottom: 3px double #3b2f22; padding-bottom: 2px; letter-spacing: .5px; }
 .gz-meta { display: flex; justify-content: space-between; font-size: 12px; color: #7a6a55; border-bottom: 1px solid #e3d8c3; padding-bottom: 4px; }
 .gz article { display: flex; flex-direction: column; gap: 4px; }
@@ -842,3 +842,6 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .dye-box .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 .card .sheet-sec small .ico { width: 13px; height: 13px; vertical-align: -2px; }
 .card .sheet-sec { text-align: left; }
+.gz-band { position: relative; }
+.gz-band img { width: 100%; display: block; border-radius: 10px; }
+.gz-band span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 26px 'Fredoka', sans-serif; color: #3b2f22; text-shadow: 0 2px 0 rgba(255, 255, 255, .8); }
