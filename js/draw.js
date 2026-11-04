@@ -1,5 +1,6 @@
 // Ortak çizim yardımcıları ve Pofi karakteri (kıyafetleriyle).
-import { art, POFI } from './art.js';
+import { art, POFI, tinted } from './art.js';
+import { COLORS } from './config.js';
 
 export function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -21,7 +22,11 @@ export function ellipse(ctx, x, y, rx, ry, rot = 0) {
   ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
 }
 
-const SCARF = { red: '#e5484d', blue: '#3d7bd9', green: '#3fae5a', yellow: '#f5b81c', striped: '#e5484d' };
+const SCARF = { red: '#e5484d', blue: '#3d7bd9', green: '#3fae5a', yellow: '#f5b81c', striped: '#e5484d', rainbow: '#b388ff', knit: '#c98b4f', starry: '#2f3b7a', plaid: '#c0392b' };
+// Kıyafet boyası (gardırop): outfit.hatDye / outfit.scarfDye bir COLORS kimliği. Görselde yalnızca renkli kısım boyanır.
+const dyeHex = id => (id ? COLORS.find(c => c.id === id)?.hex || null : null);
+// Görseli olmayan tüccar şapkaları için kod çiziminde renk
+const HAT_FALLBACK = { captain: '#1d3557', furcap: '#8e5a2b', pompom: '#e5484d', icehelm: '#9fd3ff', beret: '#8f5bd6', flowercrown: '#ff95b2' };
 
 // Pofi: (x, y) ayakların ortası, size ≈ boy. o: { face: -1|0|1, lean, squash, blink, outfit, wave }
 export function drawPofi(ctx, x, y, size, o = {}) {
@@ -99,7 +104,7 @@ export function drawPofi(ctx, x, y, size, o = {}) {
 
   // atkı
   if (outfit.scarf && outfit.scarf !== 'none') {
-    ctx.fillStyle = scarfFill(ctx, outfit.scarf, s);
+    ctx.fillStyle = scarfFill(ctx, outfit.scarf, s, outfit.scarfDye);
     roundRect(ctx, -s * 0.3, -s * 0.43, s * 0.6, s * 0.09, s * 0.04);
     ctx.fill();
     roundRect(ctx, -face * s * 0.12 + s * 0.08 - s * 0.05, -s * 0.38, s * 0.1, s * 0.2, s * 0.03);
@@ -114,7 +119,7 @@ export function drawPofi(ctx, x, y, size, o = {}) {
     }
   }
 
-  drawHat(ctx, outfit.hat, s);
+  drawHat(ctx, outfit.hat, s, outfit.hatDye);
   ctx.restore();
 }
 
@@ -141,13 +146,13 @@ function drawPofiArt(ctx, x, y, size, pose, o = {}) {
     ctx.save();
     ctx.translate(nx, ny);
     ctx.rotate(nr);
-    const im = art('outfit_scarf_' + outfit.scarf);
+    const im = outfit.scarfDye ? tinted('outfit_scarf_' + outfit.scarf, dyeHex(outfit.scarfDye)) : art('outfit_scarf_' + outfit.scarf);
     if (im) {
       const k = nw / OUTFIT_W;
       ctx.drawImage(im, -256 * k, -256 * k, 512 * k, 512 * k);
       ctx.restore();
     } else {
-    ctx.fillStyle = scarfFill(ctx, outfit.scarf, u);
+    ctx.fillStyle = scarfFill(ctx, outfit.scarf, u, outfit.scarfDye);
     roundRect(ctx, -nw / 2, -u * 0.045, nw, u * 0.09, u * 0.04);
     ctx.fill();
     roundRect(ctx, u * 0.04, 0, u * 0.1, u * 0.2, u * 0.03);
@@ -162,7 +167,7 @@ function drawPofiArt(ctx, x, y, size, pose, o = {}) {
     const [hx, hy, hw] = f.head;
     ctx.translate(hx, hy);
     ctx.rotate(f.rot);
-    const im = art('outfit_hat_' + outfit.hat);
+    const im = outfit.hatDye ? tinted('outfit_hat_' + outfit.hat, dyeHex(outfit.hatDye)) : art('outfit_hat_' + outfit.hat);
     if (im) {
       // Kenar, kafa tepesinden kafa genişliğinin %28'i aşağıda (gözlerin hemen üstü) ve kafadan biraz dar;
       // kulaklık yastıkları kafanın iki yanına, daha aşağıya oturur.
@@ -177,14 +182,15 @@ function drawPofiArt(ctx, x, y, size, pose, o = {}) {
       // Şapka kodu kafa tepesi -0.8s, kafa genişliği ≈ 0.66s varsayar.
       const u = hw / 0.66;
       ctx.translate(0, u * 0.8);
-      drawHat(ctx, outfit.hat, u);
+      drawHat(ctx, outfit.hat, u, outfit.hatDye);
     }
   }
   ctx.restore();
   return true;
 }
 
-function scarfFill(ctx, scarf, s) {
+function scarfFill(ctx, scarf, s, dye) {
+  if (dye) return dyeHex(dye);
   if (scarf === 'aurora') {
     const g = ctx.createLinearGradient(-s * 0.3, 0, s * 0.3, 0);
     g.addColorStop(0, '#3cdc9a');
@@ -225,7 +231,7 @@ export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
     ctx.fill();
     // atkı: boyunda bant, rüzgârda uçuşan uç
     if (outfit.scarf && outfit.scarf !== 'none') {
-      ctx.fillStyle = scarfFill(ctx, outfit.scarf, s);
+      ctx.fillStyle = scarfFill(ctx, outfit.scarf, s, outfit.scarfDye);
       ellipse(ctx, s * 0.25, -s * 0.2, s * 0.06, s * 0.15);
       ctx.fill();
       ctx.beginPath();
@@ -265,7 +271,7 @@ export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
       ctx.rotate(-0.45);
       ctx.scale(0.55, 0.55);
       ctx.translate(0, s * 0.6);
-      drawHat(ctx, outfit.hat, s);
+      drawHat(ctx, outfit.hat, s, outfit.hatDye);
       ctx.restore();
     }
   } else {
@@ -286,7 +292,7 @@ export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
     ellipse(ctx, 0, -s * 0.27, s * 0.24, s * 0.22);
     ctx.fill();
     if (outfit.scarf && outfit.scarf !== 'none') {
-      ctx.fillStyle = scarfFill(ctx, outfit.scarf, s);
+      ctx.fillStyle = scarfFill(ctx, outfit.scarf, s, outfit.scarfDye);
       roundRect(ctx, -s * 0.2, toward ? -s * 0.2 : -s * 0.4, s * 0.4, s * 0.07, s * 0.03);
       ctx.fill();
     }
@@ -313,7 +319,7 @@ export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
       ctx.translate(0, hy + (toward ? -s * 0.06 : 0));
       ctx.scale(0.55, toward ? 0.4 : 0.55);
       ctx.translate(0, s * 0.6);
-      drawHat(ctx, outfit.hat, s);
+      drawHat(ctx, outfit.hat, s, outfit.hatDye);
       ctx.restore();
     }
   }
@@ -322,8 +328,19 @@ export function drawPofiBelly(ctx, x, y, size, dir, o = {}) {
 
 // Şapka, ayakta duran Pofi'nin koordinatlarında çizilir (kafa merkezi ≈ (0, -0.6s)).
 // Yatma/uçma pozlarında çizim alanı kafaya göre dönüştürülüp aynı fonksiyon kullanılır.
-function drawHat(ctx, hat, s) {
+function drawHat(ctx, hat, s, dye) {
   const top = -s * 0.8;
+  if (HAT_FALLBACK[hat]) {
+    // tüccar şapkası (görsel gelene kadar): boyalıysa boyanın renginde basit bir bere
+    ctx.fillStyle = dyeHex(dye) || HAT_FALLBACK[hat];
+    ctx.beginPath();
+    ctx.ellipse(0, -s * 0.66, s * 0.3, s * 0.2, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(-s * 0.32, -s * 0.68, s * 0.64, s * 0.06);
+    circle(ctx, 0, top - s * 0.05, s * 0.06);
+    ctx.fill();
+    return;
+  }
   if (hat === 'sealhood') {
     ctx.fillStyle = '#8f9bb0';
     ctx.beginPath();

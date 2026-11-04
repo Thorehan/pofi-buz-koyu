@@ -2,6 +2,7 @@
 import { roundRect, circle, ellipse, drawPofi, drawSeal } from './draw.js';
 import { art, tinted, BLD, BLD_Z2 } from './art.js';
 import { DISTRICTS, DECOR_SLOTS } from './config.js';
+import { drawFox, drawPetBed, drawToy, drawWalrus, drawStall, drawMerchantBoat, drawProject } from './townart.js';
 
 // Yapı görseli (varsa). Çağıran tuvali SCALE[lvFull] ile büyütmüş olur; görselde seviye büyümesi
 // zaten çizili olduğundan burada geri alınır. Lv4-5 görseli yoksa Lv3 görseli kodun büyütmesiyle çizilir.
@@ -42,8 +43,9 @@ const SCALE = [0, 0.85, 1, 1.15, 1.2, 1.26]; // seviyeye göre boyut
 // Ana yol (penguenlerin yürüdüğü meydan yolu); her yapı yerine buradan bir patika ayrılır.
 // Ana yol bölgeler boyunca uzar; Buz Limanı'nda kıyı boyunca devam eder.
 // Limanın zemin görselinde yolun ortası y≈0.765; köy panelinden oraya yumuşakça geçer.
-const PROMENADE = [[0.1, 0.8], [0.3, 0.775], [0.5, 0.765], [0.7, 0.775], [0.92, 0.8], [1.08, 0.772], [1.3, 0.765], [1.5, 0.765], [1.72, 0.765], [1.92, 0.765]];
-const walkRange = land => [0.16, land >= 2 ? 1.86 : 0.88]; // yürüyüş aralığı (x)
+const PROMENADE = [[0.1, 0.8], [0.3, 0.775], [0.5, 0.765], [0.7, 0.775], [0.92, 0.8], [1.08, 0.772], [1.3, 0.765], [1.5, 0.765], [1.72, 0.765], [1.92, 0.765],
+  [2.1, 0.775], [2.4, 0.785], [2.7, 0.785], [2.95, 0.78]];
+const walkRange = land => [0.16, land >= 3 ? 2.86 : land >= 2 ? 1.86 : 0.88]; // yürüyüş aralığı (x)
 function promenadeY(x) {
   for (let i = 1; i < PROMENADE.length; i++) {
     const [x0, y0] = PROMENADE[i - 1], [x1, y1] = PROMENADE[i];
@@ -88,6 +90,12 @@ const QUEUE = [[0.29, 0.727], [0.29, 0.752]]; // kakao standına çıkan patikad
 // Haftalık etkinlik: meydanda (iglo ile ana yol arasındaki boş kar) çadır ve yanında konuk Foki.
 const EV_TENT = [0.598, 0.705];
 const EV_GUEST = [0.68, 0.728];
+// Evcil hayvan (kar tilkisi): yatağı iglonun kapısının önündeki patikada (kulübe çatısı ile etkinlik çadırı arasında).
+// Uyurken yatağında, uyanıkken Pofi'nin peşinde.
+const PET_BED = [0.485, 0.64];
+// Gezgin tüccar (Buz Limanı): tezgâh rıhtımın sol ucunda, Kaptan Mors tezgâhın arkasında (alt yarısı tezgâhın
+// arkasında kalır), teknesi limanın sağ ucunda.
+const MC_STALL = [1.24, 0.905], MC_WALRUS = [1.255, 0.885], MC_BOAT = [1.885, 0.975];
 // Etkinlik haftasında gökyüzünden düşenler (kar zaten yağıyor); tema kimliğine göre.
 const EVENT_FALL = {
   valentine: 'hearts', friendship: 'hearts', mothers: 'petals', spring: 'petals', eggs: 'petals',
@@ -891,6 +899,9 @@ export class VillageView {
     this.vs = new Map(); // köylü durumları
     this.onVillager = null; // köylüye dokunulunca (id)
     this.onEvent = null; // etkinlik çadırına ('tent') ya da konuğa ('guest') dokunulunca
+    this.onTown = null; // tüccar ('merchant'), tilki ('pet'), Pofi ('hero') ya da projeye ('proj:<id>') dokunulunca
+    this.emote = null; // { id, t0 } Pofi'nin ifadesi (el sallama, dans, piruet)
+    this.petSt = null; // tilkinin konumu ve hâli
     this.onDecorSlot = null; // süsleme modunda süs yerine dokunulunca (yer id)
     this.decorMode = false;
     this.decorSel = null; // seçili süs yeri
@@ -928,6 +939,8 @@ export class VillageView {
       }
       const evk = this.eventHit(x, y);
       if (evk) { this.onEvent?.(evk); return; }
+      const tk = this.townHit(x, y);
+      if (tk) { this.onTown?.(tk); return; }
       const vid = this.villagerHit(x, y);
       if (vid) { this.onVillager?.(vid); return; }
       const lock = this.lockHit(x, y);
@@ -1304,7 +1317,7 @@ export class VillageView {
   // upgradable: kurulu ve bir sonraki seviyesine kar tanesi yeten yapılar
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     this.clock = time;
@@ -1469,16 +1482,20 @@ export class VillageView {
       const moving = sale ? sale.wait <= 0 : w.wait <= 0;
       const face = moving ? (sale ? sale.face : w.face) : 0;
       items.push([y, () => {
-        const festive = !!sale && moving;
+        const em = hero && !sale && this.emote && time - this.emote.t0 < 3 ? this.emote.id : null;
+        const festive = (!!sale && moving) || em === 'dance';
         const bob = festive ? Math.abs(Math.sin(time * 11)) * u * 0.022 : moving ? Math.abs(Math.sin(time * 8)) * u * 0.01 : 0;
         if (festive && (this.spark = (this.spark || 0) + dt) > 0.12) {
           this.spark = 0;
           const shape = Math.random() < 0.35 ? 'note' : 'star';
           this.parts.push({ x: wx * W - (face || 1) * u * 0.03, y: y - u * 0.05, vx: -(face || 1) * 10 + (Math.random() - 0.5) * 12, vy: -18 - Math.random() * 14, life: 0.8, max: 0.8, g: -6, r: shape === 'note' ? 3.2 : 3, col: shape === 'note' ? '#8f5bd6' : '#ffd166', shape });
         }
+        if (hero) this.heroPos = [wx * W, y - u * w.size * 0.5, u * w.size * 0.5];
+        const spin = em === 'spin' ? Math.floor((time - this.emote.t0) * 8) % 4 : -1;
         drawPofi(ctx, wx * W, y - bob, u * w.size, {
-          face, lean: festive ? Math.sin(time * 11) * 0.14 : moving ? Math.sin(time * 8) * 0.08 : 0, squash: festive ? Math.max(0, Math.cos(time * 22)) * 0.12 : 0,
-          outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, wave: !moving && !w.outfit && !sale ? Math.sin(time * 6) * 0.4 : 0,
+          face: spin >= 0 ? [1, 0, -1, 0][spin] : em ? 0 : face, lean: festive ? Math.sin(time * 11) * 0.14 : moving ? Math.sin(time * 8) * 0.08 : 0, squash: festive ? Math.max(0, Math.cos(time * 22)) * 0.12 : 0,
+          outfit: w.outfit || outfit, blink: (time % 3.4) < 0.12, happy: em === 'dance' || em === 'spin',
+          wave: em === 'wave' ? 0.6 + Math.sin(time * 14) * 0.5 : !moving && !w.outfit && !sale ? Math.sin(time * 6) * 0.4 : 0,
         });
         if (sale?.tray) tray(ctx, wx * W + (face || 1) * u * w.size * 0.32, y - bob - u * w.size * 0.42, u * w.size * 0.42, time);
       }]);
@@ -1576,6 +1593,26 @@ export class VillageView {
         if (event.guest) taskMark(ctx, gx, gy - u * 0.17, u, time, event.guest.done);
       }]);
     }
+    this.townPos = [];
+    if (pet) this.stepPet(dt, time, pet, items, W, H, u, land, phase);
+    if (merchant && land >= 2) {
+      const [sx, sy] = [MC_STALL[0] * W, MC_STALL[1] * H], [wx2, wy2] = [MC_WALRUS[0] * W, MC_WALRUS[1] * H];
+      items.push([MC_BOAT[1] * H, () => drawMerchantBoat(ctx, MC_BOAT[0] * W, MC_BOAT[1] * H, u, time)]);
+      items.push([sy, () => drawStall(ctx, sx, sy, u, time)]);
+      items.push([wy2, () => {
+        drawWalrus(ctx, wx2, wy2, u * 0.13, time, 1);
+        taskMark(ctx, wx2, wy2 - u * 0.16, u, time, false);
+      }]);
+      this.townPos.push(['merchant', sx, sy - u * 0.1, u * 0.14], ['merchant', wx2, wy2 - u * 0.07, u * 0.08]);
+    }
+    if (projects && land >= 3) {
+      for (const { p, stage } of projects) {
+        const x = p.at[0] * W, y = p.at[1] * H;
+        items.push([y, () => drawProject(ctx, x, y, u, p, stage, time)]);
+        this.townPos.push([`proj:${p.id}`, x, y - u * p.cell * 0.4, u * p.cell * 0.45]);
+        if (stage < 3) markers.push([x, y - u * p.cell * (stage ? 0.75 : 0.25), 'proj']);
+      }
+    }
     items.sort((a, b) => a[0] - b[0]);
     for (const [, draw] of items) draw();
     if (event) this.bunting(ctx, W, H, u, time, [event.color, '#ffffff']);
@@ -1586,6 +1623,7 @@ export class VillageView {
       if (kind === 'cups') cupBubble(ctx, x, y, u, time, this.cocoaInfo);
       else if (kind === 'home') homeMarker(ctx, x, y, u, time);
       else if (kind === 'slot' || kind === 'slotSel') slotMarker(ctx, x, y, u, time, kind === 'slotSel');
+      else if (kind === 'proj') homeMarker(ctx, x, y, u, time);
       else upgradeMarker(ctx, x, y, u, time);
     }
     this.drawCoinFx(ctx, W, H, u, dt);
@@ -1635,6 +1673,44 @@ export class VillageView {
     }
     ctx.restore();
     ctx.globalAlpha = 1;
+  }
+
+  // Kar tilkisi. pet: { fur, collar, bed, toy, awake }. Uyanıkken Pofi'nin birkaç adım arkasından yürür,
+  // Pofi durunca yanında oturur, oyuncağı varsa ara ara zıplar. Uyurken (beslenmemiş ya da gece) yatağında kıvrılır.
+  stepPet(dt, time, pet, items, W, H, u, land, phase) {
+    const ctx = this.ctx, h = this.walkers[0], s = this.sale;
+    const st = this.petSt || (this.petSt = { x: PET_BED[0], y: PET_BED[1], face: 1, play: 0 });
+    const asleep = !pet.awake || phase === 'night';
+    const [bx, by] = [PET_BED[0] * W, PET_BED[1] * H];
+    items.push([by - 1, () => drawPetBed(ctx, bx, by, u, pet.bed)]);
+    if (pet.toy) items.push([by + u * 0.01, () => drawToy(ctx, bx + u * 0.075, by + u * 0.01, u, pet.toy, time)]);
+    let tx, ty;
+    if (asleep) [tx, ty] = PET_BED;
+    else {
+      const hx = s ? s.x : h.x, hf = s ? s.face : h.face || 1;
+      tx = hx - hf * 0.06;
+      ty = promenadeY(tx) + 0.018;
+    }
+    const dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy), sp = (asleep ? 0.08 : 0.1) * dt;
+    const moving = d > 0.012;
+    if (moving) { st.x += (dx / d) * Math.min(sp, d); st.y += (dy / d) * Math.min(sp, d); if (Math.abs(dx) > 0.002) st.face = Math.sign(dx); }
+    else if (!asleep && pet.toy && (st.play -= dt) < -6) st.play = 1.6;
+    const atBed = asleep && d < 0.02;
+    const pose = atBed ? 'sleep' : moving ? 'walk' : st.play > 0 || this.petCheer > time ? 'happy' : 'stand';
+    const x = st.x * W, y = st.y * H, size = u * 0.075;
+    this.townPos.push(['pet', x, y - size * 0.4, size * 0.7]);
+    items.push([y, () => {
+      drawFox(ctx, x, y, size, { pose, face: st.face, t: time, fur: pet.fur, collar: pet.collar, sleepy: !pet.awake });
+      if (atBed) zzz(ctx, x + size * 0.2, y - size * 0.45, u, time);
+    }]);
+  }
+
+  // Tüccar, tilki, Pofi ya da projeye dokunuş (ekran koordinatı)
+  townHit(sx, sy) {
+    const { cam, W, H } = this, p = { x: (sx - W / 2) / cam.z + cam.x, y: (sy - H / 2) / cam.z + cam.y };
+    for (const [k, x, y, r] of this.townPos || []) if (Math.hypot(p.x - x, p.y - y) < r) return k;
+    if (this.heroPos) { const [x, y, r] = this.heroPos; if (Math.hypot(p.x - x, p.y - y) < r) return 'hero'; }
+    return null;
   }
 
   // Sıkıştırılmış kar patikalar: ana yol, her yapı yerine giden kol ve yapı temelleri.
@@ -1715,6 +1791,26 @@ export class VillageView {
         ctx.fill();
       }
       this.paths(ctx, W, H, u, night, vl, i, i + 1);
+      // Çam Ormanı (zemin görseli gelene kadar): arkada ve kenarlarda karlı çamlar
+      if (DISTRICTS[i]?.id === 'forest') {
+        for (const [fx, fy, k] of [[0.04, 0.47, 1], [0.12, 0.44, 0.8], [0.36, 0.43, 0.7], [0.68, 0.42, 0.75], [0.9, 0.45, 0.9], [0.97, 0.52, 1.1], [0.05, 0.62, 1.2], [0.95, 0.9, 1.2]]) {
+          const px = x0 + W * fx, py = H * fy, h = u * 0.16 * k;
+          ctx.fillStyle = mix('#2f7d5b', '#1f3f4a', night);
+          for (let t = 0; t < 3; t++) {
+            ctx.beginPath();
+            ctx.moveTo(px - h * (0.34 - t * 0.07), py - h * t * 0.28);
+            ctx.lineTo(px, py - h * (0.45 + t * 0.28));
+            ctx.lineTo(px + h * (0.34 - t * 0.07), py - h * t * 0.28);
+            ctx.fill();
+          }
+          ctx.fillStyle = mix('#ffffff', '#c3cbe6', night);
+          ctx.beginPath();
+          ctx.moveTo(px - h * 0.12, py - h * 0.82);
+          ctx.lineTo(px, py - h * 1.01);
+          ctx.lineTo(px + h * 0.12, py - h * 0.82);
+          ctx.fill();
+        }
+      }
     }
     if (DISTRICTS[i]?.id === 'harbor') {
       // liman: alt kenarda deniz, kıyıda buz kenarı ve yüzen buz parçaları
@@ -2389,6 +2485,95 @@ export function drawDecor(ctx, x, y, u, id, t, night = 0) {
     circle(ctx, -u * 0.005, -u * 0.068, u * 0.003);
     ctx.fill();
     ctx.globalAlpha = 1;
+  } else if (id === 'mc_globe') {
+    // kar küresi: ahşap kaide üstünde cam küre, içinde minik çam
+    ctx.fillStyle = '#9a6a42';
+    roundRect(ctx, -u * 0.022, -u * 0.014, u * 0.044, u * 0.014, u * 0.004);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(200,230,255,.55)';
+    circle(ctx, 0, -u * 0.04, u * 0.028);
+    ctx.fill();
+    ctx.fillStyle = '#3fae5a';
+    ctx.beginPath();
+    ctx.moveTo(-u * 0.01, -u * 0.022);
+    ctx.lineTo(0, -u * 0.05);
+    ctx.lineTo(u * 0.01, -u * 0.022);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    for (let k = 0; k < 5; k++) { circle(ctx, Math.cos(t + k * 1.3) * u * 0.016, -u * 0.04 + Math.sin(t * 1.3 + k) * u * 0.014, u * 0.002); ctx.fill(); }
+  } else if (id === 'mc_anchor') {
+    ctx.strokeStyle = '#5b6578';
+    ctx.lineWidth = u * 0.006;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, -u * 0.07);
+    ctx.lineTo(0, -u * 0.01);
+    ctx.moveTo(-u * 0.016, -u * 0.058);
+    ctx.lineTo(u * 0.016, -u * 0.058);
+    ctx.moveTo(-u * 0.026, -u * 0.026);
+    ctx.quadraticCurveTo(0, u * 0.004, u * 0.026, -u * 0.026);
+    ctx.stroke();
+    circle(ctx, 0, -u * 0.074, u * 0.006);
+    ctx.stroke();
+  } else if (id === 'mc_totem') {
+    // üst üste üç penguen başı
+    for (let k = 0; k < 3; k++) {
+      const y = -u * (0.014 + k * 0.026);
+      ctx.fillStyle = ['#22314f', '#3d7bd9', '#22314f'][k];
+      circle(ctx, 0, y, u * 0.014);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ellipse(ctx, 0, y + u * 0.002, u * 0.008, u * 0.009);
+      ctx.fill();
+      ctx.fillStyle = '#ff9f43';
+      ctx.beginPath();
+      ctx.moveTo(-u * 0.004, y);
+      ctx.lineTo(u * 0.004, y);
+      ctx.lineTo(0, y + u * 0.006);
+      ctx.fill();
+    }
+  } else if (id === 'mc_fountain') {
+    ctx.fillStyle = '#b9e3f5';
+    ellipse(ctx, 0, -u * 0.01, u * 0.034, u * 0.011);
+    ctx.fill();
+    ctx.fillStyle = '#e8f6ff';
+    ctx.fillRect(-u * 0.005, -u * 0.045, u * 0.01, u * 0.035);
+    ctx.strokeStyle = 'rgba(127,200,240,.9)';
+    ctx.lineWidth = u * 0.003;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(0, -u * 0.046);
+      ctx.quadraticCurveTo(s * u * 0.02, -u * (0.065 + Math.sin(t * 4) * 0.004), s * u * 0.028, -u * 0.014);
+      ctx.stroke();
+    }
+  } else if (id === 'mc_swing') {
+    ctx.strokeStyle = '#9a6a42';
+    ctx.lineWidth = u * 0.005;
+    ctx.beginPath();
+    ctx.moveTo(-u * 0.03, 0);
+    ctx.lineTo(-u * 0.02, -u * 0.07);
+    ctx.lineTo(u * 0.02, -u * 0.07);
+    ctx.lineTo(u * 0.03, 0);
+    ctx.stroke();
+    const sw = Math.sin(t * 2) * u * 0.006;
+    ctx.lineWidth = u * 0.002;
+    ctx.beginPath();
+    ctx.moveTo(-u * 0.01, -u * 0.07);
+    ctx.lineTo(-u * 0.01 + sw, -u * 0.022);
+    ctx.moveTo(u * 0.01, -u * 0.07);
+    ctx.lineTo(u * 0.01 + sw, -u * 0.022);
+    ctx.stroke();
+    ctx.fillStyle = '#e5484d';
+    ctx.fillRect(-u * 0.013 + sw, -u * 0.024, u * 0.026, u * 0.005);
+  } else if (id === 'mc_chime') {
+    ctx.fillStyle = '#7a5434';
+    ctx.fillRect(-u * 0.003, -u * 0.075, u * 0.006, u * 0.075);
+    ctx.fillRect(-u * 0.016, -u * 0.075, u * 0.032, u * 0.005);
+    ctx.fillStyle = '#c0c8d0';
+    for (let k = 0; k < 4; k++) {
+      const x = -u * 0.012 + k * u * 0.008, sw = Math.sin(t * 3 + k) * u * 0.002;
+      ctx.fillRect(x + sw, -u * 0.07, u * 0.003, u * (0.014 + (k % 2) * 0.006));
+    }
   } else if (id === 'aurora') {
     ctx.fillStyle = '#1d3557';
     ctx.fillRect(-u * 0.003, -u * 0.075, u * 0.006, u * 0.075);

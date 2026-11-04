@@ -46,6 +46,17 @@ function defaults() {
     dailyRewardIdx: 0,
     dailyPuzzleDay: '',
     dailyPuzzleStreak: 0,
+    // coin harcama yerleri (2026-11-04)
+    flakeTrade: null, // { day, n } — pazarda bugün alınan kar tanesi (fiyat merdiveni)
+    merchant: null, // { visit, bought: { ürün: adet } } — tüccarın son ziyareti
+    bait: 0, // balık yeminin kalan level sayısı
+    pet: null, // { name, fur, collar, bed, toys: [], toy, furs: [], collars: [], fedDay }
+    fishDay: null, // { day, n } — bugün levellerde toplanan balık (tilkiyi beslemek için)
+    projects: {}, // { projeId: yatırılan coin }
+    gazette: {}, // { read: sayı, hard: zor level ödülü alınan sayı, riddle: cevabı açılan sayı }
+    dyes: {}, // { 'hat:id': renkId } — giyilen parçanın boyası
+    dyeOwned: [], // 'hat:id:renkId'
+    emotes: [],
   };
 }
 

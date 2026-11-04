@@ -3,8 +3,13 @@ import { BoardView, paintTile } from './board.js';
 import { VillageView, phaseOf, drawDecor } from './village.js';
 import {
   ensureEvent, levelTokens, addTokens, BONUS_TEXT, eventLevelDef, timeLeft, claimable, nextMilestone, prizeOf,
-  encodeVillage, decodeVillage, extractCode,
+  encodeVillage, decodeVillage, extractCode, currentEvent,
 } from './live.js';
+import {
+  tradeN, flakePrice, merchantToday, nextMerchant, merchantWeek, dayName, merchantStock, MERCHANT_OUTFITS, MERCHANT_DECOR,
+  petFedToday, fishToday, petUnlocked, furHex, projectSpent, projectStage, projectBonus, rareChance, gazetteIssue,
+} from './town.js';
+import { drawFox, drawToy } from './townart.js';
 import {
   building, bLevel, totalLevels, villageLevel, nextVillageLevel, isUnlocked, maxLevel, nextCost,
   buff, villageBonusPct, coinBonusPct, discounted, canAffordAny, suggestion, zone, cupPrice, nextRecipe,
@@ -21,6 +26,7 @@ import {
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
+  FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -48,6 +54,13 @@ village.onDistrict = i => showDistrict(i);
 village.onVillager = id => talkTo(id);
 village.onEvent = kind => { sfx.ui(); if (kind === 'tent') showScreen('event'); else showGuest(); };
 village.onDecorSlot = id => { village.decorSel = id; village.decorPreview = null; renderDecor(); };
+village.onTown = k => {
+  sfx.ui();
+  if (k === 'merchant') showMerchant();
+  else if (k === 'pet') { village.petCheer = village.clock + 2; showPet(); }
+  else if (k === 'hero') heroEmote();
+  else if (k.startsWith('proj:')) showProject(k.slice(5));
+};
 board.outfit = P.outfit;
 
 const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false });
@@ -80,6 +93,7 @@ function updateWallet() {
   renderNextCard();
   renderDailyButtons();
   renderEventCard();
+  renderTownStrip();
 }
 
 const SCREENS = ['splash', 'login', 'intro', 'home', 'game', 'village', 'visit', 'interior', 'event', 'map', 'ach', 'wardrobe', 'shop', 'settings'];
@@ -97,7 +111,7 @@ function showScreen(name) {
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   if (name !== 'village' && sheet) closeSheet();
   if (name !== 'village' && village.decorMode) exitDecor();
-  if (name !== 'wardrobe') wardrobeDraft = null;
+  if (name !== 'wardrobe') { wardrobeDraft = null; dyeDraft = undefined; }
   if (name !== 'game') { $('hintBar').classList.add('hidden'); $('boostBar').classList.add('hidden'); board.target = null; }
   if (name === 'village') {
     village.resize();
@@ -453,6 +467,12 @@ function win() {
     const prev = P.stars[run.def.n] || 0;
     run.replay = prev > 0;
     if (stars === 3 && prev < 3 && !run.hintsUsed && !run.boosts) P.ach.clean = (P.ach.clean || 0) + 1;
+    // Köy Gazetesi: haftanın zor leveli o hafta 3 yıldızla bitirilirse bir kez ödül
+    if (stars === 3 && run.def.n === gazetteHard() && P.gazette.hard !== gazetteIssue()) {
+      P.gazette.hard = gazetteIssue();
+      P.coins += GAZETTE.hardBonus;
+      run.hardBonus = true;
+    }
     run.gained = Math.max(0, stars - prev);
     raw = run.replay ? REPLAY.coin + run.gained * REPLAY.perNewStar : ECON.coin[run.def.tier] + stars * (ECON.coinPerStar + buff(P, 'starCoin'));
     P.stars[run.def.n] = Math.max(prev, stars);
@@ -478,6 +498,9 @@ function win() {
   taskProgress('levels', 1);
   taskProgress('fish', run.L.fishCells.length);
   if (stars === 3) taskProgress('stars', 1);
+  // bugün toplanan balık (tilkiyi beslemek için) ve balık yeminin kalan leveli
+  P.fishDay = { day: dateKey(), n: fishToday(P) + run.L.fishCells.length };
+  if (P.bait > 0) P.bait--;
   const caught = run.rare ? albumAdd(run.rare.f) : null;
   P.flakes += flakes;
   persist();
@@ -503,6 +526,7 @@ function win() {
     !run.replay && lucky && 'Şanslı ağ +1 ❄',
     run.replay && (run.gained ? `Tekrar · yeni yıldız +${run.gained}` : 'Tekrar · yeni yıldız yok'),
     caught && caught.text,
+    run.hardBonus && `📰 Haftanın zor leveli +${GAZETTE.hardBonus} coin`,
     run.masterFirst && `🏰 ${MAP_REGIONS[run.master].name} rozeti · +${MASTER_REWARD.coins} coin, +${MASTER_REWARD.hints} ipucu, +${MASTER_REWARD.flakes} ❄`,
     `${ev.token} +${evPts} jeton`,
   ].filter(Boolean).join(' · ');
@@ -544,6 +568,7 @@ function showResult(stars, base, flakes, notes) {
   openOverlay(`
     ${head}
     <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= stars ? ' on' : ''}">★</span>`).join('')}</div>
+    ${P.pet ? '<canvas id="rsPet" class="rs-pet"></canvas>' : ''}
     <p>${run.moves} hamle · en iyi çözüm ${run.def.min}</p>
     ${stars < 3 && !run.daily ? `<div class="rs-retry"><span>3 yıldız için en fazla <b>${run.def.min}</b> hamle</span><button id="rsRetry" class="btn secondary">↻ Tekrar dene</button></div>` : ''}
     ${resultProgress()}
@@ -562,6 +587,15 @@ function showResult(stars, base, flakes, notes) {
     </div>`);
 
   for (let k = 0; k < stars; k++) setTimeout(() => sfx.star(k), 180 + k * 260);
+  // tilki sonuç ekranında sevinçle zıplar
+  if ($('rsPet')) {
+    const cv = $('rsPet');
+    (function petTick(now) {
+      if (!cv.isConnected || !overlayOpen()) return;
+      drawFox(fitCanvas(cv, 64, 52), 32, 50, 40, { pose: 'happy', t: now / 1000, fur: furHex(P), collar: collarHex() });
+      requestAnimationFrame(petTick);
+    })(performance.now());
+  }
   if ($('rsRetry')) $('rsRetry').onclick = () => { closeOverlay(); restartRun(); };
   // sandık çubuğu eski değerden yenisine dolar
   const bar = $('rsChestBar');
@@ -848,7 +882,8 @@ function showHintBar() {
 // Günlük ücretsiz haklar (fener dizisi: ipucu, deniz feneri: +5 hamle); gün değişince sıfırlanır.
 function freeLeft(kind) {
   if (P.daily.day !== dateKey()) P.daily = { day: dateKey(), hints: 0, cont: 0 };
-  return Math.max(0, buff(P, kind === 'hints' ? 'freeHints' : 'freeContinues') - P.daily[kind]);
+  // Saat kulesi (köy projesi) bitince her gün +1 ücretsiz ipucu
+  return Math.max(0, buff(P, kind === 'hints' ? 'freeHints' : 'freeContinues') + (kind === 'hints' ? projectBonus(P, 'freeHint') : 0) - P.daily[kind]);
 }
 
 // Kakao: stant saatte fincan üretir; birikim gözlem noktasının saat sınırıyla dolar.
@@ -956,7 +991,7 @@ function showDistrict(i) {
   openOverlay(`
     <span class="new-tag">YENİ ARAZİ</span>
     <h2>${d.name}</h2>
-    <p>${d.soon ? 'Köy büyümeye devam edecek: yeni yapılar ve yeni bonuslarla.' : `Köy yana doğru genişler. Yeni yapılar: ${d.text}. Yapılar kar tanesiyle kurulur.`}</p>
+    <p>${d.soon ? 'Köy büyümeye devam edecek: yeni yapılar ve yeni bonuslarla.' : d.projects ? `Köy yana doğru genişler. ${d.text}. Projelere coin'i parça parça yatırırsın; biten proje kalıcı bir bonus verir.` : `Köy yana doğru genişler. Yeni yapılar: ${d.text}. Yapılar kar tanesiyle kurulur.`}</p>
     ${why ? `<small class="breakdown">${why}</small>` : ''}
     ${d.soon ? '' : `<button id="dsBuy" class="btn green" ${ok ? '' : 'disabled'}>Aç · ${coinIco}${d.price}</button>`}
     <button id="dsClose" class="btn link">Kapat</button>`);
@@ -970,7 +1005,7 @@ function showDistrict(i) {
     closeOverlay();
     sfx.reward();
     track('district_unlock', { id: d.id, price: d.price });
-    toast(`${d.name} açıldı! Yeni yapılar listede.`);
+    toast(d.projects ? `${d.name} açıldı! Köy projeleri listede.` : `${d.name} açıldı! Yeni yapılar listede.`);
     renderVillage();
     village.goPanel(i);
   };
@@ -984,8 +1019,8 @@ function renderVillage() {
   const vNext = VILLAGERS.find(v => v.price && !P.villagers.includes(v.id));
   const vCard = villageLevel(P) >= 3 ? `<button class="b-card district" data-vill><b>Köylüler · ${villagersHere().length}/${VILLAGERS.length}</b><small>${phaseNow().name}: ${PHASE_TEXT[phaseNow().id]}</small><span class="act">${vNext ? (villageLevel(P) >= vNext.vl ? `Davet et ${coinIco}${discounted(P, vNext.price)}` : `Sıradaki köylü Köy Lv${vNext.vl}`) : 'Hepsi köyde'}</span></button>` : '';
   const slotsOpen = DECOR_SLOTS.filter(s => Math.floor(s.at[0]) < (P.land || 1));
-  const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event).map(d => discounted(P, d.price)))}+</span></button>`;
-  $('buildList').innerHTML = dCard + vCard + dcCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
+  const dcCard = `<button class="b-card district" data-decor><b>Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event && !d.merchant).map(d => discounted(P, d.price)))}+</span></button>`;
+  $('buildList').innerHTML = dCard + townCards() + vCard + dcCard + projectCards() + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
       return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
@@ -999,6 +1034,7 @@ function renderVillage() {
   $('buildList').querySelectorAll('[data-d]').forEach(btn => { btn.onclick = () => { village.goPanel(+btn.dataset.d); showDistrict(+btn.dataset.d); }; });
   $('buildList').querySelector('[data-vill]')?.addEventListener('click', showVillagers);
   $('buildList').querySelector('[data-decor]')?.addEventListener('click', enterDecor);
+  $('buildList').querySelectorAll('[data-town]').forEach(btn => { btn.onclick = () => openTown(btn.dataset.town); });
   renderCocoa();
 }
 
@@ -1127,6 +1163,7 @@ function renderSheet() {
     <div class="buff-box">${buffLine}</div>
     <button id="shUp" class="btn green big" ${cost === null || P.flakes < cost ? 'disabled' : ''}>${cost !== null && P.flakes < cost ? `${cost - P.flakes} kar tanesi daha gerekli` : upLabel}</button>
     ${INTERIOR[b.id] && st ? `<button id="shIn" class="btn secondary big in-btn">İçeri gir · eşya yerleştir${interiorReady(P, b.id) ? '<i class="dot"></i>' : ''}</button>` : ''}
+    ${b.id === 'market' && st ? `<button id="shTrade" class="btn secondary big in-btn">Kar tanesi takası · ${coinIco}${flakePrice(tradeN(P))}</button>` : ''}
     ${looks}
     ${action}`;
   $('sheet').classList.remove('hidden');
@@ -1134,6 +1171,7 @@ function renderSheet() {
   $('shX').onclick = closeSheet;
   $('shUp').onclick = () => upgrade(b.id);
   if ($('shIn')) $('shIn').onclick = () => enterInterior(b.id);
+  if ($('shTrade')) $('shTrade').onclick = showMarket;
   if (!st) return;
   $('sheet').querySelectorAll('[data-style]').forEach(btn => { btn.onclick = () => { sheet.draft.style = +btn.dataset.style; renderSheet(); }; });
   $('sheet').querySelectorAll('[data-color]').forEach(btn => { btn.onclick = () => { sheet.draft.color = btn.dataset.color || null; renderSheet(); }; });
@@ -1240,7 +1278,40 @@ function renderNextCard() {
 let wardrobeCat = 'hat';
 let wardrobeDraft = null; // denenen kıyafet (bu kategoride)
 
-const previewOutfit = () => (wardrobeDraft ? { ...P.outfit, [wardrobeCat]: wardrobeDraft } : P.outfit);
+let emoteDraft = null; // İfade sekmesinde denenen ifade
+let dyeDraft; // undefined: boya denenmiyor; null: kendi rengi; yoksa COLORS kimliği
+const dyeKey = (cat, id) => `${cat}:${id}`;
+// Boyanacak parça: denenen parça (sahipse), deneme yoksa giyilen parça
+function dyeTarget() {
+  if (wardrobeCat === 'emote') return null;
+  const id = wardrobeDraft ? (P.owned[wardrobeCat].includes(wardrobeDraft) ? wardrobeDraft : null) : P.outfit[wardrobeCat];
+  return id && id !== 'none' ? id : null;
+}
+function previewOutfit() {
+  if (wardrobeCat === 'emote') return P.outfit;
+  const o = { ...P.outfit }, dk = wardrobeCat + 'Dye';
+  if (wardrobeDraft) { o[wardrobeCat] = wardrobeDraft; o[dk] = P.dyes[dyeKey(wardrobeCat, wardrobeDraft)] || null; }
+  if (dyeDraft !== undefined && dyeTarget()) o[dk] = dyeDraft;
+  return o;
+}
+// Görselde boyanacak renkli kısım var mı? Görsel yüklenmemişse kod çizimi (atkılar, tüccar şapkaları) boyanır.
+function dyeable(cat, id) {
+  const h = accentHue(`outfit_${cat}_${id}`);
+  return h === undefined ? cat === 'scarf' || !!WARDROBE.hat.find(x => x.id === id)?.merchant : h !== null;
+}
+// Giyilen parça değişince boyası da onunla gelir (her parçanın boyası ayrı saklanır).
+function wear(cat, id) {
+  P.outfit = { ...P.outfit, [cat]: id, [cat + 'Dye']: P.dyes[dyeKey(cat, id)] || null };
+  board.outfit = P.outfit;
+}
+// İfadeler: el sallama, dans, piruet (gardırop önizlemesi ve köy)
+function emotePose(id, t) {
+  if (id === 'wave') return { wave: 0.6 + Math.sin(t * 14) * 0.5 };
+  if (id === 'dance') return { lean: Math.sin(t * 11) * 0.14, squash: Math.max(0, Math.cos(t * 22)) * 0.12, happy: true };
+  if (id === 'spin') return { face: [1, 0, -1, 0][Math.floor(t * 8) % 4], happy: true };
+  return { wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 };
+}
+const emoteBob = t => (wardrobeCat === 'emote' && emoteDraft === 'dance' ? Math.abs(Math.sin(t * 11)) * 8 : 0);
 
 let wardrobeRedraw = 0;
 onArtLoad(id => {
@@ -1250,20 +1321,22 @@ onArtLoad(id => {
 
 function renderWardrobe() {
   document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === wardrobeCat));
+  if (wardrobeCat === 'emote') { renderEmotes(); return; }
   const items = WARDROBE[wardrobeCat];
   const owned = P.owned[wardrobeCat];
   const sorted = [...items.filter(it => owned.includes(it.id)), ...items.filter(it => !owned.includes(it.id))];
   $('wardrobeList').innerHTML = sorted.map(it => {
     const on = P.outfit[wardrobeCat] === it.id, have = owned.includes(it.id), sel = wardrobeDraft === it.id;
-    const label = on ? 'Giyili' : have ? 'Sahip' : it.reward ? `Köy Lv${it.reward}` : it.event ? 'Etkinlik' : `${coinIco}${discounted(P, it.price)}`;
+    const label = on ? 'Giyili' : have ? 'Sahip' : it.reward ? `Köy Lv${it.reward}` : it.event ? 'Etkinlik' : it.merchant ? 'Gezgin tüccar' : `${coinIco}${discounted(P, it.price)}`;
     return `<button class="w-item${on ? ' on' : ''}${sel ? ' sel' : ''}${have ? '' : ' locked'}" data-w="${it.id}"><canvas></canvas><span>${it.name}</span><span class="price">${label}</span></button>`;
   }).join('');
   $('wardrobeList').querySelectorAll('[data-w]').forEach(btn => {
     const id = btn.dataset.w;
     const ctx = fitCanvas(btn.querySelector('canvas'), 64, 64);
-    drawPofi(ctx, 32, 63, 44, { outfit: { ...P.outfit, [wardrobeCat]: id } });
-    btn.onclick = () => { wardrobeDraft = id === P.outfit[wardrobeCat] ? null : id; renderWardrobe(); };
+    drawPofi(ctx, 32, 63, 44, { outfit: { ...P.outfit, [wardrobeCat]: id, [wardrobeCat + 'Dye']: P.dyes[dyeKey(wardrobeCat, id)] || null } });
+    btn.onclick = () => { wardrobeDraft = id === P.outfit[wardrobeCat] ? null : id; dyeDraft = undefined; renderWardrobe(); };
   });
+  renderDye();
 
   const it = wardrobeDraft && items.find(x => x.id === wardrobeDraft);
   // Seçim varken eylem çubuğu kaydırırken de görünür kalır (alt menünün hemen üstünde).
@@ -1273,6 +1346,7 @@ function renderWardrobe() {
   const btn = have ? `<button id="wBuy" class="btn green">Giy</button>`
     : it.reward ? `<button class="btn primary" disabled>Köy Lv${it.reward} ödülü</button>`
     : it.event ? `<button class="btn primary" disabled>Haftalık etkinlik ödülü</button>`
+    : it.merchant ? `<button class="btn primary" disabled>Gezgin tüccar getirir</button>`
     : `<button id="wBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz · ' : 'Al ve giy · '}${coinIco}${price}</button>`;
   $('wardrobeAction').innerHTML = `<button id="wCancel" class="btn link">Vazgeç</button>${btn}`;
   $('wCancel').onclick = () => { wardrobeDraft = null; renderWardrobe(); };
@@ -1284,15 +1358,75 @@ function renderWardrobe() {
       sfx.coin();
       track('wardrobe_buy', { slot: wardrobeCat, item: it.id, price });
     } else sfx.ui();
-    P.outfit = { ...P.outfit, [wardrobeCat]: it.id };
-    board.outfit = P.outfit;
+    wear(wardrobeCat, it.id);
     wardrobeDraft = null;
+    dyeDraft = undefined;
     persist();
     toast(`${it.name} giyildi`);
     renderWardrobe();
   };
 }
-document.querySelectorAll('.seg-btn').forEach(b => { b.onclick = () => { wardrobeCat = b.dataset.cat; wardrobeDraft = null; renderWardrobe(); }; });
+document.querySelectorAll('.seg-btn').forEach(b => { b.onclick = () => { wardrobeCat = b.dataset.cat; wardrobeDraft = null; dyeDraft = undefined; emoteDraft = null; renderWardrobe(); }; });
+
+// Kıyafet boyama: denenen ya da giyilen parçanın renkli kısmı. Renk başına parça için bir kez ödenir.
+function renderDye() {
+  const id = dyeTarget(), box = $('dyeBox');
+  if (!id || !dyeable(wardrobeCat, id)) { box.innerHTML = ''; return; }
+  const it = WARDROBE[wardrobeCat].find(x => x.id === id), key = dyeKey(wardrobeCat, id), cur = P.dyes[key] || null;
+  const sel = dyeDraft === undefined ? cur : dyeDraft;
+  const owned = c => P.dyeOwned.includes(`${key}:${c}`);
+  const cost = sel && !owned(sel) ? DYE_PRICE : 0;
+  box.innerHTML = `<div class="sheet-sec"><b>Boya · ${it.name}</b><small>Yalnızca renkli kısmı boyar · her renk bu parça için bir kez ${coinIco}${DYE_PRICE}</small></div>
+    <div class="swatches"><button class="sw def${sel === null ? ' sel' : ''}" data-dye="" title="Kendi rengi"></button>${COLORS.map(c => `<button class="sw${sel === c.id ? ' sel' : ''}" data-dye="${c.id}" title="${c.name}" style="background:${c.hex}">${owned(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}</div>
+    ${sel !== cur ? `<button id="dyeApply" class="btn ${cost ? 'primary' : 'green'}" ${P.coins < cost ? 'disabled' : ''}>${cost ? `${P.coins < cost ? 'Yetersiz · ' : 'Boya · '}${coinIco}${cost}` : 'Uygula'}</button>` : ''}`;
+  box.querySelectorAll('[data-dye]').forEach(b => { b.onclick = () => { dyeDraft = b.dataset.dye || null; renderDye(); }; });
+  if ($('dyeApply')) $('dyeApply').onclick = () => {
+    if (P.coins < cost) return;
+    P.coins -= cost;
+    if (cost) P.dyeOwned.push(`${key}:${sel}`);
+    if (sel) P.dyes[key] = sel;
+    else delete P.dyes[key];
+    if (P.outfit[wardrobeCat] === id) wear(wardrobeCat, id);
+    dyeDraft = undefined;
+    persist();
+    cost ? sfx.coin() : sfx.ui();
+    track('outfit_dye', { slot: wardrobeCat, item: id, color: sel, price: cost });
+    toast(sel ? `${it.name} boyandı` : `${it.name} kendi renginde`);
+    renderWardrobe();
+  };
+}
+
+// İfadeler: satın alınan ifadeyi Pofi köyde ona dokununca yapar.
+function renderEmotes() {
+  $('dyeBox').innerHTML = '';
+  $('wardrobeList').innerHTML = EMOTES.map(e => {
+    const have = P.emotes.includes(e.id);
+    return `<button class="w-item${emoteDraft === e.id ? ' sel' : ''}${have ? '' : ' locked'}" data-em="${e.id}"><canvas></canvas><span>${e.name}</span><span class="price">${have ? 'Sahip' : `${coinIco}${e.price}`}</span></button>`;
+  }).join('');
+  $('wardrobeList').querySelectorAll('[data-em]').forEach(btn => {
+    const id = btn.dataset.em;
+    drawPofi(fitCanvas(btn.querySelector('canvas'), 64, 64), 32, 63, 44, { outfit: P.outfit, ...emotePose(id, 0.2) });
+    btn.onclick = () => { emoteDraft = id; renderEmotes(); };
+  });
+  const e = EMOTES.find(x => x.id === emoteDraft), have = e && P.emotes.includes(e.id);
+  $('wardrobeAction').classList.toggle('floating', !!e && !have);
+  if (!e || have) {
+    $('wardrobeAction').innerHTML = `<p class="sheet-note" style="flex:1">${have ? `${e.name} sende. ` : 'Bir ifadeye dokun, Pofi göstersin. '}Köyde Pofi'ye dokununca öğrendiği ifadeleri sırayla yapar.</p>`;
+    return;
+  }
+  $('wardrobeAction').innerHTML = `<button id="wCancel" class="btn link">Vazgeç</button><button id="wBuy" class="btn primary" ${P.coins < e.price ? 'disabled' : ''}>${P.coins < e.price ? 'Yetersiz · ' : 'Öğret · '}${coinIco}${e.price}</button>`;
+  $('wCancel').onclick = () => { emoteDraft = null; renderEmotes(); };
+  $('wBuy').onclick = () => {
+    if (P.coins < e.price) return;
+    P.coins -= e.price;
+    P.emotes.push(e.id);
+    persist();
+    sfx.coin();
+    track('emote_buy', { id: e.id, price: e.price });
+    toast(`Pofi artık "${e.name}" yapıyor · köyde ona dokun`);
+    renderEmotes();
+  };
+}
 
 // ---------- köy yaşamı (GDD 12.5) ----------
 // Saat cihazdan okunur; test için adrese ?saat=20 eklenebilir.
@@ -1462,7 +1596,7 @@ function showVillagers() {
 // Süsleme modu: köyde boş süs yerleri "+" ile görünür. Yere dokun → süsü seç (sahnede önizlenir)
 // → "Satın al ve yerleştir". Her yerleştirme ayrı ücretlidir; değiştirilen süs geri verilmez.
 // Süs seçenekleri: coin'le alınanlar ve etkinlikten kazanılmış hatıra süsleri.
-const decorList = () => DECOR_ITEMS.filter(d => !d.event || P.decorOwned.includes(d.id));
+const decorList = () => DECOR_ITEMS.filter(d => !(d.event || d.merchant) || P.decorOwned.includes(d.id));
 
 function enterDecor() {
   closeSheet();
@@ -1487,11 +1621,11 @@ function renderDecor() {
   let action = '<div class="sheet-actions"><button id="dcDone" class="btn green">Bitti</button></div>';
   if (slot) {
     body = `<div class="sheet-sec"><b>Süs seç</b><small>Dokun, yerinde gör</small></div>
-      <div class="wardrobe-grid">${decorList().map(d => `<button class="w-item${cur === d.id ? ' on' : ''}${pv === d.id ? ' sel' : ''}" data-dec="${d.id}"><canvas></canvas><span>${d.name}</span><span class="price">${cur === d.id ? 'Yerleşik' : d.event ? 'Hatıra' : `${coinIco}${discounted(P, d.price)}`}</span></button>`).join('')}</div>`;
+      <div class="wardrobe-grid">${decorList().map(d => `<button class="w-item${cur === d.id ? ' on' : ''}${pv === d.id ? ' sel' : ''}" data-dec="${d.id}"><canvas></canvas><span>${d.name}</span><span class="price">${cur === d.id ? 'Yerleşik' : d.event ? 'Hatıra' : d.merchant ? 'Nadir' : `${coinIco}${discounted(P, d.price)}`}</span></button>`).join('')}</div>`;
     const it = pv && DECOR_ITEMS.find(d => d.id === pv), price = it ? discounted(P, it.price) : 0;
     action = `<div class="sheet-actions">
       ${cur ? '<button id="dcRemove" class="btn link">Kaldır</button>' : '<button id="dcBack" class="btn link">Başka yer</button>'}
-      ${it ? `<button id="dcBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${it.event ? 'Yerleştir' : `${P.coins < price ? 'Yetersiz coin · ' : 'Satın al ve yerleştir · '}${coinIco}${price}`}</button>` : '<button id="dcDone" class="btn green">Bitti</button>'}
+      ${it ? `<button id="dcBuy" class="btn primary" ${P.coins < price ? 'disabled' : ''}>${it.event || it.merchant ? 'Yerleştir' : `${P.coins < price ? 'Yetersiz coin · ' : 'Satın al ve yerleştir · '}${coinIco}${price}`}</button>` : '<button id="dcDone" class="btn green">Bitti</button>'}
     </div>`;
   }
   $('sheet').innerHTML = `
@@ -1596,6 +1730,421 @@ function renderInterior() {
     toast(`${it.name} yerleştirildi`);
     renderInterior();
   };
+}
+
+// ---------- köy: coin harcama yerleri (pazar takası, gezgin tüccar, gazete, tilki, projeler) ----------
+const fmt = n => n.toLocaleString('tr-TR');
+const collarHex = () => (P.pet?.collar ? COLORS.find(c => c.id === P.pet.collar)?.hex || null : null);
+const gazetteUnread = () => P.gazette.read !== gazetteIssue();
+
+// Köy listesinin üstündeki kartlar
+function townCards() {
+  const land = P.land || 1, cards = [];
+  const nm = nextMerchant(), here = !!merchantToday();
+  cards.push(`<button class="b-card district town" data-town="gazette"><b>📰 Köy Gazetesi · Sayı ${gazetteIssue()}</b><small>${land >= 2 ? (here ? 'Gezgin tüccar bugün limanda' : nm ? `Tüccar ${dayName(nm)} günü geliyor` : '') : 'Haftanın haberleri, zor leveli ve bilmecesi'}</small><span class="act">${gazetteUnread() ? 'Yeni sayı!' : 'Oku'}</span>${gazetteUnread() ? '<i class="dot"></i>' : ''}</button>`);
+  if (land >= 2) cards.push(`<button class="b-card district town${here ? ' ready' : ''}" data-town="merchant"><b>⛵ Gezgin tüccar</b><small>${here ? 'Kaptan Mors limanda! Nadir kıyafet, süs ve gizemli paket' : 'Haftada 1-2 gün limana uğrar; günü gazetede'}</small><span class="act">${here ? 'Tezgâha git' : nm ? `${dayName(nm)} gelir` : 'Yolda'}</span>${here ? '<i class="dot"></i>' : ''}</button>`);
+  if (P.village.market) cards.push(`<button class="b-card district town" data-town="market"><b>🐟 Balık pazarı · kar tanesi</b><small>Coin ile kar tanesi; fiyat bugün aldıkça artar</small><span class="act">1 ${flakeIco} = ${coinIco}${fmt(flakePrice(tradeN(P)))}</span></button>`);
+  const vl = villageLevel(P);
+  if (P.pet) {
+    const fed = petFedToday(P), canFeed = !fed && fishToday(P) >= PET.feedFish;
+    cards.push(`<button class="b-card district town${canFeed ? ' ready' : ''}" data-town="pet"><b>🦊 ${esc(P.pet.name)}</b><small>${fed ? 'Karnı tok, Pofi\'nin peşinde' : canFeed ? 'Acıktı · balıklarından ver' : `Uykulu · bugün ${fishToday(P)}/${PET.feedFish} balık topladın`}</small><span class="act">${canFeed ? 'Besle' : 'Bak'}</span>${canFeed ? '<i class="dot"></i>' : ''}</button>`);
+  } else if (petUnlocked(P, vl)) {
+    cards.push(`<button class="b-card district town" data-town="pet"><b>🦊 Kar tilkisi yavrusu</b><small>Köyde Pofi'nin peşinden yürür, beslenince hediye getirir</small><span class="act">Sahiplen ${coinIco}${fmt(PET.price)}</span></button>`);
+  }
+  return cards.join('');
+}
+
+function projectCards() {
+  if ((P.land || 1) < 3) return '';
+  return PROJECTS.map(p => {
+    const spent = projectSpent(P, p), st = projectStage(P, p);
+    return `<button class="b-card town${st === 3 ? '' : ' proj'}" data-town="proj:${p.id}"><b>${p.name}</b>
+      <div class="progress slim"><div style="width:${Math.min(100, (spent / p.cost) * 100)}%"></div></div>
+      <small>${st === 3 ? `Tamamlandı · ${p.text}` : `${fmt(spent)}/${fmt(p.cost)} · bitince: ${p.text}`}</small>
+      <span class="act">${st === 3 ? '✓' : st ? PROJECT_STAGES[st - 1] : 'Başla'}</span></button>`;
+  }).join('');
+}
+
+function openTown(k) {
+  if (k === 'gazette') showGazette();
+  else if (k === 'merchant') { village.goPanel(1); showMerchant(); }
+  else if (k === 'market') showMarket();
+  else if (k === 'pet') showPet();
+  else if (k.startsWith('proj:')) { village.goPanel(2); showProject(k.slice(5)); }
+}
+
+// Ana ekranda tek satırlık köy haberi: tüccar limanda > yeni gazete > tilki acıktı
+function renderTownStrip() {
+  const el = $('townStrip');
+  let html = '', go = null;
+  if (merchantToday() && (P.land || 1) >= 2) { html = '⛵ <b>Gezgin tüccar bugün limanda</b>'; go = 'merchant'; }
+  else if (gazetteUnread() && P.level > 5) { html = `📰 <b>Köy Gazetesi · Sayı ${gazetteIssue()} çıktı</b>`; go = 'gazette'; }
+  else if (P.pet && !petFedToday(P) && fishToday(P) >= PET.feedFish) { html = `🦊 <b>${esc(P.pet.name)} acıktı</b>`; go = 'pet'; }
+  el.classList.toggle('hidden', !go);
+  if (!go) return;
+  el.innerHTML = `${html}<span>›</span>`;
+  el.onclick = () => {
+    if (go === 'gazette') { showGazette(); return; }
+    showScreen('village');
+    openTown(go);
+  };
+}
+
+// Balık pazarı: coin → 1 kar tanesi. Gün içinde her alımda FLAKE_TRADE.mult kat pahalanır.
+function showMarket() {
+  const n = tradeN(P), price = flakePrice(n);
+  openOverlay(`
+    <span class="new-tag">BALIK PAZARI</span>
+    <h2>Kar tanesi takası</h2>
+    <p>Coin ver, kar tanesi al. Fiyat bugün her alımda artar; yarın yine ${coinIco}${FLAKE_TRADE.base}'den başlar.</p>
+    <div class="reward-row"><span class="pill big">${flakeIco}<b>+1</b></span></div>
+    <small class="breakdown">Bugün aldığın: ${n} · sonraki: ${coinIco}${fmt(flakePrice(n + 1))} · elindeki: ${P.flakes} ${flakeIco}</small>
+    <button id="mkBuy" class="btn green big" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz coin · ' : 'Al · '}${coinIco}${fmt(price)}</button>
+    <button id="mkClose" class="btn link">Kapat</button>`);
+  $('mkClose').onclick = closeOverlay;
+  $('mkBuy').onclick = () => {
+    if (P.coins < price) return;
+    P.coins -= price;
+    P.flakes += 1;
+    P.flakeTrade = { day: dateKey(), n: n + 1 };
+    persist();
+    sfx.coin();
+    track('flake_trade', { n: n + 1, price });
+    toast(`+1 kar tanesi · elinde ${P.flakes}`);
+    showMarket();
+    if (screen === 'village') { renderVillage(); if (sheet) renderSheet(); }
+  };
+}
+
+// ---------- gezgin tüccar ----------
+const MC_SUB = {
+  outfit: 'Nadir kıyafet · gardıropta yok',
+  decor: 'Nadir süs · süs yerlerine konur',
+  toy: 'Tilkinin oyuncağı',
+  bait: `Sonraki ${MERCHANT.bait.levels} levelde nadir balık daha sık (yalnızca albüm)`,
+  mystery: 'Kar tanesi, ipucu, nadir süs ya da kıyafet',
+  flakes: 'Pazardan ucuz, bu gelişe özel',
+};
+const MC_ICO = { bait: '🎣', mystery: '🎁', flakes: '❄️' };
+
+function showMerchant() {
+  const m = merchantToday();
+  if (!m) {
+    const d = nextMerchant();
+    toast(d ? `Gezgin tüccar ${dayName(d)} günü limana gelecek` : 'Tüccar yolda', 2400);
+    return;
+  }
+  if (P.merchant?.visit !== m.visit) P.merchant = { visit: m.visit, bought: {} };
+  const stock = merchantStock(m.no, P);
+  const rows = stock.map(it => {
+    const n = P.merchant.bought[it.key] || 0, left = it.max - n;
+    const sub = it.needPet ? 'Önce bir tilki sahiplen' : it.kind === 'flakes' ? `${MC_SUB.flakes} · ${left}/${it.max}` : it.kind === 'bait' && P.bait ? `${MC_SUB.bait} · ${P.bait} level kaldı` : MC_SUB[it.kind];
+    const btn = it.owned ? '<button class="btn secondary" disabled>Sende var</button>'
+      : left <= 0 ? '<button class="btn secondary" disabled>Tükendi</button>'
+      : `<button class="btn green" data-mc="${it.key}" ${P.coins < it.price || it.needPet ? 'disabled' : ''}>${coinIco}${fmt(it.price)}</button>`;
+    const ico = MC_ICO[it.kind] ? `<div class="si-icon mc">${MC_ICO[it.kind]}</div>` : `<canvas class="mc-ico" data-mci="${it.key}"></canvas>`;
+    return `<div class="shop-item">${ico}<div class="si-text"><b>${it.name}</b><small>${sub}</small></div>${btn}</div>`;
+  }).join('');
+  openOverlay(`
+    <span class="new-tag">GEZGİN TÜCCAR</span>
+    <h2>Kaptan Mors</h2>
+    <p>"Uzak kıyılardan getirdim! Bugün limandayım, yarın yine yoldayım."</p>
+    <div class="mc-list">${rows}</div>
+    <small class="breakdown">Kaçırdığın ürünler birkaç hafta sonra yine gelir.</small>
+    <button id="mcClose" class="btn link">Kapat</button>`);
+  for (const it of stock) {
+    const cv = $('overlayCard').querySelector(`[data-mci="${it.key}"]`);
+    if (!cv) continue;
+    const ctx = fitCanvas(cv, 44, 44);
+    // kıyafet: Pofi'nin üst yarısı yakından (şapka ya da atkı görünsün)
+    if (it.kind === 'outfit') drawPofi(ctx, 22, it.slot === 'hat' ? 74 : 62, it.slot === 'hat' ? 62 : 52, { outfit: { hat: 'none', scarf: 'none', [it.slot]: it.id } });
+    else if (it.kind === 'decor') drawDecor(ctx, 22, 40, 360, it.id, 0, 0);
+    else if (it.kind === 'toy') drawToy(ctx, 22, 38, 600, it.id);
+  }
+  $('mcClose').onclick = closeOverlay;
+  $('overlayCard').querySelectorAll('[data-mc]').forEach(b => { b.onclick = () => buyMerchant(stock.find(x => x.key === b.dataset.mc)); });
+}
+
+function buyMerchant(it) {
+  if (!it || P.coins < it.price || !merchantToday()) return;
+  const n = P.merchant.bought[it.key] || 0;
+  if (n >= it.max || it.owned || it.needPet) return;
+  P.coins -= it.price;
+  P.merchant.bought[it.key] = n + 1;
+  let msg = `${it.name} alındı`;
+  if (it.kind === 'outfit') { P.owned[it.slot].push(it.id); msg = `${it.name} gardıropta!`; }
+  else if (it.kind === 'decor') { P.decorOwned.push(it.id); msg = `${it.name} süs listesinde, istediğin yere koy`; }
+  else if (it.kind === 'toy') { P.pet.toys.push(it.id); P.pet.toy = it.id; msg = `${P.pet.name} yeni oyuncağına bayıldı!`; }
+  else if (it.kind === 'bait') { P.bait += MERCHANT.bait.levels; msg = `Balık yemi: ${P.bait} level boyunca nadir balık daha sık`; }
+  else if (it.kind === 'flakes') { P.flakes += 1; msg = `+1 kar tanesi · elinde ${P.flakes}`; }
+  else if (it.kind === 'mystery') msg = openMystery();
+  persist();
+  sfx.coin();
+  track('merchant_buy', { item: it.kind, id: it.id || null, price: it.price });
+  toast(msg, 2600);
+  showMerchant();
+  if (screen === 'village') renderVillage();
+}
+
+// Gizemli paket: coin dışında bir şey çıkar. Nadir kıyafet ve süs, sahip olunmayanlardan seçilir.
+function openMystery() {
+  const r = Math.random();
+  const outfits = MERCHANT_OUTFITS.filter(o => !P.owned[o.slot].includes(o.id)), decor = MERCHANT_DECOR.filter(d => !P.decorOwned.includes(d.id));
+  if (r < 0.1 && outfits.length) {
+    const o = outfits[Math.floor(Math.random() * outfits.length)];
+    P.owned[o.slot].push(o.id);
+    return `🎁 Paketten nadir kıyafet çıktı: ${o.name}!`;
+  }
+  if (r < 0.28 && decor.length) {
+    const d = decor[Math.floor(Math.random() * decor.length)];
+    P.decorOwned.push(d.id);
+    return `🎁 Paketten nadir süs çıktı: ${d.name}!`;
+  }
+  if (r < 0.68) {
+    const n = 3 + Math.floor(Math.random() * 3);
+    P.flakes += n;
+    return `🎁 Paketten ${n} kar tanesi çıktı`;
+  }
+  const h = 4 + Math.floor(Math.random() * 2);
+  P.hints += h;
+  return `🎁 Paketten ${h} ipucu çıktı`;
+}
+
+// ---------- Köy Gazetesi ----------
+// Haftanın zor leveli: oynanmış, zor ya da çok zor olup 3 yıldızı eksik bir level (sayıya göre sabit).
+let gzHard = null;
+function gazetteHard() {
+  const issue = gazetteIssue();
+  if (gzHard?.issue === issue && gzHard.level === P.level) return gzHard.n;
+  let seed = issue * 7919, n = 0;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const lo = Math.max(5, P.level - 150), hi = P.level - 1;
+  for (let k = 0; k < 60 && hi > lo; k++) {
+    const c = lo + Math.floor(rnd() * (hi - lo + 1)), d = levelDef(c);
+    if ((d.tier === 'hard' || d.tier === 'veryhard') && (P.stars[c] || 0) < 3) { n = c; break; }
+  }
+  gzHard = { issue, level: P.level, n: n || P.level };
+  return gzHard.n;
+}
+
+function gazetteNews() {
+  const issue = gazetteIssue(), vname = P.villageName || 'Köyümüz', vs = villagersHere().map(v => v.name);
+  const who = k => vs.length ? vs[(issue + k) % vs.length] : 'Pofi';
+  const lines = [
+    P.ach.cups > 0 && `${vname} bu hafta da kakao kokuyor: bugüne dek ${fmt(P.ach.cups)} fincan satıldı.`,
+    `${who(0)} iskelede balık tutarken parıltılı bir balık gördüğüne yemin ediyor. Albümde şimdilik ${ALL_FISH.filter(f => P.album[f.id]).length} nadir balık var.`,
+    P.pet && `${P.pet.name} meydanda kartopu kovalarken görüldü. Köylüler çok sevdi.`,
+    ...PROJECTS.map(p => {
+      const st = projectStage(P, p);
+      return st === 3 ? `${p.name} açıldı! ${p.text}.` : st > 0 ? `${p.name} inşaatı sürüyor: %${Math.floor((projectSpent(P, p) / p.cost) * 100)} tamam.` : null;
+    }),
+    P.level > 10 && `Pofi ${P.level - 1}. leveli geçti; ${vname} gurur duyuyor.`,
+    vs.length > 1 && `${who(1)} ile ${who(2)} kardan adam yarışması için havuç biriktiriyor.`,
+    P.village.lights && 'Fener dizisi geceleri köyü aydınlatıyor; gece yürüyüşleri çok sevildi.',
+    `Hava durumu: ${['bol kar', 'ayaz ve güneş', 'hafif tipi', 'kuzey ışıklı geceler'][issue % 4]}. Atkınızı unutmayın!`,
+  ].filter(Boolean);
+  // her sayıda farklı üç haber
+  const out = [], n = Math.min(3, lines.length);
+  for (let k = 0; k < n; k++) out.push(lines.splice((issue * 3 + k * 5) % lines.length, 1)[0]);
+  return out;
+}
+
+function showGazette() {
+  const issue = gazetteIssue(), now = new Date(), land = P.land || 1;
+  const next = currentEvent(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = merchantWeek(now).filter(d => d >= midnight), nextDays = merchantWeek(now, 1);
+  const rumor = days.length ? merchantStock(merchantToday(days[0])?.no ?? 0, P)[0] : null;
+  const when = d => (d.getTime() === midnight.getTime() ? 'bugün' : `${dayName(d)} günü`);
+  const merchantText = land < 2
+    ? 'Kaptan Mors\'un teknesi Buz Limanı açılınca köyümüze de uğrayacak.'
+    : `${days.length ? `Kaptan Mors bu hafta ${days.map(when).join(' ve ')} limanda. Söylentiye göre yanında ${rumor.name} var.` : 'Kaptan Mors bu hafta uğradı ve yola çıktı.'} Gelecek hafta: ${nextDays.map(dayName).join(' ve ')}.`;
+  const monday = new Date(midnight);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const hard = gazetteHard(), hardDone = P.gazette.hard === issue, riddle = RIDDLES[issue % RIDDLES.length];
+  const head = art('gazette_header') ? '<img class="gz-img" src="assets/art/gazette_header.webp" alt="Köy Gazetesi">' : '<div class="gz-mast">Köy Gazetesi</div>';
+  openOverlay(`
+    <div class="gz">
+      ${head}
+      <div class="gz-meta"><span>Sayı ${issue}</span><span>${monday.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} haftası</span></div>
+      <article><h4>⛵ Gezgin tüccar</h4><p>${merchantText}</p></article>
+      <article><h4>${next.token} Gelecek haftanın etkinliği</h4><p><b>${next.name}.</b> ${next.text}</p></article>
+      <article><h4>🐧 Köyden haberler</h4>${gazetteNews().map(l => `<p>${esc(l)}</p>`).join('')}</article>
+      <article><h4>🏔️ Haftanın zor leveli</h4><p>Level ${hard}. ${hardDone ? 'Bu hafta 3 yıldızla bitirdin, tebrikler!' : `Bu hafta 3 yıldızla bitirene ${coinIco}${GAZETTE.hardBonus}.`}</p>
+        ${hardDone ? '' : `<button id="gzPlay" class="btn secondary">Level ${hard} · Oyna</button>`}</article>
+      <article><h4>❓ Bilmece</h4><p>${riddle.q}</p><p id="gzAns" class="gz-ans${P.gazette.riddle === issue ? '' : ' hidden'}">Cevap: <b>${riddle.a}</b></p>
+        ${P.gazette.riddle === issue ? '' : '<button id="gzReveal" class="btn link">Cevabı göster</button>'}</article>
+    </div>
+    <button id="gzClose" class="btn green">Kapat</button>`);
+  if (P.gazette.read !== issue) { P.gazette.read = issue; persist(); track('gazette_read', { issue }); }
+  $('gzClose').onclick = () => { closeOverlay(); if (screen === 'village') renderVillage(); };
+  if ($('gzPlay')) $('gzPlay').onclick = () => { closeOverlay(); playFromMap = true; startLevel(hard); };
+  if ($('gzReveal')) $('gzReveal').onclick = () => { P.gazette.riddle = issue; persist(); $('gzAns').classList.remove('hidden'); $('gzReveal').remove(); };
+}
+
+// ---------- evcil hayvan: kar tilkisi ----------
+let petDraft = null; // { fur, collar } satın almadan önce önizleme
+
+function showPet() {
+  const vl = villageLevel(P);
+  if (!P.pet) {
+    const ok = petUnlocked(P, vl);
+    openOverlay(`
+      <span class="new-tag">YENİ DOST</span>
+      <h2>Kar tilkisi yavrusu</h2>
+      <canvas id="petCv" class="pet-cv"></canvas>
+      <p>Köyde Pofi'nin peşinden yürür, iglonun önünde uyur. Günde bir kez levellerde topladığın balıklardan ${PET.feedFish} tane verirsen o gün sana küçük bir hediye getirir.</p>
+      <small class="breakdown">Beslemezsen yalnızca uykulu olur; hiçbir şey kaybetmezsin.</small>
+      <label class="field light"><input id="petName" maxlength="12" value="${PET.name}" autocomplete="off"></label>
+      <button id="petAdopt" class="btn green big" ${!ok || P.coins < PET.price ? 'disabled' : ''}>${!ok ? `Köy Lv${PET.vl} ya da level ${PET.level}'dan sonra` : P.coins < PET.price ? `Yetersiz coin · ${coinIco}${fmt(PET.price)}` : `Sahiplen · ${coinIco}${fmt(PET.price)}`}</button>
+      <button id="petClose" class="btn link">Kapat</button>`);
+    petLoop(() => ({ pose: 'happy' }));
+    $('petClose').onclick = closeOverlay;
+    $('petAdopt').onclick = () => {
+      if (!ok || P.coins < PET.price) return;
+      P.coins -= PET.price;
+      P.pet = { name: cleanName($('petName').value).slice(0, 12) || PET.name, fur: 'snow', collar: null, bed: 0, toys: [], toy: null, furs: ['snow'], collars: [], fedDay: '' };
+      persist();
+      sfx.reward();
+      track('pet_adopt', { price: PET.price });
+      toast(`${P.pet.name} artık köyde! Balık topla, besle.`, 2600);
+      showPet();
+      if (screen === 'village') renderVillage();
+    };
+    return;
+  }
+  const p = P.pet, d = petDraft || (petDraft = { fur: p.fur, collar: p.collar });
+  const fed = petFedToday(P), fish = fishToday(P), canFeed = !fed && fish >= PET.feedFish;
+  const furCost = P.pet.furs.includes(d.fur) ? 0 : PET.furs.find(f => f.id === d.fur).price;
+  const collarCost = d.collar && !p.collars.includes(d.collar) ? PET.collarPrice : 0, cost = furCost + collarCost;
+  const changed = d.fur !== p.fur || d.collar !== p.collar, bedNext = PET.beds[p.bed || 0];
+  openOverlay(`
+    <span class="new-tag">EVCİL DOST</span>
+    <h2>${esc(p.name)}</h2>
+    <canvas id="petCv" class="pet-cv"></canvas>
+    <p>${fed ? `Karnı tok! Bugün ${p.gift || 'bir hediye'} getirdi. Nadir balık şansı bugün +${Math.round(PET.rareBonus * 100)} puan.` : canFeed ? `Acıktı. Bugün ${fish} balık topladın; ${PET.feedFish} tanesini ver, karşılığında bir hediye getirsin.` : `Uykulu. Levellerde ${PET.feedFish} balık topla (bugün ${fish}), sonra besle.`}</p>
+    <button id="petFeed" class="btn green big" ${canFeed ? '' : 'disabled'}>${fed ? 'Bugün beslendi ✓' : `Besle · ${PET.feedFish} 🐟`}</button>
+    <div class="sheet-sec"><b>Tüy rengi</b><small>Dokun, önizle</small></div>
+    <div class="chips">${PET.furs.map(f => `<button class="chip-btn${d.fur === f.id ? ' sel' : ''}${p.fur === f.id ? ' cur' : ''}" data-fur="${f.id}">${f.name}${p.furs.includes(f.id) ? '' : ` ${coinIco}${f.price}`}</button>`).join('')}</div>
+    <div class="sheet-sec"><b>Tasma</b><small>Renk başına ${coinIco}${PET.collarPrice}</small></div>
+    <div class="swatches"><button class="sw def${d.collar === null ? ' sel' : ''}" data-collar="" title="Tasmasız"></button>${COLORS.map(c => `<button class="sw${d.collar === c.id ? ' sel' : ''}" data-collar="${c.id}" title="${c.name}" style="background:${c.hex}">${p.collars.includes(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}</div>
+    ${changed ? `<button id="petLook" class="btn ${cost ? 'primary' : 'green'}" ${P.coins < cost ? 'disabled' : ''}>${cost ? `${P.coins < cost ? 'Yetersiz · ' : 'Satın al · '}${coinIco}${cost}` : 'Uygula'}</button>` : ''}
+    <div class="sheet-sec"><b>Yatak</b><small>İglonun önünde · ${p.bed ? PET.beds[p.bed - 1].name : 'henüz yok'}</small></div>
+    ${bedNext ? `<button id="petBed" class="btn secondary" ${P.coins < bedNext.price ? 'disabled' : ''}>${bedNext.name} · ${coinIco}${fmt(bedNext.price)}</button>` : '<small class="breakdown">En güzel yatak onda ✓</small>'}
+    <div class="sheet-sec"><b>Oyuncak</b><small>Gezgin tüccar getirir</small></div>
+    ${p.toys.length ? `<div class="chips">${p.toys.map(id => `<button class="chip-btn${p.toy === id ? ' sel' : ''}" data-toy="${id}">${PET_TOYS.find(t => t.id === id).name}</button>`).join('')}</div>` : '<small class="breakdown">Henüz oyuncağı yok.</small>'}
+    <div class="sheet-actions"><button id="petRename" class="btn link">İsim değiştir · ${coinIco}${PET.renamePrice}</button><button id="petClose" class="btn green">Kapat</button></div>`);
+  petLoop(() => ({ pose: fed ? 'happy' : 'stand', sleepy: !fed, fur: PET.furs.find(f => f.id === d.fur).hex, collar: d.collar ? COLORS.find(c => c.id === d.collar).hex : null, toy: p.toy }));
+  $('petClose').onclick = () => { petDraft = null; closeOverlay(); };
+  $('petFeed').onclick = () => {
+    if (!canFeed) return;
+    const g = PET.gifts, tot = g.reduce((a, x) => a + x.w, 0);
+    let r = Math.random() * tot, k = 0;
+    while (r >= g[k].w) r -= g[k++].w;
+    const pick = g[k], span = v => (Array.isArray(v) ? v[0] + Math.floor(Math.random() * (v[1] - v[0] + 1)) : v);
+    let text;
+    if (pick.coins) { const n = span(pick.coins); P.coins += n; text = `${n} coin`; }
+    else if (pick.hints) { const n = span(pick.hints); P.hints += n; text = `${n} ipucu`; }
+    else { const n = span(pick.flakes); P.flakes += n; text = `${n} kar tanesi`; }
+    p.fedDay = dateKey();
+    p.gift = text;
+    persist();
+    sfx.reward();
+    track('pet_feed', { gift: text });
+    village.petCheer = village.clock + 3;
+    toast(`${p.name} karnını doyurdu ve sana ${text} getirdi!`, 2800);
+    showPet();
+    if (screen === 'village') renderVillage();
+  };
+  $('overlayCard').querySelectorAll('[data-fur]').forEach(b => { b.onclick = () => { d.fur = b.dataset.fur; showPet(); }; });
+  $('overlayCard').querySelectorAll('[data-collar]').forEach(b => { b.onclick = () => { d.collar = b.dataset.collar || null; showPet(); }; });
+  $('overlayCard').querySelectorAll('[data-toy]').forEach(b => { b.onclick = () => { p.toy = p.toy === b.dataset.toy ? null : b.dataset.toy; persist(); showPet(); }; });
+  if ($('petLook')) $('petLook').onclick = () => {
+    if (P.coins < cost) return;
+    P.coins -= cost;
+    if (furCost) p.furs.push(d.fur);
+    if (collarCost) p.collars.push(d.collar);
+    p.fur = d.fur;
+    p.collar = d.collar;
+    persist();
+    cost ? sfx.coin() : sfx.ui();
+    track('pet_look', { fur: d.fur, collar: d.collar, spent: cost });
+    toast(`${p.name} yeni görünümüyle çok şık`);
+    showPet();
+  };
+  if ($('petBed')) $('petBed').onclick = () => {
+    if (P.coins < bedNext.price) return;
+    P.coins -= bedNext.price;
+    p.bed = (p.bed || 0) + 1;
+    persist();
+    sfx.coin();
+    track('pet_bed', { tier: p.bed, price: bedNext.price });
+    toast(`${bedNext.name} iglonun önüne kondu`);
+    showPet();
+  };
+  $('petRename').onclick = () => {
+    const name = cleanName(prompt('Yeni isim', p.name) || '').slice(0, 12);
+    if (!name || name === p.name || P.coins < PET.renamePrice) return;
+    P.coins -= PET.renamePrice;
+    p.name = name;
+    persist();
+    sfx.coin();
+    showPet();
+    if (screen === 'village') renderVillage();
+  };
+}
+
+// Pencere açıkken tilki önizlemesi canlı çizilir.
+function petLoop(opts) {
+  const cv = $('petCv');
+  (function tick(now) {
+    if (!cv.isConnected || !overlayOpen()) return;
+    const o = opts(), ctx = fitCanvas(cv, 160, 110), t = now / 1000;
+    if (o.toy) drawToy(ctx, 122, 104, 700, o.toy, t);
+    drawFox(ctx, 74, 104, 82, { t, fur: furHex(P), collar: collarHex(), ...o });
+    requestAnimationFrame(tick);
+  })(performance.now());
+}
+
+// ---------- köy projeleri (Çam Ormanı) ----------
+function showProject(id) {
+  const p = PROJECTS.find(x => x.id === id);
+  if (!p) return;
+  const spent = projectSpent(P, p), st = projectStage(P, p), left = p.cost - spent;
+  const steps = [...PROJECT_STEPS.filter(s => s < left), left];
+  openOverlay(`
+    <span class="new-tag">KÖY PROJESİ</span>
+    <h2>${p.name}</h2>
+    <p>${st === 3 ? `Tamamlandı! ${p.text}.` : `Köylüler hep birlikte yapıyor. Coin'i parça parça yatır; bitince kalıcı bonus: <b>${p.text}</b>.`}</p>
+    <div class="proj-stages">${PROJECT_STAGES.map((s, i) => `<span class="${st > i ? 'on' : ''}">${s}</span>`).join('')}</div>
+    <div class="progress"><div style="width:${(spent / p.cost) * 100}%;height:100%;background:var(--green)"></div></div>
+    <small class="breakdown">${fmt(spent)} / ${fmt(p.cost)} coin</small>
+    ${st === 3 ? '' : `<div class="proj-btns">${steps.map(s => `<button class="btn ${s === left ? 'primary' : 'secondary'}" data-inv="${s}" ${P.coins < s ? 'disabled' : ''}>${s === left ? 'Kalanı' : '+'} ${coinIco}${fmt(s)}</button>`).join('')}</div>`}
+    <button id="pjClose" class="btn link">Kapat</button>`);
+  $('pjClose').onclick = closeOverlay;
+  $('overlayCard').querySelectorAll('[data-inv]').forEach(b => {
+    b.onclick = () => {
+      const n = +b.dataset.inv;
+      if (P.coins < n) return;
+      P.coins -= n;
+      P.projects[p.id] = spent + n;
+      const st2 = projectStage(P, p);
+      persist();
+      sfx.coin();
+      track('project_invest', { id: p.id, amount: n, total: P.projects[p.id] });
+      if (st2 === 3) { sfx.win(); toast(`${p.name} tamamlandı! ${p.text}`, 3200); }
+      else if (st2 > st) { sfx.reward(); toast(`${p.name}: ${st2 === 1 ? 'temeli atıldı' : 'yarıya geldi'}`, 2400); }
+      showProject(id);
+      if (screen === 'village') renderVillage();
+    };
+  });
+}
+
+// Köyde Pofi'ye dokununca öğrendiği ifadeleri sırayla yapar.
+let emoteIdx = 0;
+function heroEmote() {
+  if (!P.emotes.length) { toast('Pofi\'ye ifade öğret: Gardırop › İfade', 2400); return; }
+  village.emote = { id: P.emotes[emoteIdx++ % P.emotes.length], t0: village.clock };
 }
 
 // ---------- mağaza ----------
@@ -2161,7 +2710,7 @@ const albumCount = () => ALL_FISH.filter(f => P.album[f.id]).length;
 // Tür, set ağırlığına göre seçilir; albümde olmayan türler ALBUM.missingBias kat daha sık çıkar.
 function rollRare() {
   const n = run.L.fishCells.length;
-  if (!n || run.def.n < ALBUM.from || Math.random() >= ALBUM.chance) return null;
+  if (!n || run.def.n < ALBUM.from || Math.random() >= rareChance(P)) return null;
   const w = ALL_FISH.map(f => f.set.weight * (P.album[f.id] ? 1 : ALBUM.missingBias));
   let r = Math.random() * w.reduce((a, b) => a + b, 0), k = 0;
   while (r >= w[k]) r -= w[k++];
@@ -2706,6 +3255,8 @@ function frame(now) {
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
       cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1, homeReady: homesReady(),
       villagers: villagersHere(), hour: hourNow(), task: taskMarker(), decor: P.decor, event: eventVillage(),
+      pet: P.pet ? { fur: furHex(P), collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
+      merchant: !!merchantToday(), projects: (P.land || 1) >= 3 ? PROJECTS.map(p => ({ p, stage: projectStage(P, p) })) : null,
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
     if (village.panel !== shownPanel) renderZoneTag();
@@ -2726,8 +3277,8 @@ function frame(now) {
     const r = $('wardrobePofi').getBoundingClientRect();
     if (r.width) {
       const ctx = fitCanvas($('wardrobePofi'), r.width, r.height);
-      // Denenen (henüz alınmamış) parça burada görünür: önce dene, sonra satın al.
-      drawPofi(ctx, r.width / 2, r.height - 12, r.height * 0.8, { outfit: previewOutfit(), wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+      // Denenen (henüz alınmamış) parça burada görünür: önce dene, sonra satın al. İfade sekmesinde seçili ifade oynar.
+      drawPofi(ctx, r.width / 2, r.height - 12 - emoteBob(t), r.height * 0.8, { outfit: previewOutfit(), ...emotePose(wardrobeCat === 'emote' ? emoteDraft || 'wave' : null, t) });
       // Büyük önizleme kaydırınca görünmez olursa küçük önizleme sağ üstte takip eder (denenen parça anlık görünür).
       const off = r.bottom < $('screenWardrobe').getBoundingClientRect().top + 70;
       $('wardrobeFloat').classList.toggle('hidden', !off);

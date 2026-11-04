@@ -1,5 +1,6 @@
 // Köy hesapları: yapı seviyeleri, buff'lar, köy seviyesi, indirimli fiyatlar.
 import { BUILDINGS, VILLAGE_LEVELS, VILLAGE_BONUS_PCT, ZONES, COCOA, DISTRICTS, INTERIOR } from './config.js';
+import { projectBonus } from './town.js';
 
 export const building = id => BUILDINGS.find(b => b.id === id);
 export const bLevel = (P, id) => P.village[id]?.lv || 0;
@@ -39,7 +40,8 @@ export function buff(P, key) {
 
 // Köy bonusu + iglo: level coin ödüllerine eklenen toplam yüzde.
 export const villageBonusPct = P => (villageLevel(P) - 1) * VILLAGE_BONUS_PCT;
-export const coinBonusPct = P => buff(P, 'coinPct') + villageBonusPct(P);
+// Telesiyej (köy projesi) bitince +%5 eklenir.
+export const coinBonusPct = P => buff(P, 'coinPct') + villageBonusPct(P) + projectBonus(P, 'coinPct');
 
 // Kakao: fincan fiyatı (taban + alınan tarifler) ve sıradaki tarif.
 export const cupPrice = P => COCOA.cupPrice + buff(P, 'cupBonus') + COCOA.recipes.filter(r => P.recipes.includes(r.id)).reduce((s, r) => s + r.add, 0);

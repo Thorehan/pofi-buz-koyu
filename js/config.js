@@ -103,7 +103,7 @@ export const ZONES = [
 export const DISTRICTS = [
   { id: 'bay', name: 'Buzul Koyu', price: 0, vl: 1 },
   { id: 'harbor', name: 'Buz Limanı', price: 2000, vl: 5, ground: true, text: 'Yolcu teknesi, liman kafesi, balık pazarı ve liman çanı' },
-  { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, soon: true },
+  { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, projects: true, text: 'Köy projeleri: sıcak kaplıca, saat kulesi ve telesiyej' },
 ];
 
 export const BUILDINGS = [
@@ -194,6 +194,13 @@ export const DECOR_ITEMS = [
   { id: 'ev_sugar', name: 'Şeker standı', price: 0, event: 'sugar' },
   { id: 'ev_spring', name: 'Lale saksısı', price: 0, event: 'spring' },
   { id: 'ev_eggs', name: 'Yumurta sepeti', price: 0, event: 'eggs' },
+  // Gezgin tüccarın nadir süsleri (P.decorOwned), yerleştirmek ücretsiz. merchant: tüccardaki fiyat.
+  { id: 'mc_globe', name: 'Kar küresi', price: 0, merchant: 1200 },
+  { id: 'mc_anchor', name: 'Çapa heykeli', price: 0, merchant: 800 },
+  { id: 'mc_totem', name: 'Penguen totemi', price: 0, merchant: 1800 },
+  { id: 'mc_fountain', name: 'Buz çeşmesi', price: 0, merchant: 2500 },
+  { id: 'mc_swing', name: 'Salıncak', price: 0, merchant: 1500 },
+  { id: 'mc_chime', name: 'Rüzgâr çanı', price: 0, merchant: 1000 },
 ];
 // Süs yerleri (yapının taban ortası gibi, genişlik/yükseklik oranı). x > 1 olanlar Buz Limanı'nda.
 // Lv3 yapı görsellerinin, yolların ve köylülerin toplanma yerlerinin dışında seçildi.
@@ -470,6 +477,13 @@ export const WARDROBE = {
     { id: 'bearears', name: 'Ayı kulaklı bere', price: 0, event: 'polarbear' },
     { id: 'tulip', name: 'Lale şapka', price: 0, event: 'spring' },
     { id: 'eggshell', name: 'Yumurta kabuğu', price: 0, event: 'eggs' },
+    // gezgin tüccarın getirdikleri (merchant: tüccardaki fiyat)
+    { id: 'captain', name: 'Kaptan şapkası', price: 0, merchant: 3000 },
+    { id: 'furcap', name: 'Kürk kalpak', price: 0, merchant: 2500 },
+    { id: 'pompom', name: 'Ponponlu bere', price: 0, merchant: 1500 },
+    { id: 'icehelm', name: 'Buz miğferi', price: 0, merchant: 4000 },
+    { id: 'beret', name: 'Ressam beresi', price: 0, merchant: 2000 },
+    { id: 'flowercrown', name: 'Çiçek tacı', price: 0, merchant: 3500 },
   ],
   scarf: [
     { id: 'none', name: 'Yok', price: 0 },
@@ -483,5 +497,90 @@ export const WARDROBE = {
     { id: 'penguin', name: 'Penguenli', price: 0, event: 'penguin' },
     { id: 'hearts', name: 'Kalpli', price: 0, event: 'valentine' },
     { id: 'candy', name: 'Şeker çizgili', price: 0, event: 'sugar' },
+    { id: 'rainbow', name: 'Gökkuşağı', price: 0, merchant: 2500 },
+    { id: 'knit', name: 'Örgü', price: 0, merchant: 1500 },
+    { id: 'starry', name: 'Yıldızlı', price: 0, merchant: 3000 },
+    { id: 'plaid', name: 'Ekose', price: 0, merchant: 2000 },
   ],
 };
+
+// ---------- Coin harcama yerleri (2026-11-04) ----------
+// Tek seferlik harcamalar birkaç haftada bitiyordu; bunlar tekrar eden harcama yerleri. Fiyatlar ilk öneri (denge Mustafa'da).
+
+// Balık pazarı: coin ile kar tanesi. Gün içinde her alımda fiyat artar, gün dönünce başa döner (P.flakeTrade).
+// Coin'i yapı ilerlemesine bağlayan tek yol; artan fiyat ilerlemenin patlamasını önler.
+export const FLAKE_TRADE = { base: 400, mult: 1.5, round: 50 };
+
+// Gezgin tüccar: haftada 1-2 gün Buz Limanı'na teknesiyle yanaşır (hangi gün geleceğini gazete yazar).
+// Her gelişte vitrin: nadir kıyafet, nadir süs, evcil hayvan oyuncağı, balık yemi, gizemli paket, sınırlı kar tanesi.
+// Kıyafet/süs/oyuncak sırayla döner; kaçırılan ürün birkaç hafta sonra yine gelir.
+export const MERCHANT = {
+  bait: { price: 500, levels: 10, bonus: 0.1 }, // sonraki 10 levelde nadir balık şansı +10 puan (yalnızca albüm)
+  mystery: { price: 1000 },
+  flakes: { mult: 0.8, limit: 3 }, // pazarın o anki fiyatının %80'i, ziyaret başına en fazla 3
+};
+// Tüccarın getirdiği kıyafetler WARDROBE'da merchant fiyatıyla durur; süsler DECOR_ITEMS'ta merchant fiyatıyla.
+
+// Evcil hayvan: kar tilkisi yavrusu. Köy Lv4 ya da level 30'dan sonra sahiplenilir. Günde bir kez levellerde
+// toplanan balıklardan verilerek beslenir; beslenince o gün küçük bir hediye getirir ve nadir balık şansı artar.
+// Ceza yok: beslenmezse yalnızca uykulu görünür, hiçbir şey kaybettirmez.
+export const PET = {
+  name: 'Pamuk', price: 1500, vl: 4, level: 30, feedFish: 5, rareBonus: 0.05, renamePrice: 300,
+  furs: [
+    { id: 'snow', name: 'Kar beyazı', hex: null, price: 0 },
+    { id: 'red', name: 'Kızıl', hex: '#f0a066', price: 600 },
+    { id: 'silver', name: 'Gümüş', hex: '#b4c0d2', price: 600 },
+    { id: 'gold', name: 'Altın', hex: '#f2cf6e', price: 900 },
+    { id: 'night', name: 'Gece mavisi', hex: '#8a9ee0', price: 1200 },
+  ],
+  collarPrice: 150, // tasma rengi, COLORS paletinden
+  beds: [{ name: 'Hasır minder', price: 400 }, { name: 'Yünlü sepet', price: 900 }, { name: 'Kubbeli yuva', price: 1500 }],
+  gifts: [{ w: 5, coins: [100, 200] }, { w: 3, hints: 1 }, { w: 2, flakes: [1, 2] }],
+};
+// Oyuncaklar yalnızca gezgin tüccarda satılır; tilki köyde onunla oynar.
+export const PET_TOYS = [
+  { id: 'ball', name: 'Kartopu oyuncağı', price: 300 },
+  { id: 'yarn', name: 'Yün yumağı', price: 500 },
+  { id: 'plush', name: 'Balık peluş', price: 800 },
+  { id: 'sled', name: 'Mini kızak', price: 1500 },
+];
+
+// Köy projeleri: Çam Ormanı'nda üç büyük yapı. Coin parça parça yatırılır; üç aşamada görünür,
+// bitince küçük kalıcı bir bonus verir. at: taban ortası (genişlik/yükseklik oranı, x 2-3 Çam Ormanı paneli).
+export const PROJECTS = [
+  { id: 'spring', name: 'Sıcak kaplıca', cost: 6000, at: [2.24, 0.66], cell: 0.34, bonus: 'rare', value: 0.03, text: 'Nadir balık şansı +3 puan' },
+  { id: 'clock', name: 'Saat kulesi', cost: 10000, at: [2.52, 0.52], cell: 0.3, bonus: 'freeHint', value: 1, text: 'Her gün +1 ücretsiz ipucu' },
+  { id: 'lift', name: 'Telesiyej', cost: 16000, at: [2.8, 0.64], cell: 0.36, bonus: 'coinPct', value: 0.05, text: 'Level coin ödülü +%5' },
+];
+export const PROJECT_STAGES = ['Temel', 'Yarısı', 'Tamamlandı'];
+export const PROJECT_STEPS = [500, 2000]; // yatırma düğmeleri (+ "kalanı")
+
+// Köy Gazetesi: her pazartesi yeni sayı. Metinler kodda üretilir.
+export const GAZETTE = { hardBonus: 150 }; // haftanın zor levelini o hafta 3 yıldızla bitirene
+export const RIDDLES = [
+  { q: 'Ne kadar çok olursa o kadar az görürsün. Nedir?', a: 'Karanlık' },
+  { q: 'Kışın gelir, baharda gider; havuç burnu, kömür gözü var. Kimdir?', a: 'Kardan adam' },
+  { q: 'Suya düşer ıslanmaz, güneşe çıkar kaybolur. Nedir?', a: 'Buz' },
+  { q: 'Gökten iner, iz bırakmaz; her biri başka desenli. Nedir?', a: 'Kar tanesi' },
+  { q: 'Ağzı var konuşmaz, yatağı var uyumaz. Nedir?', a: 'Nehir' },
+  { q: 'Önce kırarsın, sonra kullanırsın. Nedir?', a: 'Yumurta' },
+  { q: 'Benim olduğu halde başkaları benden çok kullanır. Nedir?', a: 'Adın' },
+  { q: 'Pofi kayar, kayar; nerede durur?', a: 'Bir şeye çarpınca' },
+  { q: 'Gündüz yatar, gece kalkar; köyü ışıl ışıl yakar. Nedir?', a: 'Fener' },
+  { q: 'Delik deşik ama su tutar. Nedir?', a: 'Sünger' },
+  { q: 'Elleri var tutmaz, yüzü var gülmez. Nedir?', a: 'Saat' },
+  { q: 'Kanadı var uçamaz, suda balık gibi yüzer. Kimdir?', a: 'Penguen' },
+  { q: 'Bir sıcak fincan, üstü köpük; içen gülümser. Nedir?', a: 'Kakao' },
+  { q: 'Kuzeyde gökyüzü dans eder, renk renk perde açar. Nedir?', a: 'Kuzey ışıkları' },
+  { q: 'Ne kadar alırsan o kadar büyür. Nedir?', a: 'Çukur' },
+  { q: 'Hep önündedir ama göremezsin. Nedir?', a: 'Gelecek' },
+];
+
+// Kıyafet boyama: sahip olunan bir şapka ya da atkı için renk başına bir kez ödenir (COLORS paleti).
+export const DYE_PRICE = 100;
+// Pofi'nin ifadeleri: köyde Pofi'ye dokununca yapar.
+export const EMOTES = [
+  { id: 'wave', name: 'El sallama', price: 400 },
+  { id: 'dance', name: 'Dans', price: 900 },
+  { id: 'spin', name: 'Piruet', price: 1400 },
+];

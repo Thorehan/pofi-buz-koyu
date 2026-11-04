@@ -805,3 +805,40 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .as-head .rw .ico.hint { width: 10px; height: 10px; margin: 0 1px; }
 #btnBoost.pulse { animation: boostPulse 1s ease-in-out infinite; }
 @keyframes boostPulse { 50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(143,91,214,.25); } }
+
+/* ---------- coin harcama yerleri: köy kartları, ana ekran şeridi, tüccar, gazete, tilki, projeler ---------- */
+.town-strip { display: flex; align-items: center; gap: 8px; width: 100%; border: none; border-radius: 14px; padding: 8px 14px; background: #fff3e6; color: var(--ink); font: 500 14px 'Fredoka', sans-serif; text-align: left; box-shadow: 0 3px 0 rgba(29, 53, 87, .1); }
+.town-strip b { flex: 1; font-weight: 600; }
+.town-strip span { color: var(--primary); font-weight: 700; font-size: 18px; }
+.b-card.town { background: #f2f8ff; }
+.b-card.town .act .ico { width: 15px; height: 15px; }
+.b-card.proj { border-color: #ffd166; }
+.progress.slim { height: 6px; margin-top: 2px; background: #e4ecf5; }
+.progress.slim div { height: 100%; background: var(--green); border-radius: 3px; }
+.mc-list { display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.mc-list .shop-item { background: #f4f8fc; padding: 8px 10px; }
+.mc-list .shop-item small { font-size: 12px; }
+.mc-list .btn { font-size: 15px; padding: 7px 10px; }
+.mc-ico { width: 44px; height: 44px; flex: none; background: #fff; border-radius: 12px; }
+.si-icon.mc { background: #fff; font-size: 24px; }
+.gz { display: flex; flex-direction: column; gap: 10px; text-align: left; background: #fbf7ee; border-radius: 16px; padding: 10px 12px 12px; }
+.gz-img { width: 100%; border-radius: 10px; }
+.gz-mast { font: 700 28px 'Fredoka', serif; text-align: center; color: #3b2f22; border-bottom: 3px double #3b2f22; padding-bottom: 2px; letter-spacing: .5px; }
+.gz-meta { display: flex; justify-content: space-between; font-size: 12px; color: #7a6a55; border-bottom: 1px solid #e3d8c3; padding-bottom: 4px; }
+.gz article { display: flex; flex-direction: column; gap: 4px; }
+.gz h4 { margin: 0; font-size: 15px; color: #3b2f22; }
+.gz p { margin: 0; font-size: 14px; color: #4f4436; line-height: 1.35; }
+.gz .btn { align-self: flex-start; padding: 6px 12px; font-size: 14px; }
+.gz-ans b { color: var(--primary); }
+.pet-cv { align-self: center; width: 160px; height: 110px; }
+.rs-pet { align-self: center; width: 64px; height: 52px; margin: -6px 0 -8px; }
+.proj-stages { display: flex; justify-content: space-between; gap: 6px; }
+.proj-stages span { flex: 1; font-size: 13px; padding: 4px 0; border-radius: 8px; background: #eef3f9; color: var(--ink-soft); }
+.proj-stages span.on { background: #e3f7e8; color: var(--green-d); font-weight: 600; }
+.proj-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.proj-btns .btn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 12px; font-size: 15px; }
+.dye-box { display: flex; flex-direction: column; gap: 8px; background: #fff; border-radius: 16px; padding: 10px 12px; }
+.dye-box:empty { display: none; }
+.dye-box .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.card .sheet-sec small .ico { width: 13px; height: 13px; vertical-align: -2px; }
+.card .sheet-sec { text-align: left; }
