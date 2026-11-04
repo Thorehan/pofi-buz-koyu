@@ -1391,7 +1391,7 @@ export class VillageView {
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
   // photo: fotoğraf karesi (ok, kar yağışı ve panel düğmesi çizilmez)
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy', friendReady = [] }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy', friendReady = [], scene = false }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     this.clock = time;
@@ -1542,6 +1542,7 @@ export class VillageView {
     // penguenler yalnızca ana yolda yürür
     for (const w of this.walkers) {
       const hero = w === this.walkers[0];
+      if (hero && scene) continue; // ana ekran sahnesinde Pofi önde ayrı çizilir
       if (hero) this.stepHeroHome(phase, village, time);
       if (hero && this.heroHome) {
         // gece iglosunda uyuyor; köylüler de uyuyorsa onların "z"si zaten çizilir
@@ -1728,7 +1729,7 @@ export class VillageView {
 
     if (vl >= 2 && !photo) this.snowfall(ctx, W, H, time, weather);
     if (event && EVENT_FALL[event.id]) eventFall(ctx, W, H, time, EVENT_FALL[event.id], event.color);
-    if (!this.focus && n > 1 && !photo) this.panelNav(ctx, W, H, u, time);
+    if (!this.focus && n > 1 && !photo && !scene) this.panelNav(ctx, W, H, u, time);
 
     this.parts = this.parts.filter(p => (p.life -= dt) > 0);
     ctx.save();

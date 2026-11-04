@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Playfair+Display:wght@800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -68,38 +68,19 @@
 
   <!-- Ana ekran -->
   <section id="screenHome" class="screen hidden">
-    <div class="logo">
-      <canvas id="homePofi" width="120" height="120"></canvas>
-      <h1>Pofi</h1>
-      <span class="subtitle-pill">BUZ KÖYÜ BULMACASI</span>
-      <p id="greet">Kay, çarp, çöz, köyünü kur.</p>
+    <div id="homeSceneWrap" class="home-scene"><canvas id="homeScene"></canvas><canvas id="homePofi"></canvas></div>
+    <div class="home-logo">Pofi</div>
+    <div class="home-side left">
+      <button id="btnDaily" class="hbtn"><span class="h-ring"><i class="ui ui-gift"></i></span>Ödül<small id="dailySub" class="h-sub"></small><i id="dotDaily" class="dot hidden"></i></button>
+      <button id="btnDailyPuzzle" class="hbtn"><span class="h-ring"><i class="ui ui-puzzle"></i></span>Bulmaca<small id="dpSub" class="h-sub"></small><i id="dotDailyPuzzle" class="dot hidden"></i></button>
+      <button id="btnGazette" class="hbtn hidden"><span class="h-ring"><i class="ui ui-gazette"></i></span>Gazete<i id="dotGazette" class="dot hidden"></i></button>
+    </div>
+    <div class="home-side right">
+      <button id="btnMap" class="hbtn"><span class="h-ring"><i class="ui ui-map"></i></span>Harita<small id="mapSub" class="h-sub"></small><i id="dotMap" class="dot hidden"></i></button>
+      <button id="btnAch" class="hbtn"><span class="h-ring"><i class="ui ui-quests"></i></span>Görevler<small id="achSub" class="h-sub"></small><i id="dotAch" class="dot hidden"></i></button>
+      <button id="eventCard" class="hbtn"></button>
     </div>
     <div class="home-actions">
-      <button id="eventCard" class="event-card"></button>
-      <div class="quick-row">
-        <button id="btnDaily" class="quick">
-          <span class="q-ico gift"><svg viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="9.5" rx="1.5"/><rect x="3" y="7" width="18" height="3.5" rx="1"/><path d="M12 7v13"/><path d="M12 7c-1.4-2.8-5-3.4-5-1.1S10 7 12 7zM12 7c1.4-2.8 5-3.4 5-1.1S14 7 12 7z"/></svg></span>
-          <span class="q-text"><b>Günlük ödül</b><small id="dailySub"></small></span>
-          <i id="dotDaily" class="dot hidden"></i>
-        </button>
-        <button id="btnDailyPuzzle" class="quick">
-          <span class="q-ico cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.6"/></svg></span>
-          <span class="q-text"><b>Günlük bulmaca</b><small id="dpSub"></small></span>
-          <i id="dotDailyPuzzle" class="dot hidden"></i>
-        </button>
-      </div>
-      <div class="quick-row">
-        <button id="btnMap" class="quick">
-          <span class="q-ico map"><svg viewBox="0 0 24 24"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg></span>
-          <span class="q-text"><b>Harita</b><small id="mapSub"></small></span>
-          <i id="dotMap" class="dot hidden"></i>
-        </button>
-        <button id="btnAch" class="quick">
-          <span class="q-ico trophy"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M8.5 20h7M10 17h4"/></svg></span>
-          <span class="q-text"><b>Görevler</b><small id="achSub"></small></span>
-          <i id="dotAch" class="dot hidden"></i>
-        </button>
-      </div>
       <button id="townStrip" class="town-strip hidden"></button>
       <button id="nextCard" class="next-card"></button>
       <button id="btnPlay" class="btn big primary play">
@@ -107,6 +88,7 @@
         <span class="lvl"><small>LEVEL</small><b id="playLevel">1</b></span>
       </button>
     </div>
+    <p id="greet" class="hidden"></p>
   </section>
 
   <!-- Oyun -->

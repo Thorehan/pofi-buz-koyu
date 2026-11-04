@@ -875,3 +875,206 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .gz-band img { width: 100%; display: block; border-radius: 10px; }
 .gz-band span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 26px 'Fredoka', sans-serif; color: #3b2f22; text-shadow: 0 2px 0 rgba(255, 255, 255, .8); }
 .gz p .ico, .card p .ico { width: 16px; height: 16px; vertical-align: -3px; }
+
+/* ==========================================================================
+   Karlı ahşap tema: ahşap tabela ve krem kâğıt panolar, üstünde kar, tombul düğmeler.
+   Köy yapılarının kalın konturlu stiliyle aynı dünyada dursun diye. Eski kuralların üstüne yazar.
+   ========================================================================== */
+:root {
+  --wood: #a56c3a;
+  --wood-l: #c58b52;
+  --wood-d: #6d4322;
+  --paper: #fff7e6;
+  --paper-d: #f3e4c6;
+  --line: #5b3a1e;
+  --navy: #1d3557;
+  --snowcap: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 16'%3E%3Cpath fill='%23fff' stroke='%23b9d4ee' stroke-width='1' d='M-2-2h124v9c-7 7-15 7-20 2-5 6-15 7-21 1-6 7-16 6-21 0-6 6-15 6-20 0-6 7-16 6-22-1-6 5-14 5-20-1z'/%3E%3C/svg%3E");
+}
+body { background: #8fbfe2; }
+#app { background: linear-gradient(180deg, #dff1ff 0%, #c5e3f8 55%, #e9f5ff 100%); }
+
+/* ---------- düğmeler ---------- */
+.btn:not(.link) { border: 3px solid var(--navy); text-shadow: 0 2px 0 rgba(0, 0, 0, .22); }
+.btn.primary { background: linear-gradient(180deg, #ffa657, #ff8a3d 55%, #f07a2c); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .4), 0 4px 0 var(--navy); }
+.btn.secondary { background: linear-gradient(180deg, #5fa9ec, #3d8fe0 55%, #2f7ccb); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .35), 0 4px 0 var(--navy); }
+.btn.green { background: linear-gradient(180deg, #5cc777, #3fae5a 55%, #339a4c); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .35), 0 4px 0 var(--navy); }
+.btn:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .3), 0 1px 0 var(--navy); }
+/* pasif düğme: griye solmak yerine okunaklı "kapalı" hâli; yazısı neden kapalı olduğunu söyler */
+.btn:disabled { filter: none; opacity: 1; background: var(--paper-d); color: #8a7a60; border-color: #b49e7c; box-shadow: 0 3px 0 #b49e7c; text-shadow: none; }
+.btn.link { color: var(--wood-d); font-weight: 600; }
+.icon-btn { background: var(--wood); color: var(--paper); border: 3px solid var(--navy); box-shadow: inset 0 2px 0 rgba(255, 255, 255, .3), 0 3px 0 var(--navy); }
+
+/* ---------- üst para göstergesi ---------- */
+.pill { background: var(--paper); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--wood-d); }
+
+/* ---------- ahşap başlık tabelası ---------- */
+.page-title {
+  align-self: flex-start; padding: 6px 18px 7px; font-size: 24px; color: var(--paper); text-shadow: 0 2px 0 var(--wood-d);
+  background: var(--snowcap) top/120px 11px repeat-x, linear-gradient(180deg, var(--wood-l), var(--wood));
+  border: 3px solid var(--line); border-radius: 12px; box-shadow: 0 4px 0 var(--wood-d); transform: rotate(-1deg);
+}
+
+/* ---------- panolar ---------- */
+.b-card, .shop-item, .set-group, .vl-card, .quest-box, .ach-card, .album-box, .badge-box, .ev-step, .task, .dye-box, .w-item, .next-card, .town-strip {
+  background: var(--paper); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--wood-d);
+}
+.b-card.district, .honey { background: var(--paper); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--wood-d); }
+.b-card.town { background: #fff1d6; }
+.b-card.ready { border-color: var(--green-d); box-shadow: 0 3px 0 var(--green-d); }
+.b-card.proj { border-color: #c98a1c; }
+.b-card { position: relative; }
+.b-thumb { position: absolute; top: 2px; right: 2px; width: 48px; height: 48px; object-fit: contain; pointer-events: none; }
+.b-card:has(.b-thumb) b { padding-right: 42px; }
+.album-set { background: var(--paper-d); }
+.shop-list h3, #screenShop h3 { color: var(--wood-d); margin: 6px 0 0; }
+.w-item.on { background: #eaf7dc; border-color: var(--green-d); }
+.w-item.sel { background: #e0efff; border-color: var(--blue-d); }
+.progress { border: 2px solid var(--line); background: var(--paper-d); box-sizing: content-box; }
+.set-row { border-color: var(--paper-d); }
+
+/* ---------- sekmeler: ahşap ray, seçili sekme kâğıt ---------- */
+.seg { background: var(--wood); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--wood-d); }
+.seg-btn, .vtab { color: #fbe9cc; text-shadow: 0 1px 0 var(--wood-d); }
+.seg-btn.active, .vtab.active { background: var(--paper); color: var(--navy); text-shadow: none; box-shadow: 0 2px 0 var(--line); }
+
+/* ---------- oyun içi araçlar ---------- */
+.tool { background: var(--paper); border: 3px solid var(--line); box-shadow: 0 4px 0 var(--wood-d); color: var(--wood-d); }
+.tool small { color: var(--wood-d); font-weight: 600; }
+.tool .badge { border: 2px solid var(--navy); }
+.chip { background: var(--paper); border: 2px solid var(--line); }
+.hint-bar { background: var(--paper); border: 3px solid var(--line); }
+.bb-card { background: var(--paper-d); border-color: var(--line); }
+
+/* ---------- alt menü: ahşap kalas, üstünde kar ---------- */
+.tabbar {
+  position: relative; background: repeating-linear-gradient(90deg, var(--wood) 0 74px, #99623a 74px 76px);
+  border-top: 3px solid var(--line); box-shadow: 0 -3px 10px rgba(29, 53, 87, .25); padding-top: 8px;
+}
+.tabbar::before { content: ''; position: absolute; left: 0; right: 0; top: -9px; height: 13px; background: var(--snowcap) top/120px 13px repeat-x; pointer-events: none; }
+.tabbar button { color: #fbe9cc; font-weight: 600; text-shadow: 0 1px 0 var(--wood-d); }
+.tabbar button.active { color: var(--navy); text-shadow: none; }
+.tabbar button.active::before { background: var(--paper); border: 2px solid var(--line); inset: -3px 4px 0; box-shadow: 0 3px 0 var(--wood-d); }
+.tabbar svg { stroke-width: 2.6; }
+.tabbar .ui { width: 30px; height: 30px; }
+
+/* ---------- pencereler: ahşap çerçeveli kâğıt ---------- */
+.overlay { background: rgba(32, 40, 60, .62); }
+.card {
+  position: relative; background: var(--snowcap) top/150px 18px repeat-x, var(--paper);
+  border: 6px solid var(--wood); outline: 3px solid var(--line); outline-offset: -1px; border-radius: 22px; padding-top: 24px;
+  box-shadow: 0 6px 0 var(--wood-d), 0 16px 34px rgba(0, 0, 0, .3);
+}
+.card h2 { color: var(--wood-d); }
+.card p { color: #54452f; }
+.card .breakdown { color: #7a6a52; }
+.card .new-tag {
+  background: var(--wood); color: var(--paper); border: 2px solid var(--line); border-radius: 6px; padding: 3px 14px; letter-spacing: .04em;
+  text-shadow: 0 1px 0 var(--wood-d); box-shadow: 0 2px 0 var(--wood-d);
+}
+.card .shop-item, .card .ev-step { box-shadow: none; border-width: 2px; }
+.mc-list .shop-item { background: var(--paper-d); }
+.away-list { background: var(--paper-d); }
+
+/* ---------- ana ekran: köy sahnesi, kenarlarda yuvarlak düğmeler, altta dev Oyna ---------- */
+#app[data-screen="home"] .topbar { position: absolute; left: 0; right: 0; top: 0; z-index: 5; pointer-events: none; }
+#app[data-screen="home"] .wallet { pointer-events: auto; }
+#screenHome { position: relative; padding: 0; overflow: hidden; justify-content: flex-end; gap: 0; align-items: stretch; }
+.home-scene { position: absolute; inset: 0 0 140px; overflow: hidden; }
+.home-scene #homeScene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.home-logo { position: absolute; top: 10px; left: 14px; z-index: 4; font: 700 34px/1 'Fredoka', sans-serif; color: #fff; text-shadow: 0 3px 0 var(--navy), 0 0 8px rgba(29, 53, 87, .5); -webkit-text-stroke: 1px var(--navy); }
+#homePofi { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 190px; height: 150px; z-index: 2; pointer-events: none; }
+.home-side { position: absolute; top: 62px; z-index: 3; display: flex; flex-direction: column; gap: 9px; }
+.home-side.left { left: 8px; }
+.home-side.right { right: 8px; }
+.hbtn {
+  position: relative; width: 62px; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 600 11.5px/1.1 'Fredoka', sans-serif; color: #fff; text-shadow: 0 1px 0 var(--navy), 0 0 3px var(--navy), 0 0 3px var(--navy);
+}
+.hbtn .h-ring {
+  width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 25px; overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #fffdf6, var(--paper) 55%, var(--paper-d)); border: 3px solid var(--line); box-shadow: 0 3px 0 var(--wood-d); text-shadow: none;
+}
+.hbtn:active .h-ring { transform: translateY(2px); box-shadow: 0 1px 0 var(--wood-d); }
+.hbtn .ui { width: 34px; height: 34px; }
+.hbtn .tok, .hbtn .ev-token img { width: 34px; height: 34px; }
+.hbtn .h-sub { display: none; }
+.hbtn .dot { top: -2px; right: 3px; width: 15px; height: 15px; border-width: 2px; }
+.hbtn.muted-q .h-ring { filter: grayscale(.7); opacity: .8; }
+.hbtn .ev-time { position: absolute; top: 37px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 9.5px; padding: 0 5px; border-radius: 7px; background: var(--ev, var(--wood)); border: 1.5px solid var(--navy); text-shadow: none; }
+.home-actions { position: relative; z-index: 4; width: 100%; flex: none; display: flex; flex-direction: column; gap: 8px; padding: 8px 14px 12px; background: var(--snowcap) top/150px 14px repeat-x, linear-gradient(180deg, var(--wood-l), var(--wood)); border-top: 3px solid var(--line); }
+.home-actions::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; height: 14px; background: var(--snowcap) top/150px 14px repeat-x; pointer-events: none; }
+.home-actions .next-card, .home-actions .town-strip { padding: 6px 12px; min-height: 40px; font-size: 13.5px; }
+.town-strip:not(.hidden) + .next-card { display: none; }
+.btn.play { padding: 10px 12px 10px 26px; font-size: 38px; border-width: 4px; box-shadow: inset 0 4px 0 rgba(255, 255, 255, .45), 0 6px 0 var(--navy); }
+.play .lvl { background: var(--paper); color: var(--navy); border: 3px solid var(--navy); text-shadow: none; }
+@media (max-height: 700px) {
+  .home-scene { bottom: 124px; }
+  .home-side { top: 54px; gap: 5px; }
+  .hbtn .h-ring { width: 44px; height: 44px; font-size: 21px; }
+  .hbtn .ui, .hbtn .tok, .hbtn .ev-token img { width: 28px; height: 28px; }
+  .hbtn .ev-time { top: 29px; }
+  #homePofi { width: 150px; height: 118px; }
+  .btn.play { font-size: 30px; padding: 6px 10px 6px 22px; }
+  .home-actions .next-card, .home-actions .town-strip { min-height: 34px; padding: 3px 10px; }
+}
+/* ikon yeri: görsel gelene kadar yedek emoji */
+.ui { display: inline-block; width: 1.3em; height: 1.3em; background: center/contain no-repeat; font-style: normal; line-height: 1.3; text-align: center; }
+.ui-gift::before { content: '🎁'; } .ui-puzzle::before { content: '🧩'; } .ui-gazette::before { content: '📰'; }
+.ui-map::before { content: '🗺️'; } .ui-quests::before { content: '🏆'; }
+
+/* ---------- Köy Gazetesi: katlı kâğıt açılır, gerçek gazete ---------- */
+.card.news {
+  --news: #f4ecd8; --news-ink: #2e2619; --news-line: #4a3d2a;
+  background: repeating-linear-gradient(0deg, rgba(90, 70, 40, .018) 0 2px, transparent 2px 5px), var(--news);
+  border: 0; outline: 0; border-radius: 3px; padding: 14px 14px 12px; max-width: 400px; gap: 8px; text-align: left; color: var(--news-ink);
+  box-shadow: 0 2px 0 #cdbf9f, 0 4px 0 #bfb08d, 0 18px 40px rgba(0, 0, 0, .45);
+  transform-origin: 50% 50%; animation: news-open .42s cubic-bezier(.2, .9, .3, 1.1);
+}
+@keyframes news-open { 0% { transform: perspective(900px) rotateX(-82deg) scale(.86); opacity: 0; } 70% { transform: perspective(900px) rotateX(6deg); opacity: 1; } 100% { transform: perspective(900px) rotateX(0) rotate(-.5deg); } }
+.card.news { transform: rotate(-.5deg); }
+/* katlama izi */
+.card.news::after { content: ''; position: sticky; display: block; flex: none; height: 0; }
+.nw-mast { position: relative; text-align: center; border-bottom: 3px double var(--news-line); padding-bottom: 4px; }
+.nw-mast img { display: block; width: 100%; max-height: 62px; object-fit: cover; opacity: .9; }
+.nw-title { font: 900 37px/1 'Playfair Display', Georgia, serif; letter-spacing: -.3px; color: var(--news-ink); }
+.nw-mast img + .nw-title { position: absolute; left: 0; right: 0; top: 12px; text-shadow: 0 0 6px #f4ecd8, 0 0 2px #f4ecd8; }
+.nw-meta { display: flex; justify-content: space-between; gap: 6px; font: 600 10.5px/1.2 Georgia, serif; text-transform: uppercase; letter-spacing: .05em; color: #5f513b; border-bottom: 1px solid var(--news-line); padding-bottom: 3px; }
+.nw-head { font: 800 22px/1.12 'Playfair Display', Georgia, serif; margin: 2px 0 0; color: var(--news-ink); }
+.nw-photo { margin: 0; border: 1px solid var(--news-line); padding: 3px; background: #fbf6e8; }
+.nw-photo img { display: block; width: 100%; height: 120px; object-fit: cover; object-position: left center; filter: sepia(.65) contrast(1.05) saturate(.75); }
+.nw-photo figcaption { font: italic 11px/1.25 Georgia, serif; color: #5f513b; padding-top: 3px; }
+.nw-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; position: relative; }
+.nw-cols::before { content: ''; position: absolute; top: 2px; bottom: 2px; left: 50%; border-left: 1px solid rgba(74, 61, 42, .55); }
+.nw-sec h4 { margin: 6px 0 2px; font: 800 13.5px/1.15 'Playfair Display', Georgia, serif; color: var(--news-ink); border-bottom: 1px solid rgba(74, 61, 42, .4); padding-bottom: 2px; }
+.nw-sec p { margin: 0 0 4px; font: 400 12.5px/1.32 Georgia, serif; color: #3b3122; hyphens: auto; }
+.card.news .nw-sec p b { color: var(--news-ink); }
+.nw-box { border: 2px solid var(--news-line); padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+.nw-box h4 { margin: 0; border: 0; padding: 0; text-align: center; font: 800 12px/1 'Playfair Display', Georgia, serif; letter-spacing: .08em; text-transform: uppercase; }
+.nw-box p { margin: 0; text-align: center; font: 400 12.5px/1.3 Georgia, serif; color: #3b3122; }
+.nw-box .btn { align-self: center; padding: 4px 12px; font-size: 13px; }
+.nw-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nw-answer { font: 700 14px/1.2 Georgia, serif; text-align: center; color: var(--news-ink); transform: rotate(180deg); opacity: .55; transition: transform .35s, opacity .35s; }
+.nw-answer.up { transform: none; opacity: 1; }
+.nw-flip { align-self: center; border: 0; background: none; padding: 2px; font: italic 11.5px Georgia, serif; color: #5f513b; text-decoration: underline; cursor: pointer; }
+.nw-stamp { display: inline-block; align-self: center; padding: 1px 8px; border: 2px solid #b0341f; color: #b0341f; font: 800 11px Georgia, serif; text-transform: uppercase; letter-spacing: .06em; transform: rotate(-5deg); }
+.card.news #gzClose { align-self: center; margin-top: 2px; padding: 6px 22px; }
+/* ince ayarlar */
+.page-title { padding-top: 12px; }
+.si-icon { border: 2px solid var(--line); }
+.si-icon.coins { border-radius: 50%; box-shadow: inset 0 0 0 3px #e0a312; }
+.set-row.action { color: var(--wood-d); font-weight: 600; }
+.set-row.action.danger { color: #c0392b; }
+.nw-photo img { filter: sepia(.32) saturate(.85) brightness(1.04); height: 104px; }
+.nw-head { font-size: 20px; }
+.nw-title { font-size: 32px; }
+.sheet { background: var(--snowcap) top/150px 14px repeat-x, var(--paper); border-top: 4px solid var(--wood); box-shadow: 0 -3px 0 var(--line), 0 -10px 24px rgba(29, 53, 87, .25); padding-top: 18px; }
+.buff-box { background: var(--paper-d); }
+.sheet-x, .hb-x { background: var(--paper-d) !important; color: var(--wood-d) !important; border: 2px solid var(--line) !important; }
+.chip-btn { background: var(--paper); border-color: var(--line); }
+.chip-btn.sel { background: #e0efff; border-color: var(--blue-d); }
+.ev-lv, .dcell { background: var(--paper); border-color: var(--line); box-shadow: 0 3px 0 var(--wood-d); }
+.ev-lv.locked { background: var(--paper-d); box-shadow: none; }
+.dcell.today { background: #ffe7c7; border-color: var(--primary-d); }
+.lv-pill { border: 2px solid var(--line); }
+/* mavi kar tanesi yeşil ve mavi düğmede kayboluyordu */
+.btn .ico.flake { background-color: #fff; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }

@@ -70,6 +70,7 @@ let LEVELS = []; // data/levels.json — sonrası çalışma anında üretilir
 const board = new BoardView($('board'));
 const village = new VillageView($('village'));
 const visitView = new VillageView($('visitCanvas'));
+const homeView = new VillageView($('homeScene')); // ana ekranın arkasındaki canlı köy
 village.onSelect = id => (sheet?.id === id && INTERIOR[id] && P.village[id] ? goInside(id) : openSheet(id));
 village.onDistrict = i => showDistrict(i);
 village.onVillager = id => talkTo(id);
@@ -142,6 +143,7 @@ function showScreen(name) {
     if (P.vlClaimed < villageLevel(P)) setTimeout(celebrateVillage, 500);
     else if (!P.villageName && !nameAsked) { nameAsked = true; setTimeout(() => { if (screen === 'village' && !overlayOpen()) showVillageName(); }, 400); }
   }
+  if (name === 'home') homeView.resize();
   if (name === 'wardrobe') renderWardrobe();
   if (name === 'event') renderEventScreen();
   if (name === 'map') openMap();
@@ -149,7 +151,6 @@ function showScreen(name) {
   if (name === 'ach') renderAch();
   if (name === 'shop') renderShop();
   if (name === 'settings') renderSettings();
-  if (name === 'home' && P.profile) $('greet').textContent = `Merhaba ${P.profile.name}, Pofi seni bekliyor!`;
   if (name === 'home') { ensureEvent(P); if (P.eventNote) { const n = P.eventNote; P.eventNote = null; persist(); setTimeout(() => toast(`${n.name} bitti: kalan ${n.tokens} jeton ${n.coins} coin oldu`, 3200), 600); } }
   updateWallet();
   if (name === 'home' && !dailyPopupShown && !dailyRewardState().claimedToday) {
@@ -169,7 +170,8 @@ function toast(msg, ms = 1800) {
   toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
 }
 
-function openOverlay(html) {
+function openOverlay(html, cls = '') {
+  $('overlayCard').className = `card ${cls}`.trim();
   $('overlayCard').innerHTML = html;
   $('overlay').classList.remove('hidden');
 }
@@ -1127,7 +1129,8 @@ function renderVillage() {
     const ready = cost !== null && P.flakes >= cost;
     const act = cost === null ? capText(b) : lv === 0 ? `Kur ${flakeIco}${cost}` : `Lv${lv + 1} ${flakeIco}${cost}`;
     const buffNow = BUFF_TEXT[b.buff](b.values[Math.max(0, lv - 1)]);
-    return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}"><b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span>${ready ? '<i class="dot"></i>' : ''}</button>`;
+    const thumb = `<img class="b-thumb" src="assets/art/bld_${b.id}_s${P.village[b.id]?.style || 0}_lv${Math.min(Math.max(lv, 1), 3)}.webp" alt="" onerror="this.remove()">`;
+    return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}">${thumb}<b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span>${ready ? '<i class="dot"></i>' : ''}</button>`;
   }).join('');
   // Sekmeler: Köy hayatı ilk yapıdan sonra, Projeler Çam Ormanı açılınca görünür. Seçili sekme yoksa Yapılar açılır.
   const tabs = { build: true, life: Object.keys(P.village).length > 0, proj: (P.land || 1) >= 3 };
@@ -2092,6 +2095,8 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function renderTownStrip() {
+  $('btnGazette').classList.toggle('hidden', P.level <= 5);
+  $('dotGazette').classList.toggle('hidden', !gazetteUnread());
   const el = $('townStrip');
   let html = '', go = null;
   if (merchantToday() && (P.land || 1) >= 2) { html = '⛵ <b>Gezgin tüccar bugün limanda</b>'; go = 'merchant'; }
@@ -2268,6 +2273,7 @@ function gazetteNews() {
   return out;
 }
 
+let gzPhoto = null; // gazetenin ön sayfa fotoğrafı, sayı başına bir kez çekilir
 function showGazette() {
   const issue = gazetteIssue(), now = new Date(), land = P.land || 1;
   const next = currentEvent(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
@@ -2281,25 +2287,29 @@ function showGazette() {
   const monday = new Date(midnight);
   monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
   const hard = gazetteHard(), hardDone = P.gazette.hard === issue, riddle = RIDDLES[issue % RIDDLES.length];
-  // başlık bandı görseli yazısız; başlık kodla üstüne yazılır (Türkçe harfler görselde bozulmasın)
-  const head = art('gazette_header') ? '<div class="gz-band"><img src="assets/art/gazette_header.webp" alt=""><span>Köy Gazetesi</span></div>' : '<div class="gz-mast">Köy Gazetesi</div>';
+  const vname = P.villageName || 'Köyümüz', news = gazetteNews();
+  // manşet: haftanın en büyük olayı. Ön sayfa fotoğrafı köyün o anki hâli.
+  const headline = merchantToday() && land >= 2 ? 'Kaptan Mors bugün limanda!' : news.length ? `${esc(vname)} büyümeye devam ediyor` : `${esc(vname)} kışa hazır`;
+  if (gzPhoto?.issue !== issue) { try { gzPhoto = { issue, url: shootVillage().toDataURL('image/jpeg', 0.75) }; } catch { gzPhoto = null; } }
+  const answered = P.gazette.riddle === issue;
   openOverlay(`
-    <div class="gz">
-      ${head}
-      <div class="gz-meta"><span>Sayı ${issue}</span><span>${monday.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} haftası</span></div>
-      <article><h4>⛵ Gezgin tüccar</h4><p>${merchantText}</p></article>
-      <article><h4>${next.token} Gelecek haftanın etkinliği</h4><p><b>${next.name}.</b> ${next.text}</p></article>
-      <article><h4>🐧 Köyden haberler</h4>${gazetteNews().map(l => `<p>${esc(l)}</p>`).join('')}</article>
-      <article><h4>🏔️ Haftanın zor leveli</h4><p>Level ${hard}. ${hardDone ? 'Bu hafta 3 yıldızla bitirdin, tebrikler!' : `Bu hafta 3 yıldızla bitirene ${coinIco}${GAZETTE.hardBonus}.`}</p>
-        ${hardDone ? '' : `<button id="gzPlay" class="btn secondary">Level ${hard} · Oyna</button>`}</article>
-      <article><h4>❓ Bilmece</h4><p>${riddle.q}</p><p id="gzAns" class="gz-ans${P.gazette.riddle === issue ? '' : ' hidden'}">Cevap: <b>${riddle.a}</b></p>
-        ${P.gazette.riddle === issue ? '' : '<button id="gzReveal" class="btn link">Cevabı göster</button>'}</article>
+    <header class="nw-mast">${art('gazette_header') ? '<img src="assets/art/gazette_header.webp" alt="">' : ''}<div class="nw-title">Köy Gazetesi</div></header>
+    <div class="nw-meta"><span>Sayı ${issue}</span><span>${monday.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}</span><span>Fiyatı: bir kartopu</span></div>
+    <h3 class="nw-head">${headline}</h3>
+    ${gzPhoto ? `<figure class="nw-photo"><img src="${gzPhoto.url}" alt="Köyün fotoğrafı"><figcaption>${esc(vname)}, Köy seviyesi ${villageLevel(P)}. Hava: ${weatherNow().name}.</figcaption></figure>` : ''}
+    <div class="nw-cols">
+      <section class="nw-sec"><h4>Köyden haberler</h4>${news.map(l => `<p>${esc(l)}</p>`).join('')}</section>
+      <section class="nw-sec"><h4>Liman köşesi</h4><p>${merchantText}</p><h4>Gelecek hafta</h4><p><b>${next.name}.</b> ${next.text}</p></section>
     </div>
-    <button id="gzClose" class="btn green">Kapat</button>`);
+    <div class="nw-row">
+      <section class="nw-box"><h4>Haftanın zor leveli</h4><p>Level ${hard}${hardDone ? '' : `<br>3 yıldıza ${GAZETTE.hardBonus} coin`}</p>${hardDone ? '<span class="nw-stamp">Çözüldü</span>' : '<button id="gzPlay" class="btn secondary">Oyna</button>'}</section>
+      <section class="nw-box"><h4>Bilmece</h4><p>${riddle.q}</p><div id="gzAns" class="nw-answer${answered ? ' up' : ''}">${riddle.a}</div>${answered ? '' : '<button id="gzReveal" class="nw-flip">Gazeteyi çevir</button>'}</section>
+    </div>
+    <button id="gzClose" class="btn green">Gazeteyi katla</button>`, 'news');
   if (P.gazette.read !== issue) { P.gazette.read = issue; persist(); track('gazette_read', { issue }); }
   $('gzClose').onclick = () => { closeOverlay(); if (screen === 'village') renderVillage(); };
   if ($('gzPlay')) $('gzPlay').onclick = () => { closeOverlay(); playFromMap = true; startLevel(hard); };
-  if ($('gzReveal')) $('gzReveal').onclick = () => { P.gazette.riddle = issue; persist(); $('gzAns').classList.remove('hidden'); $('gzReveal').remove(); };
+  if ($('gzReveal')) $('gzReveal').onclick = () => { P.gazette.riddle = issue; persist(); $('gzAns').classList.add('up'); $('gzReveal').remove(); };
 }
 
 // ---------- evcil dostlar: her tür ayrı sahiplenilir, biri köyde Pofi'nin yanında gezer ----------
@@ -2368,7 +2378,7 @@ function showPet() {
     <canvas id="petCv" class="pet-cv"></canvas>
     ${petKindRow(p.kind)}
     <p>${fed ? `Karnı tok! Bugün ${p.gift || 'bir hediye'} getirdi. Nadir balık şansı bugün +${Math.round(PET.rareBonus * 100)} puan.` : canFeed ? `Acıktı. ${fish} balığın var${fromPier ? ` (${fromPier} tanesi iskeleden)` : ''}; ${PET.feedFish} tanesini ver, karşılığında bir hediye getirsin.` : `Uykulu. ${PET.feedFish} balık gerekli, şu an ${fish} tane var. Levellerde topla${P.village.pier ? ' ya da iskele tutsun' : ''}, sonra besle.`}</p>
-    <button id="petFeed" class="btn green big" ${canFeed ? '' : 'disabled'}>${fed ? 'Bugün beslendi ✓' : `Besle · ${PET.feedFish} 🐟`}</button>
+    ${fed ? '' : `<button id="petFeed" class="btn green big" ${canFeed ? '' : 'disabled'}>Besle · ${PET.feedFish} 🐟</button>`}
 
     <div class="sheet-sec"><b>Tasma</b><small>Renk başına ${coinIco}${PET.collarPrice}</small></div>
     <div class="swatches"><button class="sw def${d.collar === null ? ' sel' : ''}" data-collar="" title="Tasmasız"></button>${COLORS.map(c => `<button class="sw${d.collar === c.id ? ' sel' : ''}" data-collar="${c.id}" title="${c.name}" style="background:${c.hex}">${p.collars.includes(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}</div>
@@ -2382,7 +2392,7 @@ function showPet() {
   petLoop(() => ({ pose: fed ? 'happy' : changed ? 'stand' : 'sleep', sleepy: !fed, collar: d.collar ? COLORS.find(c => c.id === d.collar).hex : null, toy: p.toy }));
   bindPetKinds();
   $('petClose').onclick = () => { petDraft = null; closeOverlay(); };
-  $('petFeed').onclick = () => {
+  if ($('petFeed')) $('petFeed').onclick = () => {
     if (!canFeed) return;
     // önce bugün levellerde toplananlar sayılır, eksiği iskeleden gelir
     bankPier();
@@ -3459,13 +3469,11 @@ $('btnReset').onclick = () => {
 const tokenHtml = (ev, cls = 'tok') => (ev.art ? `<img class="${cls}" src="assets/art/ev_token_${ev.id}.webp" alt="${ev.token}">` : ev.token);
 // Etkinlik ekranı: haftaya özel 15 temalı level, jetonla ilerleyen ödül yolu ve jeton dükkânı.
 function renderEventCard() {
-  const ev = ensureEvent(P), next = nextMilestone(P), ready = claimable(P).length;
-  const pct = next ? P.event.earned / next.pts : 1;
+  const ev = ensureEvent(P), ready = claimable(P).length;
   const card = $('eventCard');
   card.style.setProperty('--ev', ev.color);
-  card.innerHTML = `<span class="ev-token">${tokenHtml(ev)}</span><span class="ev-text"><b>${ev.name}</b>`
-    + `<span class="ev-bar"><div style="width:${Math.min(100, pct * 100)}%"></div></span>`
-    + `<small>${P.event.tokens} jeton · ${next ? `sonraki ödül ${next.pts}` : 'bütün ödüller açıldı'} · ${timeLeft(ev.ends)}</small></span>`
+  card.setAttribute('aria-label', ev.name);
+  card.innerHTML = `<span class="h-ring"><span class="ev-token">${tokenHtml(ev)}</span></span><span class="ev-time">${timeLeft(ev.ends).split(' ')[0]}</span>Etkinlik`
     + (ready ? '<i class="dot"></i>' : '');
 }
 
@@ -3676,6 +3684,8 @@ window.addEventListener('hashchange', () => {
 const testLevel = Math.max(0, Math.min(1000, Math.floor(+new URLSearchParams(location.search).get('oyna') || 0)));
 $('btnPlay').onclick = () => startLevel(testLevel || P.level);
 $('nextCard').onclick = () => showScreen('village');
+$('homeSceneWrap').onclick = () => showScreen('village');
+$('btnGazette').onclick = () => { sfx.ui(); showGazette(); };
 $('btnDaily').onclick = showDailyReward;
 $('btnDailyPuzzle').onclick = () => {
   const st = dailyPuzzleState();
@@ -3901,9 +3911,14 @@ function frame(now) {
   } else if (screen === 'visit' && visit) {
     visitView.draw(t, dt, { village: visit.village, vl: villageLevel({ village: visit.village }), outfit: visit.outfit, colors: COLORS, plots: [], ready: [], land: landOf(visit.village), teaser: false });
   } else if (screen === 'home') {
-    const ctx = fitCanvas($('homePofi'), 120, 120);
-    drawPofi(ctx, P.pet ? 46 : 60, 117, 94, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
-    if (P.pet) drawPet(ctx, 94, 117, 40, { kind: P.pet.kind, pose: petFedToday(P) ? 'stand' : 'sleep', t, collar: collarHex() });
+    if (!homeView.W) homeView.resize();
+    homeView.draw(t, dt, { ...villageScene(), plots: [], ready: [], teaser: false, scene: true, pet: null });
+    const r = $('homePofi').getBoundingClientRect(), s = r.height;
+    if (s) {
+      const ctx = fitCanvas($('homePofi'), r.width, s);
+      drawPofi(ctx, P.pet ? r.width * 0.38 : r.width / 2, s - 3, s * 0.82, { outfit: P.outfit, wave: Math.max(0, Math.sin(t * 2.2)) * 0.6, blink: (t % 3.4) < 0.12 });
+      if (P.pet) drawPet(ctx, r.width * 0.76, s - 3, s * 0.38, { kind: P.pet.kind, pose: petFedToday(P) ? 'stand' : 'sleep', t, collar: collarHex() });
+    }
   } else if (screen === 'interior' && room) {
     const r = $('roomCanvas').getBoundingClientRect();
     if (r.width) {
