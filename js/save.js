@@ -48,6 +48,9 @@ function defaults() {
     dailyPuzzleDay: '',
     dailyPuzzleStreak: 0,
     // coin harcama yerleri (2026-11-04)
+    lastSeen: null, // oyunun en son açık olduğu an ("Sen yokken" kartı için)
+    pierFish: 0, // iskelenin tuttuğu balık (kesirli)
+    pierTs: null,
     flakeTrade: null, // { day, n } — pazarda bugün alınan kar tanesi (fiyat merdiveni)
     merchant: null, // { visit, bought: { ürün: adet } } — tüccarın son ziyareti
     bait: 0, // balık yeminin kalan level sayısı

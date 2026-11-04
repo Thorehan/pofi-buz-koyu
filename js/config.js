@@ -514,6 +514,12 @@ export const WARDROBE = {
 // Coin'i yapı ilerlemesine bağlayan tek yol; artan fiyat ilerlemenin patlamasını önler.
 export const FLAKE_TRADE = { base: 400, mult: 1.5, round: 50 };
 
+// Hafif idle: iskele sen yokken balık tutar, balıklar yalnızca evcil dostu beslemeye yarar (coin vermez).
+// Saatte iskele seviyesi × perLevel balık, capHours saatlik üretimde durur; kaçırmanın cezası yok.
+export const PIER_CATCH = { perLevel: 0.5, capHours: 12 };
+// "Sen yokken" kartı bu kadar dakika uzak kalınca çıkar.
+export const AWAY_MIN = 60;
+
 // Gezgin tüccar: haftada 1-2 gün Buz Limanı'na teknesiyle yanaşır (hangi gün geleceğini gazete yazar).
 // Her gelişte vitrin: nadir kıyafet, nadir süs, evcil hayvan oyuncağı, balık yemi, gizemli paket, sınırlı kar tanesi.
 // Kıyafet/süs/oyuncak sırayla döner; kaçırılan ürün birkaç hafta sonra yine gelir.

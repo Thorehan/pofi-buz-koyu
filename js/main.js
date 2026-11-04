@@ -27,7 +27,7 @@ import {
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
-  FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
+  PIER_CATCH, AWAY_MIN, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -103,7 +103,7 @@ const flakeIco = '<i class="ico flake"></i>';
 const hintIco = '<i class="ico hint"></i>';
 const popcount = m => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
 
-function persist() { save(P); updateWallet(); }
+function persist() { P.lastSeen = Date.now(); save(P); updateWallet(); }
 
 function updateWallet() {
   $('coins').textContent = P.coins;
@@ -153,7 +153,7 @@ function showScreen(name) {
   if (name === 'home' && !dailyPopupShown && !dailyRewardState().claimedToday) {
     dailyPopupShown = true;
     setTimeout(() => { if (screen === 'home' && $('overlay').classList.contains('hidden')) showDailyReward(); }, 450);
-  }
+  } else if (name === 'home' && awayFrom) setTimeout(showAway, 450);
 }
 let dailyPopupShown = false;
 let nameAsked = false;
@@ -949,6 +949,17 @@ function cocoaNow() {
 }
 function bankCocoa() { P.cocoaCups = cocoaNow(); P.cocoaTs = Date.now(); }
 
+// İskelenin balığı: kakao gibi zamanla birikir, sınırda durur. Yalnızca evcil dostu beslemeye yarar.
+const pierCap = () => bLevel(P, 'pier') * PIER_CATCH.perLevel * PIER_CATCH.capHours;
+function pierNow() {
+  const lv = bLevel(P, 'pier');
+  if (!lv) return 0;
+  if (!P.pierTs) return P.pierFish; // üretim saati ilk bankPier ile başlar
+  return Math.min(pierCap(), P.pierFish + (lv * PIER_CATCH.perLevel * (Date.now() - P.pierTs)) / 3.6e6);
+}
+function bankPier() { P.pierFish = pierNow(); P.pierTs = Date.now(); }
+const petFood = () => fishToday(P) + Math.floor(pierNow());
+
 const recipeReady = () => { const r = nextRecipe(P); return !!r && villageLevel(P) >= r.vl && P.coins >= discounted(P, r.price); };
 
 function renderCocoa() {
@@ -1091,7 +1102,7 @@ function renderVillage() {
   $('vTabs').classList.toggle('hidden', lifeCount === 0);
   // Kakao satış düğmesi Köy hayatı'nda: stant yarıdan fazla dolunca sekmede işaret çıkar.
   const cocoaFull = cocoaRate() > 0 && cocoaNow() >= cocoaCap() / 2;
-  const dotsOn = { build: canAffordAny(P) || districtReady(), life: cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || !!(P.pet && !petFedToday(P) && fishToday(P) >= PET.feedFish), proj: false };
+  const dotsOn = { build: canAffordAny(P) || districtReady(), life: cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
   $('vTabs').querySelectorAll('.vtab').forEach(b => {
     const k = b.dataset.vt;
     b.classList.toggle('hidden', !tabs[k]);
@@ -1232,7 +1243,7 @@ function renderSheet() {
 
   $('sheet').innerHTML = `
     <div class="sheet-head"><div><b>${b.name}</b><span class="lv-pill">${lv ? `Lv ${lv}/${max}` : 'Kurulmadı'}</span></div><button id="shX" class="sheet-x" aria-label="Kapat">×</button></div>
-    <div class="buff-box">${buffLine}</div>
+    <div class="buff-box">${buffLine}${b.id === 'pier' && lv ? `<small>🐟 Sen yokken saatte ${lv * PIER_CATCH.perLevel} balık tutar (evcil dost için) · şu an ${Math.floor(pierNow())}/${pierCap()}</small>` : ''}</div>
     <button id="shUp" class="btn green big" ${cost === null || P.flakes < cost ? 'disabled' : ''}>${cost !== null && P.flakes < cost ? `${cost - P.flakes} kar tanesi daha gerekli` : upLabel}</button>
     ${INTERIOR[b.id] && st ? `<button id="shIn" class="btn secondary big in-btn">İçeri gir · eşya yerleştir${interiorReady(P, b.id) ? '<i class="dot"></i>' : ''}</button>` : ''}
     ${b.id === 'market' && st ? `<button id="shTrade" class="btn secondary big in-btn">Kar tanesi takası · ${coinIco}${flakePrice(tradeN(P))}</button>` : ''}
@@ -1270,6 +1281,7 @@ function upgrade(id) {
   if (cost === null || P.flakes < cost) return;
   const vlBefore = villageLevel(P);
   bankCocoa();
+  bankPier();
   P.flakes -= cost;
   questProgress('build', 1);
   village.celebrate(id);
@@ -1854,8 +1866,8 @@ function townCards() {
   if (P.village.market) cards.push(`<button class="b-card district town" data-town="market"><b>🐟 Balık pazarı · kar tanesi</b><small>Coin ile kar tanesi; fiyat bugün aldıkça artar</small><span class="act">1 ${flakeIco} = ${coinIco}${fmt(flakePrice(tradeN(P)))}</span></button>`);
   const vl = villageLevel(P);
   if (P.pet) {
-    const fed = petFedToday(P), canFeed = !fed && fishToday(P) >= PET.feedFish;
-    cards.push(`<button class="b-card district town${canFeed ? ' ready' : ''}" data-town="pet"><b>${petKind().ico} ${esc(petInfo().name)}</b><small>${fed ? 'Karnı tok, Pofi\'nin peşinde' : canFeed ? 'Acıktı · balıklarından ver' : `Uykulu · bugün ${fishToday(P)}/${PET.feedFish} balık topladın`}</small><span class="act">${canFeed ? 'Besle' : 'Bak'}</span>${canFeed ? '<i class="dot"></i>' : ''}</button>`);
+    const fed = petFedToday(P), canFeed = !fed && petFood() >= PET.feedFish;
+    cards.push(`<button class="b-card district town${canFeed ? ' ready' : ''}" data-town="pet"><b>${petKind().ico} ${esc(petInfo().name)}</b><small>${fed ? 'Karnı tok, Pofi\'nin peşinde' : canFeed ? 'Acıktı · balıklarından ver' : `Uykulu · ${petFood()}/${PET.feedFish} balığın var`}</small><span class="act">${canFeed ? 'Besle' : 'Bak'}</span>${canFeed ? '<i class="dot"></i>' : ''}</button>`);
   } else if (petUnlocked(P, vl)) {
     cards.push(`<button class="b-card district town" data-town="pet"><b>🐾 Evcil dost</b><small>Tilki, tavşan ya da baykuş: Pofi'nin peşinden yürür, beslenince hediye getirir</small><span class="act">Sahiplen ${coinIco}${fmt(PET.kinds[0].price)}+</span></button>`);
   }
@@ -1882,12 +1894,55 @@ function openTown(k) {
 }
 
 // Ana ekranda tek satırlık köy haberi: tüccar limanda > yeni gazete > evcil dost acıktı
+// "Sen yokken": oyuna dönünce köyde biriken şeylerin özeti. Yeni para birimi yok, olanı görünür kılar.
+// Level ortasında ya da başka pencere açıkken çıkmaz; bir sonraki ana ekranda çıkar.
+let awayFrom = null;
+function noteAway() {
+  if (P.lastSeen && Date.now() - P.lastSeen >= AWAY_MIN * 6e4) awayFrom = P.lastSeen;
+  P.lastSeen = Date.now();
+  save(P);
+}
+function awayLines() {
+  const lines = [], cups = Math.floor(cocoaNow());
+  if (cups >= 1) lines.push(`☕ Kakao standında <b>${fmt(cups)} fincan</b> birikti${cups >= cocoaCap() ? ' (stant doldu)' : ''}`);
+  if (P.pet && !petFedToday(P)) {
+    const n = Math.floor(pierNow()), name = esc(petInfo().name);
+    if (n > 0) lines.push(`🐟 İskele <b>${n} balık</b> tuttu`);
+    lines.push(petFood() >= PET.feedFish ? `${petKind().ico} ${name} acıktı, besleyebilirsin` : `${petKind().ico} ${name} uyukluyor`);
+  }
+  if (merchantToday() && (P.land || 1) >= 2) lines.push('⛵ Gezgin tüccar bugün limanda');
+  if (P.level > 5 && gazetteUnread()) lines.push(`📰 Köy Gazetesi'nin ${gazetteIssue()}. sayısı çıktı`);
+  return lines;
+}
+function showAway() {
+  if (!awayFrom || screen !== 'home' || overlayOpen()) return;
+  const mins = Math.round((Date.now() - awayFrom) / 6e4), lines = awayLines();
+  awayFrom = null;
+  if (!lines.length) return;
+  const h = Math.floor(mins / 60), when = h >= 24 ? `${Math.floor(h / 24)} gün` : h ? `${h} saat` : `${mins} dakika`;
+  openOverlay(`
+    <span class="new-tag">SEN YOKKEN</span>
+    <h2>Köyde neler oldu?</h2>
+    <p>${when} yoktun.</p>
+    <div class="away-list">${lines.map(l => `<div>${l}</div>`).join('')}</div>
+    <button id="awGo" class="btn green big">Köye git</button>
+    <button id="awClose" class="btn link">Sonra</button>`);
+  $('awClose').onclick = closeOverlay;
+  $('awGo').onclick = () => { closeOverlay(); villageTab = 'life'; showScreen('village'); };
+  track('away_card', { mins, lines: lines.length });
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { P.lastSeen = Date.now(); save(P); return; }
+  noteAway();
+  if (screen === 'home') setTimeout(showAway, 400);
+});
+
 function renderTownStrip() {
   const el = $('townStrip');
   let html = '', go = null;
   if (merchantToday() && (P.land || 1) >= 2) { html = '⛵ <b>Gezgin tüccar bugün limanda</b>'; go = 'merchant'; }
   else if (gazetteUnread() && P.level > 5) { html = `📰 <b>Köy Gazetesi · Sayı ${gazetteIssue()} çıktı</b>`; go = 'gazette'; }
-  else if (P.pet && !petFedToday(P) && fishToday(P) >= PET.feedFish) { html = `${petKind().ico} <b>${esc(petInfo().name)} acıktı</b>`; go = 'pet'; }
+  else if (P.pet && !petFedToday(P) && petFood() >= PET.feedFish) { html = `${petKind().ico} <b>${esc(petInfo().name)} acıktı</b>`; go = 'pet'; }
   el.classList.toggle('hidden', !go);
   if (!go) return;
   el.innerHTML = `${html}<span>›</span>`;
@@ -2148,7 +2203,7 @@ function showPetAdopt(id) {
 function showPet() {
   if (!P.pet) { showPetAdopt(PET.kinds[0].id); return; }
   const p = P.pet, info = petInfo(), d = petDraft || (petDraft = { collar: p.collar });
-  const fed = petFedToday(P), fish = fishToday(P), canFeed = !fed && fish >= PET.feedFish;
+  const fed = petFedToday(P), fish = petFood(), canFeed = !fed && fish >= PET.feedFish, fromPier = Math.floor(pierNow());
   const cost = d.collar && !p.collars.includes(d.collar) ? PET.collarPrice : 0;
   const changed = d.collar !== p.collar, bedNext = PET.beds[p.bed || 0];
   openOverlay(`
@@ -2156,7 +2211,7 @@ function showPet() {
     <h2>${esc(info.name)}</h2>
     <canvas id="petCv" class="pet-cv"></canvas>
     ${petKindRow(p.kind)}
-    <p>${fed ? `Karnı tok! Bugün ${p.gift || 'bir hediye'} getirdi. Nadir balık şansı bugün +${Math.round(PET.rareBonus * 100)} puan.` : canFeed ? `Acıktı. Bugün ${fish} balık topladın; ${PET.feedFish} tanesini ver, karşılığında bir hediye getirsin.` : `Uykulu. Levellerde ${PET.feedFish} balık topla (bugün ${fish}), sonra besle.`}</p>
+    <p>${fed ? `Karnı tok! Bugün ${p.gift || 'bir hediye'} getirdi. Nadir balık şansı bugün +${Math.round(PET.rareBonus * 100)} puan.` : canFeed ? `Acıktı. ${fish} balığın var${fromPier ? ` (${fromPier} tanesi iskeleden)` : ''}; ${PET.feedFish} tanesini ver, karşılığında bir hediye getirsin.` : `Uykulu. ${PET.feedFish} balık gerekli, şu an ${fish} tane var. Levellerde topla${P.village.pier ? ' ya da iskele tutsun' : ''}, sonra besle.`}</p>
     <button id="petFeed" class="btn green big" ${canFeed ? '' : 'disabled'}>${fed ? 'Bugün beslendi ✓' : `Besle · ${PET.feedFish} 🐟`}</button>
 
     <div class="sheet-sec"><b>Tasma</b><small>Renk başına ${coinIco}${PET.collarPrice}</small></div>
@@ -2173,6 +2228,9 @@ function showPet() {
   $('petClose').onclick = () => { petDraft = null; closeOverlay(); };
   $('petFeed').onclick = () => {
     if (!canFeed) return;
+    // önce bugün levellerde toplananlar sayılır, eksiği iskeleden gelir
+    bankPier();
+    P.pierFish = Math.max(0, P.pierFish - Math.max(0, PET.feedFish - fishToday(P)));
     const g = PET.gifts, tot = g.reduce((a, x) => a + x.w, 0);
     let r = Math.random() * tot, k = 0;
     while (r >= g[k].w) r -= g[k++].w;
@@ -2440,6 +2498,7 @@ function showDailyReward() {
     track('daily_reward_claim', { day: st.day, mult });
     closeOverlay();
     toast(`Gün ${st.day} ödülü alındı${mult > 1 ? ' · x2' : ''}`);
+    setTimeout(showAway, 500);
   };
   $('drAd').onclick = async () => take((await showRewarded('daily_reward_x2')) ? 2 : 1);
   $('drTake').onclick = () => take(1);
@@ -3657,6 +3716,8 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+noteAway();
+if (bLevel(P, 'pier') && !P.pierTs) bankPier(); // eski kayıtlarda iskele bugünden itibaren tutar
 updateWallet();
 requestAnimationFrame(frame);
 boot();
