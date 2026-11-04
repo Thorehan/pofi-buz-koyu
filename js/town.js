@@ -70,7 +70,7 @@ export function merchantStock(no, P) {
 export const petFedToday = P => !!P.pet && P.pet.fedDay === dayKey();
 export const fishToday = P => (P.fishDay?.day === dayKey() ? P.fishDay.n : 0);
 export const petUnlocked = (P, vl) => vl >= PET.vl || P.level > PET.level;
-export const furHex = P => PET.furs.find(f => f.id === P.pet?.fur)?.hex || null;
+
 
 // ---------- köy projeleri ----------
 export const projectSpent = (P, p) => P.projects?.[p.id] || 0;

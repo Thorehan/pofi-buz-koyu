@@ -3,45 +3,20 @@
 import { art } from './art.js';
 import { circle, ellipse, roundRect } from './draw.js';
 
-// Görseli tek renge boyar: açık tüyler hedef renge döner, koyu ayrıntılar (göz, burun) koyu kalır.
-const tintCache = new Map();
-function multiplied(id, hex) {
-  const im = art(id);
-  if (!im || !hex) return im;
-  const key = id + hex;
-  if (!tintCache.has(key)) {
-    const c = document.createElement('canvas');
-    c.width = im.width;
-    c.height = im.height;
-    const x = c.getContext('2d');
-    x.drawImage(im, 0, 0);
-    x.globalCompositeOperation = 'multiply';
-    x.fillStyle = hex;
-    x.fillRect(0, 0, c.width, c.height);
-    x.globalCompositeOperation = 'destination-in';
-    x.drawImage(im, 0, 0);
-    tintCache.set(key, c);
-  }
-  return tintCache.get(key);
-}
 
 // ---------- kar tilkisi ----------
 // Görseller (pet_fox_<poz>): 512×512, ayak/taban çizgisi 470. satırda, ayakta boyu ≈ 300 px, yüzü sağa dönük.
 const FOX_FOOT = 470, FOX_H = 300;
 // Görsellerde boynun (çenenin hemen altı) yeri: boyun oranı cinsinden [sağa, yukarı] (pofi-r12 ölçümü)
 const FOX_NECK = { stand: [0.21, 0.32], walk: [0.25, 0.3], happy: [0.21, 0.28] };
-const mixHex = (a, b, k) => {
-  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const [x, y] = [p(a), p(b)];
-  return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * k)).join(',')})`;
-};
 
-// (x, y) taban ortası, size ≈ ayakta boy. o: { pose: stand|walk|sleep|happy, face: 1|-1, t, fur, collar, sleepy }
+
+// (x, y) taban ortası, size ≈ ayakta boy. o: { pose: stand|walk|sleep|happy, face: 1|-1, t, collar, sleepy }
 export function drawFox(ctx, x, y, size, o = {}) {
   const pose = o.pose || 'stand', face = o.face || 1, t = o.t || 0;
   // Yürürken ayakta ve yürüme kareleri sırayla çizilir (kare görselleri gelene kadar basit iki kareli yürüyüş).
   const framePose = pose === 'walk' && Math.floor(t * 7) % 2 ? 'stand' : pose;
-  const im = multiplied(`pet_fox_${framePose}`, o.fur);
+  const im = art(`pet_fox_${framePose}`);
   if (im) {
     const k = size / FOX_H;
     // Tek görselden kodla canlandırma: nefes, yürürken sekme ve yalpalama, sevinçte zıplama (yere inince basılır).
@@ -67,7 +42,7 @@ export function drawFox(ctx, x, y, size, o = {}) {
     if (o.collar && nk) collarBand(ctx, x + face * size * nk[0], y - bob - size * nk[1], size, o.collar, face);
     return;
   }
-  const fur = o.fur || '#f7fbff', shade = o.fur ? mixHex(o.fur.startsWith('#') ? o.fur : '#f7fbff', '#7d8aa3', 0.25) : '#dfe8f3', s = size;
+  const fur = '#f7fbff', shade = '#dfe8f3', s = size;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(face, 1);

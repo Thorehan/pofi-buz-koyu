@@ -7,7 +7,7 @@ import {
 } from './live.js';
 import {
   tradeN, flakePrice, merchantToday, nextMerchant, merchantWeek, dayName, merchantStock, MERCHANT_OUTFITS, MERCHANT_DECOR,
-  petFedToday, fishToday, petUnlocked, furHex, projectSpent, projectStage, projectBonus, rareChance, gazetteIssue,
+  petFedToday, fishToday, petUnlocked, projectSpent, projectStage, projectBonus, rareChance, gazetteIssue,
 } from './town.js';
 import { drawFox, drawToy } from './townart.js';
 import {
@@ -43,6 +43,17 @@ const P = load(); // oyuncu kaydı
     save(P);
     setTimeout(() => toast(`Güçlendiriciler yenilendi: eldekiler için +${refund} coin iade edildi`, 4000), 3000);
   }
+}
+// Tilki tüy rengi kaldırıldı (2026-11-04 kullanıcı kararı: evcil hayvanlar tek renk, renk yerine tür çeşidi gelecek).
+// Satın alınmış renkler o günkü fiyatlarından coin olarak iade edilir.
+if (P.pet?.furs) {
+  const price = { red: 600, silver: 600, gold: 900, night: 1200 };
+  const refund = P.pet.furs.reduce((a, id) => a + (price[id] || 0), 0);
+  delete P.pet.furs;
+  delete P.pet.fur;
+  P.coins += refund;
+  save(P);
+  if (refund) setTimeout(() => toast(`Tilki renkleri kalktı: +${refund} coin iade edildi`, 4000), 3000);
 }
 let LEVELS = []; // data/levels.json — sonrası çalışma anında üretilir
 
@@ -593,7 +604,7 @@ function showResult(stars, base, flakes, notes) {
     const cv = $('rsPet');
     (function petTick(now) {
       if (!cv.isConnected || !overlayOpen()) return;
-      drawFox(fitCanvas(cv, 64, 52), 32, 50, 40, { pose: 'happy', t: now / 1000, fur: furHex(P), collar: collarHex() });
+      drawFox(fitCanvas(cv, 64, 52), 32, 50, 40, { pose: 'happy', t: now / 1000, collar: collarHex() });
       requestAnimationFrame(petTick);
     })(performance.now());
   }
@@ -2029,7 +2040,7 @@ function showGazette() {
 }
 
 // ---------- evcil hayvan: kar tilkisi ----------
-let petDraft = null; // { fur, collar } satın almadan önce önizleme
+let petDraft = null; // { collar } satın almadan önce önizleme
 
 function showPet() {
   const vl = villageLevel(P);
@@ -2049,7 +2060,7 @@ function showPet() {
     $('petAdopt').onclick = () => {
       if (!ok || P.coins < PET.price) return;
       P.coins -= PET.price;
-      P.pet = { name: PET.name, named: false, fur: 'snow', collar: null, bed: 0, toys: [], toy: null, furs: ['snow'], collars: [], fedDay: '' };
+      P.pet = { name: PET.name, named: false, collar: null, bed: 0, toys: [], toy: null, collars: [], fedDay: '' };
       persist();
       sfx.reward();
       track('pet_adopt', { price: PET.price });
@@ -2058,19 +2069,17 @@ function showPet() {
     };
     return;
   }
-  const p = P.pet, d = petDraft || (petDraft = { fur: p.fur, collar: p.collar });
+  const p = P.pet, d = petDraft || (petDraft = { collar: p.collar });
   const fed = petFedToday(P), fish = fishToday(P), canFeed = !fed && fish >= PET.feedFish;
-  const furCost = P.pet.furs.includes(d.fur) ? 0 : PET.furs.find(f => f.id === d.fur).price;
-  const collarCost = d.collar && !p.collars.includes(d.collar) ? PET.collarPrice : 0, cost = furCost + collarCost;
-  const changed = d.fur !== p.fur || d.collar !== p.collar, bedNext = PET.beds[p.bed || 0];
+  const cost = d.collar && !p.collars.includes(d.collar) ? PET.collarPrice : 0;
+  const changed = d.collar !== p.collar, bedNext = PET.beds[p.bed || 0];
   openOverlay(`
     <span class="new-tag">EVCİL DOST</span>
     <h2>${esc(p.name)}</h2>
     <canvas id="petCv" class="pet-cv"></canvas>
     <p>${fed ? `Karnı tok! Bugün ${p.gift || 'bir hediye'} getirdi. Nadir balık şansı bugün +${Math.round(PET.rareBonus * 100)} puan.` : canFeed ? `Acıktı. Bugün ${fish} balık topladın; ${PET.feedFish} tanesini ver, karşılığında bir hediye getirsin.` : `Uykulu. Levellerde ${PET.feedFish} balık topla (bugün ${fish}), sonra besle.`}</p>
     <button id="petFeed" class="btn green big" ${canFeed ? '' : 'disabled'}>${fed ? 'Bugün beslendi ✓' : `Besle · ${PET.feedFish} 🐟`}</button>
-    <div class="sheet-sec"><b>Tüy rengi</b><small>Dokun, önizle</small></div>
-    <div class="chips">${PET.furs.map(f => `<button class="chip-btn${d.fur === f.id ? ' sel' : ''}${p.fur === f.id ? ' cur' : ''}" data-fur="${f.id}">${f.name}${p.furs.includes(f.id) ? '' : ` ${coinIco}${f.price}`}</button>`).join('')}</div>
+
     <div class="sheet-sec"><b>Tasma</b><small>Renk başına ${coinIco}${PET.collarPrice}</small></div>
     <div class="swatches"><button class="sw def${d.collar === null ? ' sel' : ''}" data-collar="" title="Tasmasız"></button>${COLORS.map(c => `<button class="sw${d.collar === c.id ? ' sel' : ''}" data-collar="${c.id}" title="${c.name}" style="background:${c.hex}">${p.collars.includes(c.id) ? '' : '<span class="lock">🔒</span>'}</button>`).join('')}</div>
     ${changed ? `<button id="petLook" class="btn ${cost ? 'primary' : 'green'}" ${P.coins < cost ? 'disabled' : ''}>${cost ? `${P.coins < cost ? 'Yetersiz · ' : 'Satın al · '}${coinIco}${cost}` : 'Uygula'}</button>` : ''}
@@ -2079,7 +2088,7 @@ function showPet() {
     <div class="sheet-sec"><b>Oyuncak</b><small>Gezgin tüccar getirir</small></div>
     ${p.toys.length ? `<div class="chips">${p.toys.map(id => `<button class="chip-btn${p.toy === id ? ' sel' : ''}" data-toy="${id}">${PET_TOYS.find(t => t.id === id).name}</button>`).join('')}</div>` : '<small class="breakdown">Henüz oyuncağı yok.</small>'}
     <div class="sheet-actions"><button id="petRename" class="btn link">${p.named ? `İsim değiştir · ${coinIco}${PET.renamePrice}` : 'İsim ver · ücretsiz'}</button><button id="petClose" class="btn green">Kapat</button></div>`);
-  petLoop(() => ({ pose: fed ? 'happy' : 'stand', sleepy: !fed, fur: PET.furs.find(f => f.id === d.fur).hex, collar: d.collar ? COLORS.find(c => c.id === d.collar).hex : null, toy: p.toy }));
+  petLoop(() => ({ pose: fed ? 'happy' : 'stand', sleepy: !fed, collar: d.collar ? COLORS.find(c => c.id === d.collar).hex : null, toy: p.toy }));
   $('petClose').onclick = () => { petDraft = null; closeOverlay(); };
   $('petFeed').onclick = () => {
     if (!canFeed) return;
@@ -2101,19 +2110,17 @@ function showPet() {
     showPet();
     if (screen === 'village') renderVillage();
   };
-  $('overlayCard').querySelectorAll('[data-fur]').forEach(b => { b.onclick = () => { d.fur = b.dataset.fur; showPet(); }; });
+
   $('overlayCard').querySelectorAll('[data-collar]').forEach(b => { b.onclick = () => { d.collar = b.dataset.collar || null; showPet(); }; });
   $('overlayCard').querySelectorAll('[data-toy]').forEach(b => { b.onclick = () => { p.toy = p.toy === b.dataset.toy ? null : b.dataset.toy; persist(); showPet(); }; });
   if ($('petLook')) $('petLook').onclick = () => {
     if (P.coins < cost) return;
     P.coins -= cost;
-    if (furCost) p.furs.push(d.fur);
-    if (collarCost) p.collars.push(d.collar);
-    p.fur = d.fur;
+    if (cost) p.collars.push(d.collar);
     p.collar = d.collar;
     persist();
     cost ? sfx.coin() : sfx.ui();
-    track('pet_look', { fur: d.fur, collar: d.collar, spent: cost });
+    track('pet_look', { collar: d.collar, spent: cost });
     toast(`${p.name} yeni görünümüyle çok şık`);
     showPet();
   };
@@ -2176,7 +2183,7 @@ function petLoop(opts) {
     if (!cv.isConnected || !overlayOpen()) return;
     const o = opts(), ctx = fitCanvas(cv, 160, 110), t = now / 1000;
     if (o.toy) drawToy(ctx, 122, 104, 700, o.toy, t);
-    drawFox(ctx, 74, 104, 82, { t, fur: furHex(P), collar: collarHex(), ...o });
+    drawFox(ctx, 74, 104, 82, { t, collar: collarHex(), ...o });
     requestAnimationFrame(tick);
   })(performance.now());
 }
@@ -3360,7 +3367,7 @@ function frame(now) {
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
       cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, land: P.land || 1, homeReady: homesReady(),
       villagers: villagersHere(), hour: hourNow(), task: taskMarker(), decor: P.decor, event: eventVillage(),
-      pet: P.pet ? { fur: furHex(P), collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
+      pet: P.pet ? { collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
       merchant: !!merchantToday(), projects: (P.land || 1) >= 3 ? PROJECTS.map(p => ({ p, stage: projectStage(P, p) })) : null,
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }

@@ -641,7 +641,8 @@ export class BoardView {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const { w, h } = this.L;
     const pad = 16;
-    this.s = Math.floor(Math.min((p.width - pad * 2) / w, (p.height - pad * 2) / h, 84));
+    // Alan geçici olarak sıfır ölçülebilir (pencere gizli); negatif ölçek çizimde hata atıp oyun döngüsünü durdurur.
+    this.s = Math.max(8, Math.floor(Math.min((p.width - pad * 2) / w, (p.height - pad * 2) / h, 84)));
     this.ox = Math.round((p.width - this.s * w) / 2);
     this.oy = Math.round((p.height - this.s * h) / 2);
   }

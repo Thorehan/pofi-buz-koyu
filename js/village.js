@@ -1721,7 +1721,7 @@ export class VillageView {
     ctx.globalAlpha = 1;
   }
 
-  // Kar tilkisi. pet: { fur, collar, bed, toy, awake }. Uyanıkken Pofi'nin birkaç adım arkasından yürür,
+  // Kar tilkisi. pet: { collar, bed, toy, awake }. Uyanıkken Pofi'nin birkaç adım arkasından yürür,
   // Pofi durunca yanında oturur, oyuncağı varsa ara ara zıplar. Uyurken (beslenmemiş ya da gece) yatağında kıvrılır.
   stepPet(dt, time, pet, items, W, H, u, land, phase) {
     const ctx = this.ctx, h = this.walkers[0], s = this.sale;
@@ -1746,7 +1746,7 @@ export class VillageView {
     const x = st.x * W, y = st.y * H, size = u * 0.075;
     this.townPos.push(['pet', x, y - size * 0.4, size * 0.7]);
     items.push([y, () => {
-      drawFox(ctx, x, y, size, { pose, face: st.face, t: time, fur: pet.fur, collar: pet.collar, sleepy: !pet.awake });
+      drawFox(ctx, x, y, size, { pose, face: st.face, t: time, collar: pet.collar, sleepy: !pet.awake });
       if (atBed) zzz(ctx, x + size * 0.2, y - size * 0.45, u, time);
     }]);
   }

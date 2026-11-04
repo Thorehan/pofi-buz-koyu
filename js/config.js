@@ -529,13 +529,6 @@ export const MERCHANT = {
 // Ceza yok: beslenmezse yalnızca uykulu görünür, hiçbir şey kaybettirmez.
 export const PET = {
   name: 'Pamuk', price: 1500, vl: 4, level: 30, feedFish: 5, rareBonus: 0.05, renamePrice: 300,
-  furs: [
-    { id: 'snow', name: 'Kar beyazı', hex: null, price: 0 },
-    { id: 'red', name: 'Kızıl', hex: '#f0a066', price: 600 },
-    { id: 'silver', name: 'Gümüş', hex: '#b4c0d2', price: 600 },
-    { id: 'gold', name: 'Altın', hex: '#f2cf6e', price: 900 },
-    { id: 'night', name: 'Gece mavisi', hex: '#8a9ee0', price: 1200 },
-  ],
   collarPrice: 150, // tasma rengi, COLORS paletinden
   beds: [{ name: 'Hasır minder', price: 400 }, { name: 'Yünlü sepet', price: 900 }, { name: 'Kubbeli yuva', price: 1500 }],
   gifts: [{ w: 5, coins: [100, 200] }, { w: 3, hints: 1 }, { w: 2, flakes: [1, 2] }],
