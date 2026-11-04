@@ -26,7 +26,7 @@ import {
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
-  FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES,
+  FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient } from './sound.js';
 
@@ -666,21 +666,21 @@ function fail() {
   if (won(run.L, run.st)) return;
   track('level_fail', { level: run.def.n, fish: popcount(run.st.fish) });
   sfx.fail();
-  const free = freeLeft('cont');
+  const free = freeLeft('cont'), contPrice = boostPrice(BOOSTERS.find(b => b.id === 'moves5'));
   openOverlay(`
     <h2>Hamlen bitti!</h2>
     <p>Çok yaklaştın: ${popcount(run.st.fish)}/${run.L.fishCells.length} balık toplandı.</p>
     ${free > 0 ? `<button id="fFree" class="btn green big">Ücretsiz +${ECON.continueMoves} hamle</button><small class="breakdown">Deniz feneri · bugün ${free} hakkın var</small>` : ''}
     ${P.boosters.moves5 > 0 ? `<button id="fBoost" class="btn green big">⏱️ +${ECON.continueMoves} hamle · elinde ${P.boosters.moves5}</button>` : ''}
     <button id="fAd" class="btn primary big ad">+${ECON.continueMoves} hamle</button>
-    <button id="fCoin" class="btn secondary">+${ECON.continueMoves} hamle · ${ECON.continueCost} coin</button>
+    <button id="fCoin" class="btn secondary">+${ECON.continueMoves} hamle · ${contPrice} coin</button>
     <button id="fRetry" class="btn link">Baştan başla</button>`);
-  $('fCoin').disabled = P.coins < ECON.continueCost;
+  $('fCoin').disabled = P.coins < contPrice;
   const resume = () => { run.limit += ECON.continueMoves; run.finished = false; closeOverlay(); renderHud(); };
   if (free > 0) $('fFree').onclick = () => { P.daily.cont++; persist(); resume(); };
   if ($('fBoost')) $('fBoost').onclick = () => { P.boosters.moves5--; run.boosts = (run.boosts || 0) + 1; persist(); track('booster_used', { type: 'moves5', level: run.def.n }); resume(); };
   $('fAd').onclick = async () => { if (await showRewarded('continue')) resume(); };
-  $('fCoin').onclick = () => { P.coins -= ECON.continueCost; persist(); resume(); };
+  $('fCoin').onclick = () => { P.coins -= contPrice; rampUp('moves5'); persist(); resume(); };
   $('fRetry').onclick = () => { closeOverlay(); restartRun(); };
 }
 
@@ -690,12 +690,23 @@ function fail() {
 // Oyun içinden almak hintGameMult kat pahalı; 5'li paket her zaman daha uygun.
 const ladderN = () => (P.hintLadder?.day === dateKey() ? P.hintLadder.n : 0);
 const hintPrice = (inGame = false) => Math.round(ECON.hintBase * 2 ** ladderN() * (inGame ? ECON.hintGameMult : 1));
-const packPrice = (inGame = false) => (inGame ? ECON.hintGamePack5 : ECON.hintPack5Cost);
+// Bugünkü alım sayısına göre fiyat: mağazada taban + adet × adım; oyun içinde aynı oranda, 5'e yuvarlı.
+const rampN = id => (P.priceRamp?.day === dateKey() ? P.priceRamp[id] || 0 : 0);
+function rampUp(id) {
+  const n = rampN(id) + 1;
+  P.priceRamp = { ...(P.priceRamp?.day === dateKey() ? P.priceRamp : { day: dateKey() }), [id]: n };
+}
+function ramped(id, shop, game, inGame) {
+  const p = shop + rampN(id) * (PRICE_RAMP[id] || 0);
+  return inGame ? Math.round((p * game) / shop / 5) * 5 : p;
+}
+const packPrice = (inGame = false) => ramped('pack', ECON.hintPack5Cost, ECON.hintGamePack5, inGame);
 function buyHints(n, cost, where) {
   if (P.coins < cost) return false;
   P.coins -= cost;
   P.hints += n;
   if (n === 1) P.hintLadder = { day: dateKey(), n: ladderN() + 1 };
+  else rampUp('pack');
   persist();
   track('hint_buy', { n, cost, where });
   sfx.coin();
@@ -729,7 +740,7 @@ function useHint() {
 // Güç düğmesi araç çubuğunun üstünde üç kart açar. Kazma ve kürek hedef ister (tahtada geçerli hücreler parlar),
 // düdük hemen etki eder. Güçlendirici bitince kartta coin'le alma ve ödüllü reklam (+1) çıkar.
 const boostIcon = b => (art(`booster_${b.id}`) ? `<img src="assets/art/booster_${b.id}.webp" alt="">` : b.icon);
-const boostPrice = b => b.gamePrice ?? Math.round(b.price * ECON.hintGameMult);
+const boostPrice = (b, inGame = true) => ramped(b.id, b.price, b.gamePrice ?? Math.round(b.price * ECON.hintGameMult), inGame);
 
 function boostCells(kind) {
   const L = run.L, S = run.st, cells = new Set();
@@ -765,6 +776,7 @@ function showBoostBar() {
       if (P.coins < price) return;
       P.coins -= price;
       P.boosters[b.id] = (P.boosters[b.id] || 0) + 1;
+      rampUp(b.id);
       persist();
       sfx.coin();
       track('booster_buy', { id: b.id, price, where: 'game' });
@@ -864,7 +876,7 @@ function showHintBar() {
       <button id="hbOne" class="btn secondary" ${P.coins < one ? 'disabled' : ''}>1 · ${coinIco}${one}</button>
       <button id="hbFive" class="btn green" ${P.coins < five ? 'disabled' : ''}>5'li · ${coinIco}${five}</button>
     </div>
-    <small>Tek ipucu her alımda ikiye katlanır · mağazada daha ucuz</small>`;
+    <small>Fiyatlar bugün her alımda artar · mağazada daha ucuz</small>`;
   bar.classList.remove('hidden');
   const done = n => { bar.classList.add('hidden'); toast(`+${n} ipucu`); useHint(); };
   bar.querySelector('.hb-x').onclick = () => bar.classList.add('hidden');
@@ -2164,11 +2176,11 @@ function renderShop() {
     '<h3>İpucu</h3>',
     item(['hint', '×1'], 'İpucu', 'Sıradaki doğru hamleyi gösterir',
       `<button class="btn green" data-hints="1" data-cost="${hintPrice()}" ${P.coins < hintPrice() ? 'disabled' : ''}>${coinIco}${hintPrice()}</button>`),
-    item(['hint', '×5'], 'İpucu paketi', `Her zaman ${ECON.hintPack5Cost} coin · tek fiyat bugün aldıkça ikiye katlanır`,
-      `<button class="btn green" data-hints="5" data-cost="${ECON.hintPack5Cost}" ${P.coins < ECON.hintPack5Cost ? 'disabled' : ''}>${coinIco}${ECON.hintPack5Cost}</button>`),
+    item(['hint', '×5'], 'İpucu paketi', `Bugün aldıkça pahalanır · yarın ${ECON.hintPack5Cost} coin'den başlar`,
+      `<button class="btn green" data-hints="5" data-cost="${packPrice()}" ${P.coins < packPrice() ? 'disabled' : ''}>${coinIco}${packPrice()}</button>`),
     '<h3>Güçlendiriciler</h3>',
-    ...ACTIVE_BOOSTERS.map(b => item(['boost', b.icon], b.name, `${b.text} · elinde ${P.boosters[b.id] || 0}`,
-      `<button class="btn green" data-boost="${b.id}" ${P.coins < b.price ? 'disabled' : ''}>${coinIco}${b.price}</button>`)),
+    ...ACTIVE_BOOSTERS.map(b => item(['boost', b.icon], b.name, `${b.text} · elinde ${P.boosters[b.id] || 0} · bugün aldıkça pahalanır`,
+      `<button class="btn green" data-boost="${b.id}" ${P.coins < boostPrice(b, false) ? 'disabled' : ''}>${coinIco}${boostPrice(b, false)}</button>`)),
     '<h3>Paketler</h3>',
     item(['noads', 'VIP'], 'Reklamsız ödüller', 'Ödüllü reklam izlemeden x2 ödülleri ve çarpanı doğrudan al',
       '<button class="btn secondary" data-iap="vip">$3.99</button>'),
@@ -2198,12 +2210,14 @@ function renderShop() {
   $('shopList').querySelectorAll('[data-boost]').forEach(btn => {
     btn.onclick = () => {
       const b = BOOSTERS.find(x => x.id === btn.dataset.boost);
-      if (P.coins < b.price) return;
-      P.coins -= b.price;
+      const price = boostPrice(b, false);
+      if (P.coins < price) return;
+      P.coins -= price;
       P.boosters[b.id] = (P.boosters[b.id] || 0) + 1;
+      rampUp(b.id);
       persist();
       sfx.coin();
-      track('booster_buy', { id: b.id, price: b.price, where: 'shop' });
+      track('booster_buy', { id: b.id, price, where: 'shop' });
       toast(`${b.name} alındı · elinde ${P.boosters[b.id]}`);
       renderShop();
       updateWallet();

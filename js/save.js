@@ -37,6 +37,7 @@ function defaults() {
     albumSets: {}, // ödülü verilmiş setler
     masters: {}, // { bölgeIndeksi: en iyi yıldız } — usta levelleri // haritada en son gösterilen level (Pofi'nin yeni levele zıplaması için)
     hintLadder: null, // { day, n } — bugün coin'le alınan tek ipucu sayısı (fiyat merdiveni)
+    priceRamp: null, // { day, pack, route, moves5 } — bugün coin'le alınan adetler (PRICE_RAMP)
     villageName: null, // köy ekranına ilk girişte sorulur; ilk isim ücretsiz, değiştirmek VILLAGE_RENAME_PRICE
     task: null, // { day, type, need, have, giver, claimed } — köylünün günlük işi
     settings: { haptics: true, sfx: true, ambient: true },

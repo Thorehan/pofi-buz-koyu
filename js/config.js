@@ -9,7 +9,7 @@ export const ECON = {
   hintGameMult: 1.5, // oyun içinden almak mağazadan bu kadar pahalı
   hintGamePack5: 300, // oyun içi 5'li paket (mağazada hintPack5Cost)
   hintAdAmount: 10, // ödüllü reklam bu kadar ipucu verir
-  continueCost: 80,
+
   continueMoves: 5,
   startCoins: 100,
   startHints: 3,
@@ -389,6 +389,9 @@ export const BOOSTERS = [
   { id: 'whistle', name: 'Fok düdüğü', text: 'Foklar 3 hamle uyur', icon: '🎵', price: 100, suspended: true },
 ];
 export const ACTIVE_BOOSTERS = BOOSTERS.filter(b => !b.suspended);
+// İpucu paketi, Rota göster ve +5 hamle: fiyat gün içinde her alımda sabit bir miktar artar, gün dönünce başa döner.
+// Değer, mağaza fiyatına alım başına eklenen coin; oyun içi fiyat aynı oranda artar. Mağaza ve oyun içi aynı sayacı kullanır.
+export const PRICE_RAMP = { pack: 50, route: 50, moves5: 15 };
 export const WHISTLE_MOVES = 3;
 
 // Balık albümü: bazı levellerde balıklardan biri nadir türdür (parıltılı). Level bitince albüme eklenir.
