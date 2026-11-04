@@ -25,7 +25,7 @@ import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
   STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, ACTIVE_BOOSTERS, WHISTLE_MOVES, FISH_SETS, ALBUM,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
-  VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, DECOR_ITEMS, DECOR_SLOTS,
+  VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, FRIEND, VILLAGER_LIFE, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
   PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
@@ -1105,7 +1105,7 @@ function renderVillage() {
   $('vTabs').classList.toggle('hidden', lifeCount === 0);
   // Kakao satış düğmesi Köy hayatı'nda: stant yarıdan fazla dolunca sekmede işaret çıkar.
   const cocoaFull = cocoaRate() > 0 && cocoaNow() >= cocoaCap() / 2;
-  const dotsOn = { build: canAffordAny(P) || districtReady(), life: cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
+  const dotsOn = { build: canAffordAny(P) || districtReady(), life: villagersHere().some(v => friendReady(v.id)) || cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
   $('vTabs').querySelectorAll('.vtab').forEach(b => {
     const k = b.dataset.vt;
     b.classList.toggle('hidden', !tabs[k]);
@@ -1449,6 +1449,7 @@ function renderWardrobe() {
       track('wardrobe_buy', { slot: wardrobeCat, item: it.id, price });
     } else sfx.ui();
     wear(wardrobeCat, it.id);
+    taskProgress('wear', 1);
     wardrobeDraft = null;
     dyeDraft = undefined;
     cheerWardrobe();
@@ -1538,7 +1539,7 @@ function ensureTask() {
   const here = villagersHere();
   if (!here.length) return null;
   if (P.task?.day === dateKey()) return P.task;
-  const pool = DAILY_TASKS.filter(t => !t.needs || P.village[t.needs]);
+  const pool = DAILY_TASKS.filter(t => (!t.needs || P.village[t.needs]) && (!t.pet || P.pet));
   const t = pool[Math.floor(Math.random() * pool.length)];
   P.task = { day: dateKey(), type: t.type, need: t.need, have: 0, giver: here[Math.floor(Math.random() * here.length)].id, claimed: false };
   save(P);
@@ -1558,31 +1559,115 @@ function taskMarker() {
   return t && !t.claimed ? { giver: t.giver, done: t.have >= t.need } : null;
 }
 
+// Dostluk: konuşma, iş ve kakao ikramı puan verir; her eşikte bir hikâye bölümü açılır.
+const friendOf = id => P.friends[id] || (P.friends[id] = { pts: 0, ch: 0, talk: '', gift: '' });
+const friendLv = f => FRIEND.levels.filter(n => f.pts >= n).length;
+const friendReady = id => { const f = friendOf(id); return f.ch < friendLv(f); };
+function friendAdd(id, n) {
+  const f = friendOf(id), before = friendLv(f);
+  f.pts += n;
+  save(P);
+  if (friendLv(f) > before) toast(`${VILLAGERS.find(v => v.id === id).name} sana bir şey anlatmak istiyor`, 2600);
+}
+const friendHearts = f => [0, 1, 2].map(i => (i < friendLv(f) ? '♥' : '♡')).join('');
+
+// Köylünün sözü: çoğunlukla kendi karakterinden, ara sıra köyde olan bitenden.
+function villagerLine(v) {
+  const phase = phaseOf(hourNow()), own = VILLAGER_LIFE[v.id].lines, pick = a => a[Math.floor(Math.random() * a.length)];
+  if (phase === 'night') return pick(VILLAGER_LINES.night);
+  const news = [];
+  if (P.pet) news.push(petFedToday(P) ? `${petInfo().name} ne kadar tatlı!` : `${petInfo().name} uykulu, karnı aç sanki.`);
+  if (merchantToday() && (P.land || 1) >= 2) news.push('Kaptan Mors limanda!');
+  const building = PROJECTS.find(p => { const st = projectStage(P, p); return st > 0 && st < 3; });
+  if (building) news.push(`${building.name} yükseliyor!`);
+  news.push({ heavy: 'Bu hafta kar durmuyor!', clear: 'Ayaz var ama güneş güzel.', blizzard: 'Tipi başladı, sıkı giyin!', aurora: 'Geceleri gökyüzüne bak!' }[weatherNow().id]);
+  const r = Math.random();
+  return r < 0.3 ? pick(news) : r < 0.45 ? pick(VILLAGER_LINES[phase]) : pick(own);
+}
+
 function talkTo(id) {
-  const v = VILLAGERS.find(x => x.id === id), t = ensureTask();
+  const v = VILLAGERS.find(x => x.id === id), t = ensureTask(), f = friendOf(id);
   if (t && !t.claimed && t.giver === id) { showTask(); return; }
-  const lines = VILLAGER_LINES[phaseOf(hourNow())];
-  village.say(id, `${v.name}: ${lines[Math.floor(Math.random() * lines.length)]}`);
+  // yeni hikâyesi varsa ya da konuşurken bir daha dokunulursa dostluk penceresi açılır
+  if (friendReady(id) || (village.speechOn() && village.speech.id === id)) { showFriend(id); return; }
+  if (f.talk !== dateKey()) { f.talk = dateKey(); friendAdd(id, FRIEND.talkPts); village.heartsAt(id); }
+  village.say(id, `${v.name}: ${villagerLine(v)}`);
   sfx.ui();
 }
 
+function showFriend(id) {
+  const v = VILLAGERS.find(x => x.id === id), life = VILLAGER_LIFE[id], f = friendOf(id), lv = friendLv(f), next = FRIEND.levels[lv];
+  const prev = lv ? FRIEND.levels[lv - 1] : 0, cups = Math.floor(cocoaNow()), gifted = f.gift === dateKey();
+  openOverlay(`
+    <span class="new-tag">DOSTLUK</span>
+    <canvas class="intro-icon" id="frFace"></canvas>
+    <h2>${v.name}</h2>
+    <small class="breakdown">${life.trait}</small>
+    <div class="fr-hearts">${friendHearts(f)}</div>
+    ${next ? `<div class="progress"><div style="width:${((f.pts - prev) / (next - prev)) * 100}%;height:100%;background:#ff5f8f"></div></div><small class="breakdown">Sonraki hikâyeye ${next - f.pts} dostluk puanı · günlük sohbet +${FRIEND.talkPts}, iş +${FRIEND.taskPts}, ikram +${FRIEND.giftPts}</small>` : '<small class="breakdown">En yakın dostun oldu</small>'}
+    <div class="fr-stories">${life.story.map((s, i) => (i < f.ch ? `<button class="chip-btn" data-st="${i}">${s.title}</button>` : i < lv ? `<button class="btn green" data-st="${i}">Yeni hikâye: ${s.title}</button>` : `<span class="chip-btn fr-lock">🔒 Hikâye ${i + 1}</span>`)).join('')}</div>
+    ${P.village.cocoa ? `<button id="frGift" class="btn secondary" ${gifted || cups < FRIEND.giftCups ? 'disabled' : ''}>${gifted ? 'Bugün kakao ikram ettin ✓' : `☕ Kakao ikram et · ${FRIEND.giftCups} fincan`}</button>` : ''}
+    <button id="frClose" class="btn link">Kapat</button>`);
+  drawPofi(fitCanvas($('frFace'), 84, 84), 42, 82, 64, { outfit: v.outfit, happy: friendReady(id) });
+  $('frClose').onclick = closeOverlay;
+  $('overlayCard').querySelectorAll('[data-st]').forEach(b => { b.onclick = () => showStory(id, +b.dataset.st); });
+  if ($('frGift')) $('frGift').onclick = () => {
+    if (f.gift === dateKey() || cocoaNow() < FRIEND.giftCups) return;
+    bankCocoa();
+    P.cocoaCups -= FRIEND.giftCups;
+    f.gift = dateKey();
+    friendAdd(id, FRIEND.giftPts);
+    persist();
+    sfx.reward();
+    village.heartsAt(id);
+    track('villager_gift', { id });
+    showFriend(id);
+    renderCocoa();
+  };
+}
+
+function showStory(id, i) {
+  const v = VILLAGERS.find(x => x.id === id), s = VILLAGER_LIFE[id].story[i], f = friendOf(id), fresh = i === f.ch, r = FRIEND.rewards[i];
+  openOverlay(`
+    <span class="new-tag">${v.name.toLocaleUpperCase('tr-TR')} ANLATIYOR</span>
+    <canvas class="intro-icon" id="frFace"></canvas>
+    <h2>${s.title}</h2>
+    <p class="fr-text">${s.text}</p>
+    ${fresh ? `<div class="reward-row">${rewardHtml(r)}</div>` : ''}
+    <button id="stOk" class="btn green big">${fresh ? 'Teşekkürler!' : 'Geri'}</button>`);
+  drawPofi(fitCanvas($('frFace'), 84, 84), 42, 82, 64, { outfit: v.outfit, happy: true });
+  $('stOk').onclick = () => {
+    if (fresh && f.ch === i) {
+      f.ch = i + 1;
+      giveReward(r);
+      persist();
+      sfx.reward();
+      track('villager_story', { id, chapter: i + 1 });
+    }
+    showFriend(id);
+  };
+}
+
 function showTask() {
-  const t = ensureTask(), v = VILLAGERS.find(x => x.id === t.giver), def = DAILY_TASKS.find(d => d.type === t.type);
+  const t = ensureTask(), v = VILLAGERS.find(x => x.id === t.giver), def = DAILY_TASKS.find(d => d.type === t.type), life = VILLAGER_LIFE[v.id];
   const done = t.have >= t.need;
   openOverlay(`
     <span class="new-tag">GÜNLÜK İŞ</span>
     <canvas class="intro-icon" id="taskFace"></canvas>
     <h2>${v.name}</h2>
-    <p>${done ? 'Harikasın, tam istediğim gibi! Al bakalım ödülün.' : `Bugün bana yardım eder misin? <b>${def.text}</b>.`}</p>
+    <p>${done ? life.thanks : `${life.ask} <b>${def.text}</b>.`}</p>
     <div class="progress"><div style="width:${Math.round((t.have / t.need) * 100)}%;height:100%;background:var(--green)"></div></div>
     <small class="breakdown">${t.have}/${t.need} · ödül ${coinIco}${TASK_REWARD.coins} + ${flakeIco}${TASK_REWARD.flakes}</small>
     ${done ? '<button id="tkClaim" class="btn green">Ödülü al</button>' : ''}
+    <button id="tkFriend" class="btn link">Dostluk · ${friendHearts(friendOf(v.id))}</button>
     <button id="tkClose" class="btn link">Kapat</button>`);
+  $('tkFriend').onclick = () => showFriend(v.id);
   drawPofi(fitCanvas($('taskFace'), 84, 84), 42, 82, 64, { outfit: v.outfit, happy: done });
   $('tkClose').onclick = closeOverlay;
   if ($('tkClaim')) $('tkClaim').onclick = () => {
     if (t.claimed || t.have < t.need) return;
     t.claimed = true;
+    friendAdd(t.giver, FRIEND.taskPts);
     P.coins += TASK_REWARD.coins;
     P.flakes += TASK_REWARD.flakes;
     const ev = ensureEvent(P);
@@ -1651,16 +1736,16 @@ function showVillagers() {
   const vl = villageLevel(P), here = villagersHere().map(v => v.id);
   const rows = VILLAGERS.map(v => {
     const price = discounted(P, v.price);
-    const act = here.includes(v.id) ? '<span class="check">Köyde</span>'
+    const act = here.includes(v.id) ? `<button class="btn secondary fr-open" data-fr="${v.id}">${friendHearts(friendOf(v.id))}${friendReady(v.id) ? '<i class="dot"></i>' : ''}</button>`
       : !v.price ? `<small class="muted">Köy Lv${v.vl}</small>`
       : vl < v.vl ? `<small class="muted">Köy Lv${v.vl}</small>`
       : `<button class="btn green" data-inv="${v.id}" ${P.coins < price ? 'disabled' : ''}>${coinIco}${price}</button>`;
-    return `<div class="ev-step${here.includes(v.id) ? ' done' : ''}"><canvas class="vill-face" data-face="${v.id}"></canvas><span class="rw"><b>${v.name}</b>${v.kid ? '&nbsp;<small>çocuk</small>' : ''}</span>${act}</div>`;
+    return `<div class="ev-step"><canvas class="vill-face" data-face="${v.id}"></canvas><span class="rw"><b>${v.name}</b>${v.kid ? '&nbsp;<small>çocuk</small>' : ''}</span>${act}</div>`;
   }).join('');
   openOverlay(`
     <span class="new-tag">KÖYLÜLER</span>
     <h2>Köyü şenlendir</h2>
-    <p>Köylüler günün saatine göre yaşar: sabah balığa çıkar, öğlen kakao kuyruğuna girer, akşam ateş başında toplanır, gece uyur. Her gün biri senden küçük bir iş ister.</p>
+    <p>Köylüler günün saatine göre yaşar: sabah balığa çıkar, öğlen kakao kuyruğuna girer, akşam ateş başında toplanır, gece uyur. Her gün biri senden küçük bir iş ister. Kalplere dokun: dostluk ilerledikçe sana hikâyelerini anlatırlar.</p>
     <div class="ev-track">${rows}</div>
     <button id="vlClose" class="btn link">Kapat</button>`);
   $('overlayCard').querySelectorAll('[data-face]').forEach(cv => {
@@ -1668,6 +1753,7 @@ function showVillagers() {
     drawPofi(fitCanvas(cv, 36, 36), 18, 35, v.kid ? 24 : 30, { outfit: v.outfit });
   });
   $('vlClose').onclick = closeOverlay;
+  $('overlayCard').querySelectorAll('[data-fr]').forEach(b => { b.onclick = () => showFriend(b.dataset.fr); });
   $('overlayCard').querySelectorAll('[data-inv]').forEach(btn => {
     btn.onclick = () => {
       const v = VILLAGERS.find(x => x.id === btn.dataset.inv), price = discounted(P, v.price);
@@ -1752,6 +1838,7 @@ function renderDecor() {
     village.decorPreview = null;
     persist();
     sfx.coin();
+    taskProgress('decor', 1);
     track('decor_buy', { slot, item: it.id, price });
     toast(`${it.name} yerleştirildi`);
     renderDecor();
@@ -2281,6 +2368,7 @@ function showPet() {
     persist();
     sfx.reward();
     P.ach.feeds = (P.ach.feeds || 0) + 1;
+    taskProgress('feed', 1);
     save(P);
     track('pet_feed', { gift: text });
     village.petCheer = village.clock + 3;
@@ -3145,6 +3233,7 @@ function achStat(stat) {
     case 'outfits': return P.owned.hat.length + P.owned.scarf.length - 2;
     case 'villagers': return P.villagers.length;
     case 'masters': return Object.keys(P.masters).length;
+    case 'friends': return Object.values(P.friends).filter(f => f.ch >= 3).length;
     case 'pets': return P.pet?.kinds.length || 0;
     case 'album': return ALL_FISH.filter(f => P.album[f.id]).length;
     case 'projects': return PROJECTS.filter(p => projectStage(P, p) === 3).length;
@@ -3550,8 +3639,8 @@ window.addEventListener('keydown', e => {
 // Köy sahnesinin oyun ekranı ve fotoğrafta ortak olan bilgileri
 const villageScene = () => ({
   village: P.village, vl: villageLevel(P), outfit: P.outfit, colors: COLORS, land: P.land || 1,
-  villagers: villagersHere(), hour: hourNow(), decor: P.decor, event: eventVillage(), weather: weatherNow().id,
-  pet: P.pet ? { kind: P.pet.kind, collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
+  villagers: villagersHere(), hour: hourNow(), decor: P.decor, event: eventVillage(), weather: weatherNow().id, friendReady: villagersHere().filter(v => friendReady(v.id)).map(v => v.id),
+  pet: P.pet ? { kind: P.pet.kind, others: P.pet.kinds.filter(k => k !== P.pet.kind), collar: collarHex(), bed: P.pet.bed || 0, toy: P.pet.toy, awake: petFedToday(P) } : null,
   projects: (P.land || 1) >= 3 ? PROJECTS.map(p => ({ p, stage: projectStage(P, p) })) : null,
 });
 

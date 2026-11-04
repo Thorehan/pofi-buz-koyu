@@ -240,8 +240,93 @@ export const DAILY_TASKS = [
   { type: 'fish', need: 12, text: 'Levellerde 12 balık topla' },
   { type: 'stars', need: 2, text: "2 level'i 3 yıldızla bitir" },
   { type: 'cocoa', need: 1, text: 'Yolculara kakao sat', needs: 'cocoa' },
+  { type: 'feed', need: 1, text: 'Evcil dostunu besle', pet: true },
+  { type: 'decor', need: 1, text: 'Köye bir süs yerleştir' },
+  { type: 'wear', need: 1, text: 'Gardıroptan başka bir şey giy' },
 ];
 export const TASK_REWARD = { coins: 120, flakes: 1 };
+
+// Dostluk: köylüyle günde bir kez konuşmak, işini bitirmek ve kakao ikram etmek puan verir. Her eşikte bir hikâye açılır.
+// Ödüller coin değil (coin zaten bol). giftCups: ikram edilen fincan.
+export const FRIEND = {
+  levels: [3, 8, 15], talkPts: 1, taskPts: 3, giftPts: 2, giftCups: 5,
+  rewards: [{ hints: 1 }, { flakes: 2 }, { flakes: 5, hints: 2 }],
+};
+// Her köylünün karakteri, sözleri, ricası ve üç bölümlük hikâyesi.
+export const VILLAGER_LIFE = {
+  bobo: {
+    trait: 'Balık delisi',
+    lines: ['Bugün oltam bir şey hissediyor!', 'Balık az, sabır çok.', 'O yüzgeci gördün mü?', 'İskele benim ikinci evim.'],
+    ask: 'Balıkçılar birbirine yardım eder, Pofi.',
+    thanks: 'İşte bu! Oltama bile iyi haber oldu.',
+    story: [
+      { title: 'Eski olta', text: 'Bu oltayı dedemden aldım. Ona sorarsan buzun altından dev bir balık çıkarmış. Bana sorarsan balık onu çekmiş! Ama oltayı hiç bırakmamış.' },
+      { title: 'Büyük yüzgeç', text: 'Sabahları iskelede kocaman bir yüzgeç görüyorum. Kimse inanmıyor. Geçen gün yüzgece bir fincan kakao uzattım. Fincan boş geri geldi, yemin ederim!' },
+      { title: 'Sır', text: 'Sana sırrımı söyleyeyim: o yüzgeç bir balığın değil, Foki\'nin şakasıymış. Bütün köy biliyormuş! Ben yine de her sabah bir fincan bırakıyorum. Dostluk böyle bir şey.' },
+    ],
+  },
+  lili: {
+    trait: 'Meraklı gezgin',
+    lines: ['Haritama bir nokta daha!', 'Limandan yeni geldim.', 'Burada kalabilirim sanki.', 'Pusulam hep buraya döner.'],
+    ask: 'Haritamı bitirmeden gidemem, bana yardım et.',
+    thanks: 'Bunu haritama yıldızla işaretliyorum!',
+    story: [
+      { title: 'Küçük nokta', text: 'Ben aslında buradan geçip gidecektim. Haritamda köyünüz yoktu bile! Kalemimi çıkardım, küçücük bir nokta koydum.' },
+      { title: 'Büyüyen nokta', text: 'Her yeni yapıda o noktayı biraz büyütüyorum. Artık kocaman bir daire oldu. Kâğıdın kenarına geldim, bir sayfa daha yapıştırdım.' },
+      { title: 'Ev', text: 'Bugün haritaya yeni bir kelime yazdım: Ev. Gezmeye devam edeceğim ama dönüş yolum artık belli. Bunu sana borçluyum.' },
+    ],
+  },
+  kiko: {
+    trait: 'Soru makinesi',
+    lines: ['Kar neden soğuk, Pofi?', 'Bak, dişim sallanıyor!', 'Bana kaymayı öğretir misin?', 'Balıklar uyur mu?'],
+    ask: 'Bunu yaparsan bir soru daha sormam. Belki.',
+    thanks: 'Yaşasın! Nasıl yaptın? Neden? Bir daha yap!',
+    story: [
+      { title: '46 soru', text: 'Kar neden beyaz? Balıklar uyur mu? Penguenler neden uçmaz? Annem "Pofi\'ye sor" dedi. Hepsini yazdım, 46 tane oldu. Başlayalım mı?' },
+      { title: 'Kayıp diş', text: 'Dişim düştü, hem de karın içine! Bütün sabah kazdım. Diş çıkmadı ama kale yapacak kadar kartopum oldu. Sanırım kazandım.' },
+      { title: 'Büyüyünce', text: 'Büyüyünce senin gibi olacağım. Kayıp bir yere çarpacağım, sonra "bunu planlamıştım" diyeceğim. Dün kardan duvara çarptım. Planlamıştım!' },
+    ],
+  },
+  nana: {
+    trait: 'Köyün büyüğü',
+    lines: ['Üşüme evladım, atkını tak.', 'Gençken daha çok kar yağardı.', 'Kakaoya az şeker, çok sevgi.', 'Seninle gurur duyuyorum.'],
+    ask: 'Yaşlı kemiklerim yetişemiyor evladım.',
+    thanks: 'Maşallah sana. Annen baban görse ne sevinirdi.',
+    story: [
+      { title: 'Boş koy', text: 'Burası eskiden bomboş bir koydu evladım. Bir tek rüzgâr vardı, o da misafirdi. Şimdi fener ışığında yürüyorum, gençliğim aklıma geliyor.' },
+      { title: 'Kakaonun sırrı', text: 'Kakaonun sırrı tarçın değil. Sırrı, fincanı uzatırken gülümsemek. Kimseye söyleme, tarif defterine de yazmadım.' },
+      { title: 'Atkı', text: 'Sana bir atkı örüyordum, ipim bitti. Köydeki herkes bir parça yün getirdi. Atkı uzadıkça uzadı. Asıl hediye atkı değil, o yünü getirenlermiş.' },
+    ],
+  },
+  tipi: {
+    trait: 'Haylaz',
+    lines: ['Kartopunu ben atmadım!', 'Şşş, kimseye söyleme!', 'Kalenin arkası güvenli.', 'Havuç kimde, biliyor musun?'],
+    ask: 'Kimseye söylemezsen sana bir iş vereceğim.',
+    thanks: 'Sen de bizim gizli gruba girdin!',
+    story: [
+      { title: 'Kartopu', text: 'Kartopunu ben atmadım! Yani bu sefer. Önceki sefer attım ama o da kardan adam çok sıkılmış göründüğü içindi.' },
+      { title: 'Gizli üs', text: 'Kalenin arkasında gizli üssüm var. Şifresi "balık". Kimseye söyleme. Bobo biliyor. Bir de Kiko. Bir de Nana, çünkü çorba getiriyor.' },
+      { title: 'Havuç', text: 'Geçen gün kardan adamın havucunu aldım. Geri koydum ama ters. Gece gidip düzelttim, kimse görmedi. Sana söylüyorum, çünkü sen dostsun.' },
+    ],
+  },
+  mavi: {
+    trait: 'Şık sanatçı',
+    lines: ['Şapkam düz mü, efendim?', 'Bu kar çok zarif bugün.', 'Sanat sabır ister.', 'Islığımı duydunuz mu?'],
+    ask: 'Size zahmet, küçük bir ricam olacak efendim.',
+    thanks: 'Pek zarif! Şapkamı çıkarıyorum. Düşmezse.',
+    story: [
+      { title: 'Silindir', text: 'Bu şapkayla denizi geçtim efendim. Tamam, bir kez suya düştüm. Ama şapka ıslanmadı. Hayatta öncelikler önemlidir.' },
+      { title: 'Heykel', text: 'Köye bir buz heykeli yapmak istedim. Yaptım da. Sonra güneş çıktı, heykel havuz oldu. Modern sanat diyelim.' },
+      { title: 'Konser', text: 'Akşamları ateşin başında ıslık çalıyorum, herkes uyuyor sanıyordum. Geçen gün Tipi alkışladı. Demek ki bir dinleyicim varmış. Yeter de artar.' },
+    ],
+  },
+};
+// Köylülerin kendi aralarındaki kısa sohbetler (yan yana boş dururlarken).
+export const VILLAGER_CHAT = [
+  ['Bugün balık var mı?', 'Yüzgeç hariç, yok.'], ['Şapkan çok güzel.', 'Biliyorum efendim.'], ['Kim yaptı bu kartopunu?', 'Ben değilim!'],
+  ['Kakao içtin mi?', 'İki fincan!'], ['Hava soğuk bugün.', 'Penguene göre iyi.'], ['Yeni yapıyı gördün mü?', 'Pofi çok çalışıyor.'],
+  ['Akşam ateşe gelecek misin?', 'Islık yoksa gelirim.'], ['Neden kar yağıyor?', 'Kiko, sus biraz.'], ['Liman ne kadar uzak?', 'Bir kayış mesafesi.'], ['Köy büyüyor, değil mi?', 'Hem de nasıl!'],
+];
 
 // Renk paleti: bir kez açılan renk tüm yapılarda kullanılabilir. null = stilin kendi rengi.
 export const COLOR_PRICE = 100;
@@ -439,6 +524,7 @@ export const ACHIEVEMENTS = [
   { id: 'feeds', name: 'Can dostu', icon: '🦊', stat: 'feeds', text: n => `Evcil dostunu ${n} kez besle`, tiers: [7, 30, 100] },
   { id: 'album', name: 'Balık koleksiyoncusu', icon: '🐠', stat: 'album', text: n => `Albüme ${n} nadir balık ekle`, tiers: [4, 12, 24] },
   { id: 'projects', name: 'Köy mimarı', icon: '🏗️', stat: 'projects', text: n => `${n} köy projesi tamamla`, tiers: [1, 2, 3] },
+  { id: 'friends', name: 'Köyün sevgilisi', icon: '💛', stat: 'friends', text: n => `${n} köylünün hikâyesini bitir`, tiers: [1, 3, 6] },
   { id: 'merchant', name: 'Tüccar dostu', icon: '⛵', stat: 'merchant', text: n => `Kaptan Mors'tan ${n} kez alışveriş yap`, tiers: [5, 20, 50] },
 ];
 // Günlük görevler: her gün tarihe göre 3 görev seçilir (herkeste aynı gün aynı görevler). needs: o özellik açık değilse seçilmez.

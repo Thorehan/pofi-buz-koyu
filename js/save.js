@@ -41,6 +41,7 @@ function defaults() {
     villageName: null, // köy ekranına ilk girişte sorulur; ilk isim ücretsiz, değiştirmek VILLAGE_RENAME_PRICE
     task: null, // { day, type, need, have, giver, claimed } — köylünün günlük işi
     settings: { haptics: true, sfx: true, ambient: true, music: true },
+    friends: {}, // { köylü: { pts, ch: okunan bölüm, talk: gün, gift: gün } }
     unlocksSeen: null, // gösterilmiş "Yeni" kartları; eski kayıtlarda açık olanlar sessizce işaretlenir
     freeCoinDay: '',
     freeCoinCount: 0,

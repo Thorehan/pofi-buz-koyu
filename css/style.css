@@ -842,6 +842,12 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .vtab.active { background: #fff; color: var(--ink); box-shadow: 0 2px 0 rgba(29, 53, 87, .1); }
 .vtab .dot { top: -3px; right: 2px; width: 12px; height: 12px; border-width: 2px; }
 .card .code-box { min-height: 74px; resize: none; }
+.fr-hearts { font-size: 26px; line-height: 1; color: #ff5f8f; letter-spacing: 3px; }
+.fr-stories { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.fr-lock { color: var(--ink-soft); }
+.fr-text { text-align: left; font-size: 16px !important; }
+.fr-open { position: relative; color: #ffd9e6; padding: 4px 10px !important; letter-spacing: 1px; }
+.fr-open .dot { top: -5px; right: -5px; width: 13px; height: 13px; border-width: 2px; }
 .unlock-ico { font-size: 56px; line-height: 1.1; }
 .first-tip { grid-column: 1 / -1; margin: 0; background: #fff6dc; border-radius: 12px; padding: 8px 10px; }
 .away-list { display: flex; flex-direction: column; gap: 6px; text-align: left; background: #f4f8fc; border-radius: 14px; padding: 10px 12px; font-size: 15px; color: var(--ink); }

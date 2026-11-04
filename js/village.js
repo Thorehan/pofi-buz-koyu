@@ -1,7 +1,7 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
 import { roundRect, circle, ellipse, drawPofi, drawSeal } from './draw.js';
 import { art, tinted, BLD, BLD_Z2 } from './art.js';
-import { DISTRICTS, DECOR_SLOTS } from './config.js';
+import { DISTRICTS, DECOR_SLOTS, VILLAGER_CHAT } from './config.js';
 import { drawPet, drawPetBed, drawToy, drawWalrus, drawStall, drawMerchantBoat, drawProject } from './townart.js';
 
 // Yapı görseli (varsa). Çağıran tuvali SCALE[lvFull] ile büyütmüş olur; görselde seviye büyümesi
@@ -1391,7 +1391,7 @@ export class VillageView {
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
   // photo: fotoğraf karesi (ok, kar yağışı ve panel düğmesi çizilmez)
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy' }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy', friendReady = [] }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     this.clock = time;
@@ -1662,6 +1662,7 @@ export class VillageView {
           });
           if (st.act === 'fish' && !moving && !cheer) rod(ctx, x, y, size, st.face, st.x > 1, time + i);
           if (task?.giver === v.id) taskMark(ctx, x, y - size * 1.05 - bob, u, time, task.done);
+          else if (friendReady.includes(v.id)) heartMark(ctx, x, y - size * 1.05 - bob, u, time);
         }]);
       });
       if (phase === 'night') for (const id of ['igloo', 'hut']) if (village[id]) zzz(ctx, AT[id][0] * W, AT[id][1] * H - u * 0.2, u, time);
@@ -1679,6 +1680,8 @@ export class VillageView {
     }
     this.townPos = [];
     if (pet) this.stepPet(dt, time, pet, items, W, H, u, land, phase);
+    if (pet?.others?.length) this.stepOtherPets(dt, time, pet, items, W, H, u, land, phase);
+    if (!photo) this.stepChat(time);
     if (merchant && land >= 2) {
       const [sx, sy] = [MC_STALL[0] * W, MC_STALL[1] * H], [wx2, wy2] = [MC_WALRUS[0] * W, MC_WALRUS[1] * H];
       // Liman ilk kez görününce tekne sağdan yelkenle gelir, sonra iskelede sallanır.
@@ -1801,6 +1804,89 @@ export class VillageView {
       if (atBed) zzz(ctx, x + st.face * size * 0.2, y - lift - size * 0.5, u, time, '#3f6fa8');
     }]);
   }
+
+  // Yanında olmayan dostlar köyde kendi başına gezer; gece ya da karınları açken yatağın yanında uyur.
+  stepOtherPets(dt, time, pet, items, W, H, u, land, phase) {
+    const ctx = this.ctx, [x0, x1] = walkRange(land), size = u * 0.085;
+    this.otherPets = this.otherPets || new Map();
+    pet.others.forEach((kind, i) => {
+      let st = this.otherPets.get(kind);
+      const off = 0.02 + (i % 2) * 0.012;
+      if (!st) {
+        const x = x0 + Math.random() * (x1 - x0);
+        st = { x, y: promenadeY(x) + off, face: 1, tx: x, wait: Math.random() * 3, play: 0, cool: time + 5 };
+        this.otherPets.set(kind, st);
+      }
+      const asleep = !pet.awake || phase === 'night';
+      const tx = asleep ? PET_BED[0] + (i ? 0.11 : -0.11) : st.tx, ty = asleep ? PET_BED[1] + 0.015 : promenadeY(st.tx) + off;
+      const dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy);
+      let moving = false;
+      if (d > 0.01 && (asleep || st.wait <= 0)) {
+        const step = Math.min(d, 0.07 * dt);
+        st.x += (dx / d) * step;
+        st.y += (dy / d) * step;
+        if (Math.abs(dx) > 0.002) st.face = Math.sign(dx);
+        moving = true;
+      } else if (!asleep) {
+        st.wait -= dt;
+        if (st.wait <= 0 && d <= 0.01) { st.tx = x0 + Math.random() * (x1 - x0); st.wait = 2 + Math.random() * 5; }
+      }
+      if (!asleep) this.petGreet(st, time, pet);
+      const pose = asleep && !moving ? 'sleep' : moving ? 'walk' : time < st.play ? 'happy' : 'stand';
+      const x = st.x * W, y = st.y * H;
+      this.townPos.push(['pet', x, y - size * 0.4, size * 0.7]);
+      items.push([y, () => {
+        drawPet(ctx, x, y, size, { kind, pose, face: st.face, t: time + i, collar: pet.collar });
+        if (pose === 'sleep') zzz(ctx, x + st.face * size * 0.2, y - size * 0.5, u, time + i, '#3f6fa8');
+      }]);
+    });
+  }
+
+  // Gezen dost başka bir dosta ya da gezinen köylüye rastlayınca sevinir; kalpler çıkar, köylü de bir şey söyler.
+  petGreet(st, time, pet) {
+    if (time < st.cool) return;
+    const main = this.petSt;
+    if (main && !main.nap && pet.awake && Math.hypot(st.x - main.x, st.y - main.y) < 0.07) {
+      st.play = time + 2.5;
+      st.cool = time + 25;
+      this.petCheer = time + 2.5;
+      this.hearts((st.x + main.x) / 2, (st.y + main.y) / 2);
+      return;
+    }
+    for (const [id, v] of this.vs) {
+      if (v.hidden || !v.wander || v.cheer || Math.hypot(st.x - v.x, st.y - v.y) > 0.06) continue;
+      st.play = time + 2;
+      st.cool = time + 25;
+      v.cheer = this.clock + 1.8;
+      this.hearts(v.x, v.y);
+      if (!this.speechOn()) this.say(id, pick(['Ne tatlısın sen!', 'Gel buraya minik!', 'Aa, merhaba!', 'Burnun soğuk!']));
+      return;
+    }
+  }
+
+  speechOn() { return !!this.speech && performance.now() < this.speech.until; }
+
+  // Yan yana duran iki köylü ara sıra kısa bir sohbet eder (biri söyler, öbürü cevap verir).
+  stepChat(time) {
+    if (this.chat) {
+      if (performance.now() > this.chat.at) { this.say(this.chat.id, this.chat.text); this.chat = null; this.chatAt = time + 12 + Math.random() * 14; }
+      return;
+    }
+    if (this.chatAt === undefined) this.chatAt = time + 6;
+    if (time < this.chatAt || this.speechOn() || this.focus || this.decorMode) return;
+    this.chatAt = time + 4;
+    const list = [...this.vs.entries()].filter(([id, v]) => !v.hidden && !v.route.length && !v.cheer && (this.vpos || []).some(p => p[0] === id));
+    for (const [a, va] of list) {
+      const other = list.find(([b, vb]) => b !== a && Math.hypot(va.x - vb.x, va.y - vb.y) < 0.16);
+      if (!other) continue;
+      const [line, reply] = pick(VILLAGER_CHAT);
+      this.say(a, line);
+      this.chat = { id: other[0], text: reply, at: performance.now() + 3300 };
+      return;
+    }
+  }
+
+  heartsAt(id) { const v = this.vs.get(id); if (v) this.hearts(v.x, v.y - 0.04); }
 
   // Şekerlemeyi bitirir (süre dolunca ya da dosta dokununca).
   wakePet(time = this.clock) {
@@ -2401,6 +2487,20 @@ function rod(ctx, x, y, size, face, sea, t) {
 }
 
 // Günlük iş işareti: sarı "!" (iş var) ya da yeşil "✓" (bitti, ödül bekliyor).
+// Köylünün anlatacak yeni hikâyesi var.
+function heartMark(ctx, x, y, u, t) {
+  const b = Math.abs(Math.sin(t * 3)) * u * 0.01, r = u * 0.015, cy = y - b;
+  ctx.fillStyle = '#ffffff';
+  circle(ctx, x, cy, u * 0.028);
+  ctx.fill();
+  ctx.fillStyle = '#ff5f8f';
+  ctx.beginPath();
+  ctx.moveTo(x, cy + r);
+  ctx.bezierCurveTo(x - r * 1.7, cy - r * 0.3, x - r * 0.8, cy - r * 1.6, x, cy - r * 0.5);
+  ctx.bezierCurveTo(x + r * 0.8, cy - r * 1.6, x + r * 1.7, cy - r * 0.3, x, cy + r);
+  ctx.fill();
+}
+
 function taskMark(ctx, x, y, u, t, done) {
   const b = Math.abs(Math.sin(t * 3)) * u * 0.01, r = u * 0.026;
   ctx.fillStyle = done ? '#3cc977' : '#ffb400';
