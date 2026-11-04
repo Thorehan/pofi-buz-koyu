@@ -166,7 +166,7 @@ function move(L, S, dir, who) {
     take();
     if (stops(t)) { fx.push({ k: 'snow', at: pPath.length - 1 }); return true; }
     if (isArrow(t)) { d = t - T.UP; fx.push({ k: 'arrow', cell: cur, at: pPath.length - 1 }); }
-    if (t === T.TURN) { d = (d + 1) % 4; fx.push({ k: 'turn', cell: cur, at: pPath.length - 1 }); }
+    if (t === T.TURN) { fx.push({ k: 'turn', cell: cur, at: pPath.length - 1, d }); d = (d + 1) % 4; } // d: tablaya giriş yönü
     return false;
   };
 

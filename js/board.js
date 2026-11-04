@@ -1,5 +1,5 @@
 // Oyun tahtası: çizim, kayma animasyonu, kaydırma/klavye girdisi.
-import { T, tileOf, isRamp } from './engine.js';
+import { T, tileOf, isRamp, simulate } from './engine.js';
 import { roundRect, circle, ellipse, drawPofi, drawPofiBelly, drawFish, drawSeal } from './draw.js';
 import { art, tinted } from './art.js';
 
@@ -193,6 +193,19 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
     || (t === T.FRAGILE ? (opt.cracked ? 'obj_rock_fragile_cracked' : 'obj_rock_fragile') : null);
   // Sarkıt görseli ince; tavana yapışık kalacak şekilde 1,6 kat büyütülür (altı saydam).
   if (t === T.ICICLE && art('obj_icicle')) { ctx.drawImage(art('obj_icicle'), cx - s * 0.8, y - s * 0.02, s * 1.6, s * 1.6); return; }
+  // Döner tabla: Pofi'nin bu hamlede gelebileceği yön biliniyorsa dairesel ok yerine çıkışı gösteren ok çizilir.
+  // Ok görseli alttan girip sağdan çıkar (giriş yönü yukarı); diskin üstüne oturması için önce döner, sonra basılır.
+  if (t === T.TURN && opt.turnDir >= 0 && art('obj_turntable_base') && art('obj_turntable_arrow')) {
+    objArt(ctx, 'obj_turntable_base', cx, cy, s);
+    const k = s / 256;
+    ctx.save();
+    ctx.translate(cx + k, cy + 10 * k);
+    ctx.scale((k * 168) / 256, (k * 100) / 256);
+    ctx.rotate((opt.turnDir * Math.PI) / 2);
+    ctx.drawImage(art('obj_turntable_arrow'), -128, -128, 256, 256);
+    ctx.restore();
+    return;
+  }
   if (id && objArt(ctx, id, cx, cy, s)) return;
   // Plaka kapısı: aynı kapı görseli yeşile boyanır (kol kapısından ayırt edilsin).
   if ((t === T.PGATE || (opt.pgateOpen && t === T.ICE)) && art('obj_gate_closed')) {
@@ -567,6 +580,27 @@ export class BoardView {
     window.addEventListener('resize', () => this.L && this.resize());
   }
 
+  // Döner tabladaki ok: dört kaydırma yönünü dener, Pofi'nin yolu tablaya uğruyorsa giriş yönünü alır. Hamle sürerken
+  // bir önceki hâl kalır. Tek giriş varsa o gösterilir, birkaç giriş varsa sırayla; ulaşılamıyorsa -1 (dairesel ok).
+  turnDir(c, time) {
+    if (!this.anim && (this.turnS !== this.S || this.turnSel !== this.sel)) {
+      this.turnS = this.S;
+      this.turnSel = this.sel;
+      this.turnIn = new Map();
+      for (let dir = 0; dir < 4; dir++) {
+        const r = simulate(this.L, this.S, dir + (this.S.q >= 0 ? this.sel * 4 : 0));
+        for (const f of r?.fx || []) {
+          if (f.k !== 'turn') continue;
+          const list = this.turnIn.get(f.cell) || [];
+          if (!list.includes(f.d)) list.push(f.d);
+          this.turnIn.set(f.cell, list);
+        }
+      }
+    }
+    const list = this.turnIn?.get(c);
+    return list ? list[Math.floor(time / 1.4) % list.length] : -1;
+  }
+
   input(dir) {
     if (this.anim) { this.queued = dir; return; }
     this.onMove?.(dir + (this.S?.q >= 0 ? this.sel * 4 : 0));
@@ -848,6 +882,7 @@ export class BoardView {
       const t = this.visTile(c, u);
       const crackAt = a && a.r.fx.some(f => f.k === 'rock' && f.cell === c && u < f.at);
       paintTile(ctx, t, x, y, s, time, {
+        turnDir: t === T.TURN ? this.turnDir(c, time) : -1,
         leverOn: this.leverOn, gateOpen: L.t[c] === T.GATE, pgateOpen: L.t[c] === T.PGATE,
         pressed: (a && a.r.fx.some(f => f.k === 'plate' && u < f.at) ? this.prev : this.S).pg,
         cracked: L.t[c] === T.FRAGILE && (crackAt ? this.prev : this.S).dyn[L.dynIdx[c]] === 1,

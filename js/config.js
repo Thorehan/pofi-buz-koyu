@@ -72,7 +72,7 @@ export const INTRO = {
   106: { title: 'Fok', text: 'Fok her hamlenden sonra bir adım yürür ve önü kapanınca geri döner. Seni de kasaları da durdurur; zamanlamayı iyi ayarla.', icon: 'seal' },
   121: { title: 'Sıralı balıklar', text: 'Numaralı balıkları sırayla topla. Sırası gelmeyen balığın üstünden geçersin ama onu alamazsın.', icon: 'order' },
   140: { title: 'Basınç plakası', text: 'Yeşil kapılar, plakanın üstünde bir şey durduğu sürece açıktır. Plakaya bir kasa it ya da üstünde dur.', icon: 'plate' },
-  165: { title: 'Döner tabla', text: 'Döner tablanın üstünden geçen Pofi ve kasalar saat yönünde çeyrek tur döner ve yeni yönde kaymaya devam eder.', icon: 'turn' },
+  165: { title: 'Döner tabla', text: 'Üstünden geçen Pofi ve kasalar sağına döner ve yeni yönde kaymaya devam eder. Tabladaki ok, Pofi\'nin geleceği yönden nereye çıkacağını gösterir.', icon: 'turn' },
   195: { title: 'Kırılgan kaya', text: 'Açık renkli kaya ilk çarpmada çatlar, ikinci çarpmada kırılıp buza döner. Yol açmak için iki kez çarp!', icon: 'fragile' },
   230: { title: 'Sarkıt', text: 'Sarkıtın altından geçtiğinde arkandan düşer ve orası kayaya dönüşür. O yoldan bir kez geçebilirsin.', icon: 'icicle' },
   270: { title: 'Kar topu', text: 'Kar topunu itince kayar; durduğu yerde dağılıp kar yığını olur. Kendi frenini istediğin yere kur!', icon: 'ball' },

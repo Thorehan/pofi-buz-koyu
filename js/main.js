@@ -77,7 +77,7 @@ village.onDecorSlot = id => { village.decorSel = id; village.decorPreview = null
 village.onTown = k => {
   sfx.ui();
   if (k === 'merchant') showMerchant();
-  else if (k === 'pet') { village.petCheer = village.clock + 2; showPet(); }
+  else if (k === 'pet') { village.wakePet(); village.petCheer = village.clock + 2; showPet(); }
   else if (k === 'hero') heroEmote();
   else if (k.startsWith('proj:')) showProject(k.slice(5));
 };

@@ -93,6 +93,8 @@ const EV_GUEST = [0.68, 0.728];
 // Evcil dost: yatağı iglonun kapısının önündeki patikada (kulübe çatısı ile etkinlik çadırı arasında).
 // Uyurken yatağında, uyanıkken Pofi'nin peşinde.
 const PET_BED = [0.485, 0.64];
+// Dost yatağın üstüne yerleşince ayağının tabandan yüksekliği (u cinsinden; 0: yatak yok, karda kıvrılır).
+const PET_BED_LIFT = [0, 0.01, 0.016, 0.005];
 // Gezgin tüccar (Buz Limanı): tezgâh rıhtımın sol ucunda, Kaptan Mors tezgâhın sol önünde (arkasında durunca
 // tezgâhtaki mallar onu kapatıyordu; sağ önü kıyıya denk gelir), teknesi limanın sağ ucunda.
 // Tüccarın geldiği günlerde morsun yanındaki h5 süs yeri gizlenir.
@@ -1724,7 +1726,13 @@ export class VillageView {
   stepPet(dt, time, pet, items, W, H, u, land, phase) {
     const ctx = this.ctx, h = this.walkers[0], s = this.sale;
     const st = this.petSt || (this.petSt = { x: PET_BED[0], y: PET_BED[1], face: 1, play: 0 });
-    const asleep = !pet.awake || phase === 'night';
+    // Şekerleme: uyanık dost ara sıra yatağına gider, uyur, sonra Pofi'nin yanına döner. Pofi koydan uzaktaysa gitmez.
+    if (st.napAt === undefined) st.napAt = time + 20 + Math.random() * 20;
+    if (!st.nap && pet.awake && phase !== 'night' && time > st.napAt && !s) {
+      if (Math.abs(h.x - PET_BED[0]) < 0.6) st.nap = { end: 0 };
+      else st.napAt = time + 10;
+    }
+    const asleep = !pet.awake || phase === 'night' || !!st.nap;
     const [bx, by] = [PET_BED[0] * W, PET_BED[1] * H];
     items.push([by - 1, () => drawPetBed(ctx, bx, by, u, pet.bed)]);
     if (pet.toy) items.push([by + u * 0.01, () => drawToy(ctx, bx + u * 0.075, by + u * 0.01, u, pet.toy, time)]);
@@ -1740,13 +1748,25 @@ export class VillageView {
     if (moving) { st.x += (dx / d) * Math.min(sp, d); st.y += (dy / d) * Math.min(sp, d); if (Math.abs(dx) > 0.002) st.face = Math.sign(dx); }
     else if (!asleep && pet.toy && (st.play -= dt) < -6) st.play = 1.6;
     const atBed = asleep && d < 0.02;
+    if (st.nap && atBed) {
+      if (!st.nap.end) st.nap.end = time + 10 + Math.random() * 6;
+      else if (time > st.nap.end) this.wakePet(time);
+    }
     const pose = atBed ? 'sleep' : moving ? 'walk' : st.play > 0 || this.petCheer > time ? 'happy' : 'stand';
-    const x = st.x * W, y = st.y * H, size = u * 0.085;
+    const x = st.x * W, y = st.y * H, size = u * 0.085, lift = atBed ? PET_BED_LIFT[pet.bed] * u : 0;
     this.townPos.push(['pet', x, y - size * 0.4, size * 0.7]);
     items.push([y, () => {
-      drawPet(ctx, x, y, size, { kind: pet.kind, pose, face: st.face, t: time, collar: pet.collar, sleepy: !pet.awake });
-      if (atBed) zzz(ctx, x + size * 0.2, y - size * 0.45, u, time);
+      drawPet(ctx, x, y - lift, size, { kind: pet.kind, pose, face: st.face, t: time, collar: pet.collar, sleepy: !pet.awake });
+      if (atBed) zzz(ctx, x + st.face * size * 0.2, y - lift - size * 0.5, u, time, '#3f6fa8');
     }]);
+  }
+
+  // Şekerlemeyi bitirir (süre dolunca ya da dosta dokununca).
+  wakePet(time = this.clock) {
+    const st = this.petSt;
+    if (!st?.nap) return;
+    st.nap = null;
+    st.napAt = time + 30 + Math.random() * 30;
   }
 
   // Tüccar, evcil dost, Pofi ya da projeye dokunuş (ekran koordinatı)
@@ -2354,15 +2374,18 @@ function taskMark(ctx, x, y, u, t, done) {
 }
 
 // Gece uyuyan köylülerin evlerinin üstünde yükselen "z"ler.
-function zzz(ctx, x, y, u, t) {
+function zzz(ctx, x, y, u, t, col = '#ffffff') {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (let k = 0; k < 3; k++) {
     const f = (t * 0.35 + k / 3) % 1;
     ctx.globalAlpha = Math.sin(f * Math.PI);
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = col;
     ctx.font = `700 ${Math.round(u * (0.03 + f * 0.025))}px Fredoka, sans-serif`;
-    ctx.fillText('z', x + Math.sin(f * 6 + k) * u * 0.02 + f * u * 0.04, y - f * u * 0.12);
+    const zx = x + Math.sin(f * 6 + k) * u * 0.02 + f * u * 0.04, zy = y - f * u * 0.12;
+    // koyu harf açık zeminde ve iglonun üstünde kaybolmasın diye beyaz konturlu
+    if (col !== '#ffffff') { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, u * 0.01); ctx.lineJoin = 'round'; ctx.strokeText('z', zx, zy); }
+    ctx.fillText('z', zx, zy);
   }
   ctx.globalAlpha = 1;
 }
