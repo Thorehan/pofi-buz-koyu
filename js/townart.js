@@ -28,6 +28,8 @@ function multiplied(id, hex) {
 // ---------- kar tilkisi ----------
 // Görseller (pet_fox_<poz>): 512×512, ayak/taban çizgisi 470. satırda, ayakta boyu ≈ 300 px, yüzü sağa dönük.
 const FOX_FOOT = 470, FOX_H = 300;
+// Görsellerde boynun (çenenin hemen altı) yeri: boyun oranı cinsinden [sağa, yukarı] (pofi-r12 ölçümü)
+const FOX_NECK = { stand: [0.21, 0.32], walk: [0.25, 0.3], happy: [0.21, 0.28] };
 const mixHex = (a, b, k) => {
   const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const [x, y] = [p(a), p(b)];
@@ -45,7 +47,8 @@ export function drawFox(ctx, x, y, size, o = {}) {
     ctx.scale(face * k, k);
     ctx.drawImage(im, -256, -FOX_FOOT, 512, 512);
     ctx.restore();
-    if (o.collar && pose !== 'sleep') collarBand(ctx, x + face * size * 0.16, y - size * (pose === 'walk' ? 0.52 : 0.6), size, o.collar, face);
+    const nk = FOX_NECK[pose];
+    if (o.collar && nk) collarBand(ctx, x + face * size * nk[0], y - size * nk[1], size, o.collar, face);
     return;
   }
   const fur = o.fur || '#f7fbff', shade = o.fur ? mixHex(o.fur.startsWith('#') ? o.fur : '#f7fbff', '#7d8aa3', 0.25) : '#dfe8f3', s = size;
@@ -411,10 +414,12 @@ export function drawProject(ctx, x, y, u, p, stage, t = 0) {
   }
   ctx.save();
   ctx.translate(x, y);
-  // temel (her aşamada)
-  ctx.fillStyle = '#c7d3e0';
-  ellipse(ctx, 0, -w * 0.03, w * 0.42, w * 0.1);
-  ctx.fill();
+  // temel: zemin görselinde ped çizili; yalnızca kod zemininde çizilir
+  if (!art('bg_ground_forest')) {
+    ctx.fillStyle = '#c7d3e0';
+    ellipse(ctx, 0, -w * 0.03, w * 0.42, w * 0.1);
+    ctx.fill();
+  }
   if (stage === 0) {
     // inşaat yeri: kazıklar ve ip
     ctx.strokeStyle = '#9a6a42';

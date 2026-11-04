@@ -93,9 +93,11 @@ const EV_GUEST = [0.68, 0.728];
 // Evcil hayvan (kar tilkisi): yatağı iglonun kapısının önündeki patikada (kulübe çatısı ile etkinlik çadırı arasında).
 // Uyurken yatağında, uyanıkken Pofi'nin peşinde.
 const PET_BED = [0.485, 0.64];
-// Gezgin tüccar (Buz Limanı): tezgâh rıhtımın sol ucunda, Kaptan Mors tezgâhın arkasında (alt yarısı tezgâhın
-// arkasında kalır), teknesi limanın sağ ucunda.
-const MC_STALL = [1.24, 0.905], MC_WALRUS = [1.255, 0.885], MC_BOAT = [1.885, 0.975];
+// Gezgin tüccar (Buz Limanı): tezgâh rıhtımın sol ucunda, Kaptan Mors tezgâhın sol önünde (arkasında durunca
+// tezgâhtaki mallar onu kapatıyordu; sağ önü kıyıya denk gelir), teknesi limanın sağ ucunda.
+// Tüccarın geldiği günlerde morsun yanındaki h5 süs yeri gizlenir.
+const MC_STALL = [1.24, 0.905], MC_WALRUS = [1.147, 0.915], MC_BOAT = [1.885, 0.975];
+const MC_HIDE_SLOT = 'h5';
 // Etkinlik haftasında gökyüzünden düşenler (kar zaten yağıyor); tema kimliğine göre.
 const EVENT_FALL = {
   valentine: 'hearts', friendship: 'hearts', mothers: 'petals', spring: 'petals', eggs: 'petals',
@@ -1551,6 +1553,7 @@ export class VillageView {
     this.slotPos = [];
     for (const sl of DECOR_SLOTS) {
       if (Math.floor(sl.at[0]) >= land) continue;
+      if (merchant && sl.id === MC_HIDE_SLOT) continue; // Kaptan Mors orada duruyor
       const x = sl.at[0] * W, y = sl.at[1] * H;
       const pv = this.decorPreview?.slot === sl.id ? this.decorPreview.item : null;
       const item = pv || decor[sl.id];
@@ -1600,10 +1603,10 @@ export class VillageView {
       items.push([MC_BOAT[1] * H, () => drawMerchantBoat(ctx, MC_BOAT[0] * W, MC_BOAT[1] * H, u, time)]);
       items.push([sy, () => drawStall(ctx, sx, sy, u, time)]);
       items.push([wy2, () => {
-        drawWalrus(ctx, wx2, wy2, u * 0.13, time, 1);
-        taskMark(ctx, wx2, wy2 - u * 0.16, u, time, false);
+        drawWalrus(ctx, wx2, wy2, u * 0.16, time, 1);
+        taskMark(ctx, wx2, wy2 - u * 0.19, u, time, false);
       }]);
-      this.townPos.push(['merchant', sx, sy - u * 0.1, u * 0.14], ['merchant', wx2, wy2 - u * 0.07, u * 0.08]);
+      this.townPos.push(['merchant', sx, sy - u * 0.1, u * 0.14], ['merchant', wx2, wy2 - u * 0.08, u * 0.09]);
     }
     if (projects && land >= 3) {
       for (const { p, stage } of projects) {

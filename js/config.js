@@ -103,7 +103,7 @@ export const ZONES = [
 export const DISTRICTS = [
   { id: 'bay', name: 'Buzul Koyu', price: 0, vl: 1 },
   { id: 'harbor', name: 'Buz Limanı', price: 2000, vl: 5, ground: true, text: 'Yolcu teknesi, liman kafesi, balık pazarı ve liman çanı' },
-  { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, projects: true, text: 'Köy projeleri: sıcak kaplıca, saat kulesi ve telesiyej' },
+  { id: 'forest', name: 'Çam Ormanı', price: 5000, vl: 9, projects: true, ground: true, text: 'Köy projeleri: sıcak kaplıca, saat kulesi ve telesiyej' },
 ];
 
 export const BUILDINGS = [

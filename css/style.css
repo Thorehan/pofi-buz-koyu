@@ -845,3 +845,4 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .gz-band { position: relative; }
 .gz-band img { width: 100%; display: block; border-radius: 10px; }
 .gz-band span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 700 26px 'Fredoka', sans-serif; color: #3b2f22; text-shadow: 0 2px 0 rgba(255, 255, 255, .8); }
+.gz p .ico, .card p .ico { width: 16px; height: 16px; vertical-align: -3px; }
