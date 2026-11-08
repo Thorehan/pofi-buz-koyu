@@ -364,9 +364,16 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
        - Kaydırıcı %30'da düzey 0,17 oldu (0,55 × 0,3).
        - Level kazanılınca kazanma müziği 0,80'de çaldı, oyun müziği 0,11'e kısıldı ve bitince 0,55'e döndü.
      - **Denenmedi:** Gerçek iPhone. Web Audio bağlantısı iOS 14.5 ve sonrasında çalışır; daha eski sürümde eski yola düşer.
-6. [ ] **Uzun oturum denetimi.**
+6. [x] **Uzun oturum denetimi.**
    - Oyun hızlandırılmış olarak 30 dakikalık ekran geçişleri ve levellerle oynatılır.
    - Bellek, DOM düğüm sayısı, zamanlayıcı ve dinleyici birikmesi ve hatalar ölçülür; sızıntı varsa düzeltilir.
+   - **Yapıldı (2026-11-08, `80a5c19`):**
+     - **Düzenek:** Zengin bir test kaydıyla 22 tur oynatıldı (yaklaşık 220 sn yoğun oyun; gerçek oyunda yarım saatten fazla ekran geçişine denk). Her turda ana sayfa, köy, mağaza, gardırop, ayarlar, görevler, harita ve gazete açıldı, köyde 4 kart açıldı ve bir level kazanıldı. Ses gerçek tıklamayla açıktı.
+     - **Bulunan sızıntı (müzik elemanları):** Her ekran değişiminde yeni bir müzik elemanı açılıyordu; tek turda 9 oldu. Web Audio'ya bağlanan elemanlar ses grafiğinde kaldığı için bellekten de silinmiyordu, uzun oturumda birikip belleği şişirirdi. Artık her parça için tek eleman var ve aynı parçaya dönünce kaldığı yerden sürüyor. 20 tur boyunca 4 elemanda sabit kaldı (menü, köy, oyun, kazanma).
+     - **Bulunan hata:** Evcil dostun adı kayıtta yoksa köy ekranı ve gazete hata veriyordu. Normal oyunda ad hep yazılıyor; eksik ya da bozuk kayıt için türün varsayılan adı kullanılıyor (Pamuk, Ponpon, Puhu).
+     - **Ölçümler (0 → 20 tur):** Sayfa öğeleri 1127'de, bellek 9,1-9,6 MB'ta, zamanlayıcılar 1-3'te, çalan parça 1'de sabit (geçiş anında 2). Hata yok.
+     - **Olay dinleyicileri:** Turda 10 artıyor, ama hepsi listeler yeniden çizilince yerine yenisi konan düğmelerde. Eski düğmeler sayfadan çıkınca dinleyicileriyle birlikte siliniyor; pencere ya da belgeye biriken dinleyici yok.
+     - **Denenmedi:** Gerçek telefonda saatlerce açık kalma (pil ve ısınma).
 
 **Erişilebilirlik ve akış**
 
@@ -442,3 +449,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `dea8582` Köy düzeni küçük düzeltmeler: etkinlik çadırı görünür, festival pankartı, bölge etiketi, yapılar biraz küçük.
 - 2026-11-08 · `fa9fa8e` Yükleme boyutu: açılış 2,4 → 1,5 MB ham (~0,85 MB sıkıştırılmış).
 - 2026-11-08 · `b13d052` Müzik Web Audio üzerinden (iPhone düzey kaydırıcısı); iki parçanın üst üste çalması düzeltildi.
+- 2026-11-08 · `80a5c19` Uzun oturum: müzik elemanı birikmesi giderildi, adı eksik evcil dost hatası; 20 turda bellek sabit.
