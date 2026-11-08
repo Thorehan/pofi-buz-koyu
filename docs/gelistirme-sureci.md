@@ -66,9 +66,13 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
    - Oyunda yakalanan hatalar cihazda küçük bir günlükte tutulur (son 30 kayıt).
    - Ayarlar'daki "Oynanış verisi" yanına "Hata kaydını kopyala" düğmesi eklenir. Mustafa test ederken sorun bildirebilsin diye.
    - **Yapıldı (2026-11-08):** `js/errlog.js` ilk modül olarak yüklenir ve hataları cihazda tutar (son 30 kayıt, `pofi.err.v1`, sunucuya gitmez). Her kayıtta zaman, ekran, level ve yığın izinin ilk satırları var. Aynı hata art arda gelirse sayacı artar. Görsel ya da ses yüklenememesi kaydedilmez, oyun onu zaten yedekle karşılıyor. Ayarlar > "Hata kaydı" son 5 hatayı gösterir ve "Kaydı kopyala" düğmesi sürüm, ekran boyutu ve tarayıcı bilgisiyle düz metin kopyalar; pano kapalıysa metin seçili bir kutuda çıkar. "Kaydı temizle" günlüğü boşaltır.
-5. [ ] **Dokunma alanı ve yazı boyu denetimi.**
+5. [x] **Dokunma alanı ve yazı boyu denetimi.**
    - Düğmeler en az 44 px, yazılar en az 12 px olmalı.
    - 360 px dar ekranda taşma ve yatay kaydırma olmamalı.
+   - **Yapıldı (2026-11-08):** 360 px genişlikte ölçülen ekranlar: ana sayfa, köy, mağaza, gardırop, ayarlar, oyun, harita, görevler, etkinlik, sipariş ve festival pencereleri. Yatay kaydırma ve taşma hiçbir yerde yok.
+     - **Düzeltilenler:** Bütün düğmeler en az 40 px yükseklikte; pencerelerdeki "Kapat" bağlantıları 19 px'ten 40 px'e çıktı. Etkinlik dükkânı, festival bağışı, "Hepsini al" ve sandık düğmeleri 32-37 px'ten 40 px'e; köy ve gardırop sekmeleri 40 px'e; köy adındaki kalem düğmesinin dokunma alanı 26x22 px'ten 40x40 px'e çıktı.
+     - **Yazılar:** Alt menü, ana sayfa yan düğmeleri, oyun araç çubuğu etiketleri ve görevler ekranındaki bölge ve albüm yazıları en az 12 px oldu.
+     - **Bilerek küçük kalanlar:** Etkinlik süresi rozeti (11 px), Oyna düğmesindeki "LEVEL" etiketi (11 px) ve albümdeki "?" işaretleri. Ayar anahtarları satırın tamamıyla dokunulabildiği için sorun değil.
 6. [ ] **Performans.**
    - Köy sahnesi, ekran gizliyken ya da sekme değişince çizmeyi bırakmalı.
    - Kare süresi ölçülür; köyde ve oyunda 16 ms'yi aşan yerler düzeltilir.
