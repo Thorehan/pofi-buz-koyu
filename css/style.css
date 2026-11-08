@@ -1160,6 +1160,12 @@ body { background: #8fbfe2; }
 .sheet-x, .hb-x { font-size: 0 !important; background: var(--paper-d) url(../assets/art/ui_close.webp) center/18px no-repeat !important; }
 /* reklam düğmesi: film ikonu ve küçük yazı */
 .btn.ad::before { padding-left: 20px; background: rgba(0, 0, 0, .22) url(../assets/art/ui_ad.webp) 2px center/16px no-repeat; }
+/* hata kaydı */
+.err-list { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; text-align: left; max-height: 180px; overflow-y: auto; }
+.err-row { background: var(--paper-d); border-radius: 10px; padding: 6px 8px; }
+.err-row small { display: block; color: var(--wood-d); font-size: 12px; }
+.err-row code { display: block; font-size: 12px; word-break: break-word; color: var(--navy); }
+.err-text { width: 100%; height: 120px; font: 12px/1.4 monospace; border-radius: 10px; border: 2px solid var(--line); padding: 6px; margin: 6px 0; }
 /* köy festivali */
 .fest-bar { position: relative; margin: 10px 4px 4px; }
 .fest-bar .progress { margin: 0; height: 12px; }

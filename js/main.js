@@ -1,3 +1,4 @@
+import { setErrContext, errList, errText, clearErrors } from './errlog.js'; // önce yüklenir: açılış hataları da yakalanır
 import { parseLevel, simulate, solve, won, generateLevel, starsFor, T, tileOf } from './engine.js';
 import { BoardView, paintTile } from './board.js';
 import { VillageView, phaseOf, drawDecor } from './village.js';
@@ -181,7 +182,7 @@ function showScreen(name) {
   if (name === 'home' || name === 'village') setTimeout(() => { if (screen === name && !overlayOpen()) showUnlock(); }, 900);
   if (name === 'ach') renderAch();
   if (name === 'shop') { renderShop(); if (P.shopSeen !== today()) { P.shopSeen = today(); save(P); } }
-  if (name === 'settings') renderSettings();
+  if (name === 'settings') { renderSettings(); renderErrCount(); }
   if (name === 'home') { ensureEvent(P); if (P.eventNote) { const n = P.eventNote; P.eventNote = null; persist(); setTimeout(() => toast(`${n.name} bitti: kalan ${n.tokens} jeton ${n.coins} coin oldu`, 3200), 600); } }
   updateWallet();
   if (name === 'home' && !dailyPopupShown && !dailyRewardState().claimedToday) {
@@ -4153,6 +4154,36 @@ function showStats() {
   $('stDown').onclick = () => downloadFile(new Blob([statCsv()], { type: 'text/csv;charset=utf-8' }), `pofi-oynanis-${dateKey()}.csv`);
 }
 $('btnStats').onclick = showStats;
+
+// Hata kaydı: bu cihazda yakalanan hatalar (js/errlog.js). Kopyalanan metin test edene gönderilir.
+setErrContext(() => ({ ekran: screen, level: P?.level, oyun: run && !run.finished ? (run.def?.n ?? null) : null }));
+function renderErrCount() {
+  const n = errList().length;
+  if (!$('errCount')) return; // eski önbellekli HTML'de satır yoksa oyun yine açılsın
+  $('errCount').textContent = n ? `(${n} kayıt)` : '(sorun bildirmek için)';
+}
+function showErrors() {
+  const list = errList();
+  const rows = list.slice(-5).reverse().map(e => `<div class="err-row"><small>${new Date(e.t).toLocaleString('tr-TR')}${e.n > 1 ? ` · x${e.n}` : ''}${e.ekran ? ` · ${esc(e.ekran)}` : ''}</small><code>${esc(e.m)}</code></div>`).join('');
+  openOverlay(`
+    <span class="new-tag">HATA KAYDI</span>
+    <h2>${list.length ? `${list.length} kayıt` : 'Kayıtlı hata yok'}</h2>
+    <p>${list.length ? 'Oyunda bir sorun yaşadıysan kaydı kopyalayıp bize gönder. Kayıt yalnızca bu cihazda durur.' : 'Oyunda bir hata yakalanırsa burada görünür. Kayıt yalnızca bu cihazda durur.'}</p>
+    ${rows ? `<div class="err-list">${rows}</div>` : ''}
+    <textarea id="errText" class="err-text hidden" readonly></textarea>
+    <button id="errCopy" class="btn primary big" ${list.length ? '' : 'disabled'}>Kaydı kopyala</button>
+    ${list.length ? '<button id="errClear" class="btn secondary">Kaydı temizle</button>' : ''}
+    <button id="errClose" class="btn link">Kapat</button>`);
+  $('errClose').onclick = closeOverlay;
+  $('errCopy').onclick = async () => {
+    const text = errText();
+    try { await navigator.clipboard.writeText(text); toast('Hata kaydı kopyalandı'); }
+    catch { const ta = $('errText'); ta.value = text; ta.classList.remove('hidden'); ta.select(); toast('Metni seçip kopyala'); }
+    track('errlog_copy', { n: list.length });
+  };
+  if ($('errClear')) $('errClear').onclick = () => { clearErrors(); renderErrCount(); showErrors(); };
+}
+if ($('btnErrors')) $('btnErrors').onclick = showErrors;
 
 // Harita: 3 yıldızı eksik leveller arasında sırayla atlar (tekrar oynayıp yıldız sandıklarını doldurmak için).
 let missingAt = 0;

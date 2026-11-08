@@ -62,9 +62,10 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - Yapı kartlarında nokta yalnızca önerilen sıradaki yapıda (en ucuz, kar tanesi yeten). Parası yeten diğer kartlar yalnızca yeşil çerçeveli; sahnedeki yükseltme oku da tek.
      - Köy hayatı sekmesinin kakao noktası standın yarısı dolunca değil, tamamen dolunca (üretim durunca) yanıyor.
    - **Sonuç:** Zengin test kaydında köyde 10 yeşil kart, 1 nokta ve 1 ok. Ana sayfada kalan noktaların her biri yapılacak gerçek bir işe bağlı.
-4. [ ] **Hata günlüğü.**
+4. [x] **Hata günlüğü.**
    - Oyunda yakalanan hatalar cihazda küçük bir günlükte tutulur (son 30 kayıt).
    - Ayarlar'daki "Oynanış verisi" yanına "Hata kaydını kopyala" düğmesi eklenir. Mustafa test ederken sorun bildirebilsin diye.
+   - **Yapıldı (2026-11-08):** `js/errlog.js` ilk modül olarak yüklenir ve hataları cihazda tutar (son 30 kayıt, `pofi.err.v1`, sunucuya gitmez). Her kayıtta zaman, ekran, level ve yığın izinin ilk satırları var. Aynı hata art arda gelirse sayacı artar. Görsel ya da ses yüklenememesi kaydedilmez, oyun onu zaten yedekle karşılıyor. Ayarlar > "Hata kaydı" son 5 hatayı gösterir ve "Kaydı kopyala" düğmesi sürüm, ekran boyutu ve tarayıcı bilgisiyle düz metin kopyalar; pano kapalıysa metin seçili bir kutuda çıkar. "Kaydı temizle" günlüğü boşaltır.
 5. [ ] **Dokunma alanı ve yazı boyu denetimi.**
    - Düğmeler en az 44 px, yazılar en az 12 px olmalı.
    - 360 px dar ekranda taşma ve yatay kaydırma olmamalı.
