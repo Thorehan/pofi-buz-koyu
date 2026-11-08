@@ -391,7 +391,7 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
        - Anahtar balığın anahtar halkası var, sıralı balıklarda numara var.
        - Ok, rampa, tabla ve bayrağın yönü şekille gösteriliyor.
      - **Not:** Yeni görsel üretilmedi; rozet ve çizgi kodla çiziliyor.
-8. [ ] **Hareketi azalt seçeneği.**
+8. [x] **Hareketi azalt seçeneği.** (2026-11-08, `4652b43`: Ayarlar anahtarı, cihaz ayarına da uyar; parçacıklar 1/4, konfeti ve havai fişek yok, kar seyrek, CSS animasyonları anında biter. Tarayıcıda görsel olarak denenmedi, yalnızca duman testi.)
    - Ayarlar'a anahtar eklenir; telefonun "hareketi azalt" ayarına da uyar.
    - Açıkken sallanma, zıplama, ekran sarsıntısı ve parçacıklar sadeleşir; oyunun anlaşılması bozulmaz.
 9. [ ] **Köye ilk giriş akışı.**
@@ -462,3 +462,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `b13d052` Müzik Web Audio üzerinden (iPhone düzey kaydırıcısı); iki parçanın üst üste çalması düzeltildi.
 - 2026-11-08 · `80a5c19` Uzun oturum: müzik elemanı birikmesi giderildi, adı eksik evcil dost hatası; 20 turda bellek sabit.
 - 2026-11-08 · `09c7e32` Renk körlüğü: plaka kapısı rozeti, kasa hedefi düz çizgi.
+- 2026-11-08 · `4652b43` Hareketi azalt seçeneği.
