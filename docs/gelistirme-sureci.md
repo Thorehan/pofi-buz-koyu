@@ -134,9 +134,15 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Kod:** Yedek kodlaması `js/backup.js` modülüne taşındı.
      - **Test:** Duman testi dolu bir kaydı (sipariş, festival, hikâye, evcil dost, Türkçe karakterli ve emojili ad) sıkıştırmalı ve sıkıştırmasız koda çevirip geri açıyor. Oyunun açılışından geçtikten sonra da her alanın aynı kaldığına bakıyor. Boşluklu yapıştırma, `<` içeren ad ve 6 bozuk kod da deneniyor.
      - **Tarayıcı:** Ayarlar > Kayıt yedeği penceresindeki kod geri açılınca kayıtla aynı; bozuk kod "Bu kod geçersiz" diyor.
-2. [ ] **Kare döngüsünü hataya dayanıklı yapmak.**
+2. [x] **Kare döngüsünü hataya dayanıklı yapmak.**
    - Bir karede çizim hatası olursa hata günlüğe yazılır, döngü sonraki karede devam eder; oyun donmaz.
    - Aynı hata her karede tekrar ederse günlük dolmaz (sayaç artar).
+   - **Yapıldı (2026-11-08):**
+     - **Döngü:** Her kare korumalı çiziliyor. Hata olursa sonraki kare yine istenir; eskiden tek hata bütün döngüyü durduruyordu.
+     - **Kurtarma:** Hata olunca sahne tuvalleri sıfırlanıyor, yarıda kalan çizim durumu sonraki kareye taşınmıyor. Hata sürerse saniyede bir yeniden deneniyor.
+     - **Günlük:** "Kare (ekran): mesaj" olarak tek satır yazılıyor. Aynı hata sürerse yeni satır açılmıyor, kare sayacı 5 sn'de bir topluca artıyor; her karede depolamaya yazılmıyor.
+     - **Deneme:** Ana sayfada çizime kasıtlı hata verildi. 383 kare boyunca köy sahnesi çizilmeye devam etti, günlükte tek satır ("x295") oluştu, hata bitince Pofi yeniden çizildi.
+     - **Not:** Çizim dışındaki hatalar (düğme tıklaması gibi) zaten döngüyü durdurmuyordu; onlar eskisi gibi günlüğe yazılıyor.
 3. [ ] **"Yeni sürüm hazır" bildirimi.**
    - Servis çalışanı yeni sürümü fark edince oyunda küçük bir "Yeni sürüm hazır · Yenile" şeridi çıkar.
    - Oyun sırasında araya girmez; ana sayfada ya da köyde gösterilir.
@@ -197,3 +203,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `a30c62d` Gazete: oyuncu verisinden 7 yeni haber türü, 34 bilmece.
 - 2026-11-08 · `dd29944` Ayarlar'da "Nasıl oynanır": kurallar ve karşılaşılan mekanikler.
 - 2026-11-08 · `5ba529f` Kayıt yedeği: duman testinde yedek denetimi, `<` içeren adlı yedek artık yükleniyor.
+- 2026-11-08 · `f39322b` Kare döngüsü hataya dayanıklı: çizim hatası günlüğe yazılır, oyun donmaz.
