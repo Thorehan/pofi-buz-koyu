@@ -165,9 +165,19 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Göster:** Köyün Yapılar sekmesini açıyor ve önerilen yapının panelini hazır getiriyor. Köye ilk girişte zaten çıkan "Köyüne bir isim ver" penceresi önce geliyor; kapanınca panel orada bekliyor.
      - **Deneme:** 3 kar tanesi, sıfır yapılı kayıtla ana sayfada kart çıktı. Göster → isim penceresi → Kaydet → İglo paneli → Kur: İglo kuruldu, kart bir daha çıkmıyor. Konsolda hata yok.
      - **Eski kayıtlar:** Zaten yapısı olan oyuncuda kart hiç çıkmaz.
-5. [ ] **Ses düzeyi ayarları.**
+5. [x] **Ses düzeyi ayarları.**
    - Ayarlar'da müzik ve efekt için ayrı ses kaydırıcıları; açma/kapama anahtarları kalır.
    - Seviye kayıtta tutulur, jingle efekt seviyesine uyar.
+   - **Yapıldı (2026-11-08):**
+     - **Ekran:** Ayarlar'da "Ses efektleri" ve "Müzik" anahtarlarının hemen altında birer düzey kaydırıcısı var (%0-100, 5'er adım), yanında yüzde yazıyor. Anahtar kapalıyken kaydırıcı soluk görünüyor.
+     - **Kayıt:** Düzeyler `settings.sfxVol` ve `settings.musicVol` olarak tutuluyor, varsayılan 100. Eski kayıtlarda alan yoksa 100 sayılıyor.
+     - **Davranış:**
+       - Kaydırıcı sürüklenirken düzey anında uygulanıyor, bırakılınca kaydediliyor.
+       - Efekt kaydırıcısı bırakılınca örnek bir ses çalıyor.
+       - Efekt düzeyi kodla üretilen sesleri, level sonu jingle'ını ve ortam çanını ölçekliyor. %0'da jingle çalmaz, eski sese de düşmez.
+       - Müzik düzeyi bütün parçalara ve jingle sırasındaki kısmaya uygulanıyor.
+     - **Deneme:** Müzik %40'a çekilince parçanın düzeyi 0,55'ten 0,22'ye indi. Köye geçince yeni parça da 0,22 ile başladı. Müzik kapatılınca kaydırıcı soluklaştı ve parça durdu; açılınca kaldığı düzeyden devam etti. 375 px'te taşma yok.
+     - **Sınır:** iPhone Safari müzik elemanının ses düzeyini değiştirmeye izin vermiyor, orada müzik kaydırıcısı etkisiz kalabilir; açma/kapama çalışır. Efekt kaydırıcısı Web Audio ile çalıştığı için iPhone'da da etkili. Gerçek telefonda denenmedi.
 6. [ ] **Erişilebilirlik ve klavye.**
    - Yalnızca ikonu olan düğmelere ekran okuyucu etiketi (`aria-label`) eklenir.
    - Masaüstü kısayolları: oklar ve WASD kaydırma (varsa korunur), Z geri al, R baştan, H ipucu, Esc pencere kapatma.
@@ -219,3 +229,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `f39322b` Kare döngüsü hataya dayanıklı: çizim hatası günlüğe yazılır, oyun donmaz.
 - 2026-11-08 · `e6cf565` Yeni sürüm şeridi: yayına alınan sürüm fark edilince ana sayfada "Yenile".
 - 2026-11-08 · `17a6562` İlk yapı kartı: kar tanesi yetince bir kez "İlk yapını kur", önerilen yapının paneline götürür.
+- 2026-11-08 · `e6438e9` Ses düzeyi ayarları: müzik ve efekt için ayrı kaydırıcı.
