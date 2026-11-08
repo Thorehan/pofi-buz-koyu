@@ -35,6 +35,8 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 ## Sıradaki işler
 
+### Tur 1 (bitti, 2026-11-08)
+
 1. [x] **Otomatik duman testi** (`tools/smoke.mjs`). Her tur bu testle başlar.
    - Bütün leveller çözülebilir olmalı ve çözüm uzunluğu kayıtlı en kısa çözümle eşleşmeli.
    - Yan yollar ve usta levelleri çözülebilir olmalı.
@@ -119,9 +121,50 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
       - **Sürpriz korunur:** Henüz gelmemiş mekanikler gösterilmez, yalnızca sıradakinin leveli yazar.
       - **Deneme:** Level 12'deki oyuncu 3/21, level 252'deki oyuncu 16/21 mekanik görüyor.
 
+### Tur 2 (2026-11-08'de başladı)
+
+**Sağlamlık**
+
+1. [ ] **Kayıt yedeği testi.**
+   - Sipariş, festival, hikâye ve mağaza alanları kayda yeni eklendi. Yedekle ve geri yükle bunları kayıpsız taşımalı.
+   - Duman testine yedek → geri yükleme denetimi eklenir; eksik alan çıkarsa düzeltilir.
+2. [ ] **Kare döngüsünü hataya dayanıklı yapmak.**
+   - Bir karede çizim hatası olursa hata günlüğe yazılır, döngü sonraki karede devam eder; oyun donmaz.
+   - Aynı hata her karede tekrar ederse günlük dolmaz (sayaç artar).
+3. [ ] **"Yeni sürüm hazır" bildirimi.**
+   - Servis çalışanı yeni sürümü fark edince oyunda küçük bir "Yeni sürüm hazır · Yenile" şeridi çıkar.
+   - Oyun sırasında araya girmez; ana sayfada ya da köyde gösterilir.
+
+**Oyuncu deneyimi**
+
+4. [ ] **İlk yapıya yönlendirme.**
+   - Hiç yapı kurulmamışken kar tanesi ilk yapıya yetince bir kez "İlk yapını kur" kartı çıkar ve köyde önerilen yapıyı gösterir.
+   - Kart yalnızca bir kez gelir; diğer tanıtım kartlarıyla üst üste binmez.
+5. [ ] **Ses düzeyi ayarları.**
+   - Ayarlar'da müzik ve efekt için ayrı ses kaydırıcıları; açma/kapama anahtarları kalır.
+   - Seviye kayıtta tutulur, jingle efekt seviyesine uyar.
+6. [ ] **Erişilebilirlik ve klavye.**
+   - Yalnızca ikonu olan düğmelere ekran okuyucu etiketi (`aria-label`) eklenir.
+   - Masaüstü kısayolları: oklar ve WASD kaydırma (varsa korunur), Z geri al, R baştan, H ipucu, Esc pencere kapatma.
+7. [ ] **Geniş ekran düzeni.**
+   - 768 px (tablet) ve 1280 px (masaüstü) genişlikte bütün ana ekranlar ölçülür.
+   - Düzen ortalanır, gereksiz uzayan ve bozulan yerler düzeltilir; telefon düzeni değişmez.
+
+**Mustafa ve test**
+
+8. [ ] **Gizli test paneli.**
+   - Sürüm yazısına 7 kez dokununca açılır; normal oyuncu görmez.
+   - Yalnızca levele atlama, saat ve gün değiştirme ve kaydı sıfırlama; coin ya da eşya ekleme yok.
+9. [ ] **Mekanik başına oyun içi test.**
+   - Her mekaniğin ilk levelini gerçek oyun arayüzünde çözüm hamleleriyle otomatik oynatan bir araç (`tools/`).
+   - Kazanma, geri alma ve baştan alma hatasız olmalı; konsolda hata olmamalı.
+10. [ ] **Metin denetimi.**
+    - Bütün oyun yazıları taranır: yazım hataları, tutarsız kelimeler ("level" / "bölüm" gibi), büyük İ ve küçük ı hataları.
+    - Düzeltmeler tek commit; anlamı değişen metin olursa not düşülür.
+
 ## Durum
 
-Sıradaki işler listesindeki 10 maddenin hepsi bitti (2026-11-08). Döngü durdu. Yeni iş, "Karar bekleyenler"den senin kararınla ya da listeye eklenen yeni maddelerle başlar.
+Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemiş ilk maddeden devam ediyor.
 
 ## Karar bekleyenler
 
