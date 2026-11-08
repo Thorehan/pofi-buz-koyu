@@ -311,12 +311,27 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Senin istediklerin (2026-11-08, öncelikli)**
 
-- [ ] **A. Evcil dostların kendi uyku yeri.** Evcil dostlar (ve yatakları) köyde aynı yerde üst üste uyuyor; her birinin kendi uyuma alanı olsun.
-- [ ] **B. Kazanma sesi yorucu.** Level kazanma müziği art arda çalınca yoruyor. Seçenekler: kısaltmak, her levelde değil arada bir tam çalmak, kısa bir "ding" ile değiştirmek.
-- [ ] **C. Köy yerleşimi.**
+- [x] **A. Evcil dostların kendi uyku yeri.** Evcil dostlar (ve yatakları) köyde aynı yerde üst üste uyuyor; her birinin kendi uyuma alanı olsun.
+  - **Yapıldı (2026-11-08, `61d3c99`):**
+    - Ana dost eskisi gibi iglonun önündeki yatağında uyuyor.
+    - Diğer dostlar eskiden onun iki yanına yığılıp iglonun ve etkinlik çadırının arkasında kayboluyordu. Artık her birinin kendi yeri var: baykuş çam ağacının dalına tünüyor; tilki ya da tavşan kulübe ile buz pisti arasında, ikincisi kale ile kardan adam arasında kendi yatağında uyuyor. Yatak kademesi ana dostunkiyle aynı.
+    - Gece görüntüsünde üç dost ayrı ayrı görünüyor; ana dost baykuşken de denendi.
+- [x] **B. Kazanma sesi yorucu.** Level kazanma müziği art arda çalınca yoruyor. Seçenekler: kısaltmak, her levelde değil arada bir tam çalmak, kısa bir "ding" ile değiştirmek.
+  - **Yapıldı (2026-11-08, `e4f4625`):** Tam kazanma müziği (5 sn) en çok 4 dakikada bir çalıyor (`MUSIC.jingleGapSec: 240`). Arada kazanılan levellerde kısa zafer sesi çıkıyor. İlk kazanma ve moladan sonraki kazanma yine tam müzikle.
+  - **Denenmedi:** Tarayıcı paneli dokunmadan ses açmadığı için kulakla dinlenmedi.
+- [x] **C. Köy yerleşimi (küçük düzeltmeler; geniş görsel karar bekliyor).**
   - Yapılar iç içe duruyor; örneğin etkinlik foku buz pateninin arkasında kalıyor.
   - Alanlar daha geniş kullanılsın, bölgelerin ne olduğu belli olsun.
   - Oyundaki etkinlikler de köyde görünsün.
+  - **Senin kararın (2026-11-08):** Şimdi kodla küçük düzeltmeler yapılacak, sonra görsel oturumunda Buzul Koyu'nu genişleten yeni arka plan hazırlanacak (maliyet önce gösterilecek).
+  - **Yapıldı (`dea8582`):**
+    - **Yapı boyutu:** Yapılar yaklaşık %9 küçültüldü (`SCALE`), aralarında boşluk açıldı.
+    - **Etkinlik çadırı ve konuk fok:** Artık buz pistinin arkasında değil. Liman açıksa limanda kafe ile balık pazarı arasındaki boş kara geçiyorlar; liman kapalı ama buz pisti kuruluysa pistin sağındaki köşeye.
+    - **Bayrak dizisi:** Etkinliğin renkli bayrakları eskiden iglonun ve kalenin ortasını kesiyordu; artık çadırın üstüne asılı.
+    - **Festival:** Aylık festival köyde görünüyor; gözlemevi ile iglo arasında fener dizisine tema renginde, festivalin adı yazılı bir pankart asılı. Pankartın altındaki şerit festival puanıyla doluyor.
+    - **Bölge etiketi:** Köyün sol üstünde "Bölge 2 · Buzul Koyu" yazıyordu; buradaki "Bölge 2" yapı seviyesi sınırıydı, arazi sanılıyordu. Artık "Buzul Koyu · 1/2", "Buz Limanı · 2/2".
+    - **Süs yeri b3:** Köşedeki çadırla çakışmasın diye biraz sola alındı.
+  - **Kalan:** Buzul Koyu'nda 12 yapı tek ekranda duruyor; asıl çözüm geniş arka plan, "Karar bekleyenler"de.
 
 **Hız ve cihazlar**
 
@@ -353,6 +368,17 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 
 ## Karar bekleyenler
 
+- **Buzul Koyu geniş zemin görseli (görsel oturumu, senin onayınla).** Kararın: küçük düzeltmeler yapıldı, geniş görsel görsel oturumunda maliyeti gösterilerek hazırlanacak. Görsel oturumu için şartname:
+  - **Görsel:** Buzul Koyu zemini, 2 ekran genişliğinde (2048×1024, 2:1); mevcut `bg_village_pano` üslubunda. Tek görsel en çok 3072×1024 olabildiği için liman ve orman panoraması ayrı kalır; sağ kenarı Buz Limanı'nın sol kenarına dikişsiz bağlanmalı.
+  - **Yerleşim (çizim kroki olarak verilir, stil görseli yanına konmaz):** 12 yapı yeri üç mahallede:
+    - **Meydan:** iglo, kakao standı, fener dizisi, gözlemevi.
+    - **Eğlence:** buz pisti, kızak tepesi, kartopu kalesi, kardan adam.
+    - **Kıyı:** iskele, balıkçı kulübesi, deniz feneri, çam ağacı.
+    - Ayrıca boş bir **etkinlik meydanı** (çadır, konuk fok, festival pankartı) ve evcil dostlar için ayrı uyku köşeleri.
+  - **Yol:** Ana yol üç mahalleyi birleştirir, her yapı yerine patika ayrılır, sol altta deniz kıyısı kalır.
+  - **Kod tarafı (görsel gelince bu oturum):** Birinci arazi iki ekran genişliğine çıkar; `AT` yerleri, ana yol (`PROMENADE`), süs yerleri, çadır ve uyku yerleri yeni krokiye göre güncellenir; mahalle adları köyde küçük tabelalarla gösterilir.
+  - **Maliyet (tahmini):** Benzer geniş zeminler deneme başına yaklaşık $0,03 tuttu; görsel oturumu kesin maliyeti gösterip onay alır.
+
 - **Köy büyüme görselleri:** Köy seviyesi arttıkça daha çok köylü, ışık ve tekne. Görsel üretimi gerekir, maliyet görsel oturumunda çıkarılacak.
 - **Kalan müzikler:** Level 136+, zor leveller, günlük bulmaca, 4 etkinlik, köy büyüdü, bir daha dene ve açılış parçaları Mustafa'dan bekleniyor. Gelince `MUSIC` ayarına eklenir.
 - **Bildirimler:** "Stant doldu" ve "festivalin son günü" hatırlatmaları. Oyunun yayınlanacağı platforma bağlı.
@@ -388,3 +414,6 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `676ca70` Yarım kalan level: kaldığı hamleden sürer.
 - 2026-11-08 · `8986d42` Kayıt güvenliği: yedek kopya, bozuk kayıt yedekten açılır, yazılamazsa uyarı.
 - 2026-11-08 · `7626295` İnternetsiz ilk açılış: kurulumda kod, veri ve ilk ekran görselleri önceden indirilir.
+- 2026-11-08 · `61d3c99` Evcil dostların kendi uyku yerleri.
+- 2026-11-08 · `e4f4625` Kazanma müziği seyrek: tam hâli en çok 4 dakikada bir.
+- 2026-11-08 · `dea8582` Köy düzeni küçük düzeltmeler: etkinlik çadırı görünür, festival pankartı, bölge etiketi, yapılar biraz küçük.
