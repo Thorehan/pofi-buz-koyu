@@ -80,7 +80,7 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Gizli ekranlar:** Kare döngüsü yalnızca açık ekranı çiziyor; köy başka ekrandayken çizilmiyor. Sekme gizlenince tarayıcı döngüyü zaten durduruyor. Sürekli çalışan zamanlayıcı yok; reklam ve müzik geçişindekiler kısa ömürlü.
      - **Kare süresi:** 3x piksel yoğunluklu telefon taklidiyle ölçüldü (masaüstü işlemci, yalnızca JavaScript süresi): ana sayfa 0,7 ms, köy 1,0 ms, oyun 0,4 ms, harita 0,5 ms, gardırop 0,1 ms; en kötü kare 2,6 ms. Telefonda 4-6 kat yavaş olsa bile 16 ms'nin altında.
      - **Asıl yük boyamadaydı:** Ana sayfa sahnesi her karede 1,8 MP, köy 0,9 MP boyuyordu. Sahne tuvallerinde piksel yoğunluğu 2x ile sınırlandı: ana sayfa 0,8 MP, köy 0,4 MP. Köy fotoğrafı kendi çözünürlüğünü kullandığı için etkilenmedi.
-     - **Ek düzeltme:**  artık yalnızca yükseklik değiştiğinde de tuvali güncelliyor.
+     - **Ek düzeltme:** `fitCanvas` artık yalnızca yükseklik değiştiğinde de tuvali güncelliyor.
      - **Denenmedi:** Gerçek telefonda boyama süresi ölçülmedi.
 7. [ ] **Çevrimdışı ses.**
    - Müzik ve jingle'lar servis çalışanında güvenli biçimde önbelleğe alınır; tarayıcının parça parça yükleme isteklerine dikkat edilir.
