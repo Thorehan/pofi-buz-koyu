@@ -297,9 +297,26 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
        - Duman testi yedek alma, yarım yazılmış kayıt, okunan ama kullanılamayan kayıt, yedeksiz bozuk kayıt, iki kez yazılamama (tek uyarı), düzelme ve sıfırlamayı deniyor.
        - Tarayıcıda yarım yazılmış kayıt ve sağlam bir yedekle açılış denendi: oyun level 77 ve 4321 coin ile açıldı, uyarı çıktı, bozuk kayıt kenara alındı.
      - **Araç:** `tools/oyun-testi.html` test bitince yedek kopyayı da eski hâline getiriyor; test kaydı yedeğe geçmiyor.
-3. [ ] **İnternetsiz ilk açılış.**
+3. [x] **İnternetsiz ilk açılış.**
    - Servis çalışanı kurulurken temel dosyaları (html, js, css, level verisi, ilk ekranların görselleri) önceden indirir.
    - Oyun bir kez açıldıktan sonra uçak modunda baştan açılabilir; duman testi sahte ağla dener.
+   - **Yapıldı (2026-11-08):**
+     - **Eski davranış:** Yalnızca ziyaret edilmiş dosyalar önbellekteydi. Örneğin köye hiç girilmediyse uçak modunda köy görselleri yoktu.
+     - **Kurulumda indirilenler:** 28 kod ve veri dosyası (sayfa, stil, 21 modül, 3 level dosyası, manifest) ve 68 görsel (arayüz ikonları, açılışta yüklenen karolar ve Pofi, logo, uygulama ikonları). Toplam yaklaşık 2,6 MB.
+       - Bir dosya alınamazsa kurulum durmuyor; o dosya ilk kullanıldığında yine önbelleğe giriyor.
+       - Müzik ve yapı görselleri eskisi gibi ilk kullanımda önbelleğe giriyor.
+     - **Liste denetimi:** Liste `sw.js` içinde elle tutuluyor. Duman testi her `js/` ve `data/` dosyasının, CSS görsellerinin ve `art.js` açılış görsellerinin listede olduğunu, listedeki her dosyanın diskte durduğunu denetliyor. Yeni modül eklenip listeye yazılmazsa test kırılır.
+     - **Deneme:** Duman testinde servis çalışanı sahte ağla kuruldu, ağ kesildi; sayfa, `index.html`, modüller, level verisi, stil ve görsel önbellekten geldi.
+     - **Denenmedi:** Gerçek telefonda uçak modunda baştan açılış. Tarayıcı paneli servis çalışanı kaydetmiyor.
+
+**Senin istediklerin (2026-11-08, öncelikli)**
+
+- [ ] **A. Evcil dostların kendi uyku yeri.** Evcil dostlar (ve yatakları) köyde aynı yerde üst üste uyuyor; her birinin kendi uyuma alanı olsun.
+- [ ] **B. Kazanma sesi yorucu.** Level kazanma müziği art arda çalınca yoruyor. Seçenekler: kısaltmak, her levelde değil arada bir tam çalmak, kısa bir "ding" ile değiştirmek.
+- [ ] **C. Köy yerleşimi.**
+  - Yapılar iç içe duruyor; örneğin etkinlik foku buz pateninin arkasında kalıyor.
+  - Alanlar daha geniş kullanılsın, bölgelerin ne olduğu belli olsun.
+  - Oyundaki etkinlikler de köyde görünsün.
 
 **Hız ve cihazlar**
 
@@ -370,3 +387,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `e0dd51e` Metin denetimi: sayıya göre ekler (`js/tr.js`), Türkçe büyük harf, yazım düzeltmeleri.
 - 2026-11-08 · `676ca70` Yarım kalan level: kaldığı hamleden sürer.
 - 2026-11-08 · `8986d42` Kayıt güvenliği: yedek kopya, bozuk kayıt yedekten açılır, yazılamazsa uyarı.
+- 2026-11-08 · `7626295` İnternetsiz ilk açılış: kurulumda kod, veri ve ilk ekran görselleri önceden indirilir.
