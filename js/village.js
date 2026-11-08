@@ -961,7 +961,9 @@ export class VillageView {
   resize() {
     const p = this.c.parentElement.getBoundingClientRect();
     if (!p.width) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    // Sahne tam ekran ve her karede baştan boyanır: 3x telefonda 2x ile sınırlamak boyanan pikseli yarıdan fazla düşürür,
+    // görüntü yine net kalır (ana sayfa sahnesi 1,8 MP yerine 0,8 MP).
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.W = p.width;
     this.H = p.height;
     this.c.width = Math.round(p.width * dpr);

@@ -213,7 +213,8 @@ const overlayOpen = () => !$('overlay').classList.contains('hidden');
 // CSS boyutunda, yüksek çözünürlüklü canvas bağlamı.
 function fitCanvas(cv, w, h) {
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
-  if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  // Boyut değişmedikçe tuval yeniden ayrılmaz (her karede çağrılır); yalnızca yükseklik değişirse de güncellenir.
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
   const ctx = cv.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);

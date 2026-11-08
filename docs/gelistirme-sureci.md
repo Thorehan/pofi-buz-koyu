@@ -73,9 +73,15 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Düzeltilenler:** Bütün düğmeler en az 40 px yükseklikte; pencerelerdeki "Kapat" bağlantıları 19 px'ten 40 px'e çıktı. Etkinlik dükkânı, festival bağışı, "Hepsini al" ve sandık düğmeleri 32-37 px'ten 40 px'e; köy ve gardırop sekmeleri 40 px'e; köy adındaki kalem düğmesinin dokunma alanı 26x22 px'ten 40x40 px'e çıktı.
      - **Yazılar:** Alt menü, ana sayfa yan düğmeleri, oyun araç çubuğu etiketleri ve görevler ekranındaki bölge ve albüm yazıları en az 12 px oldu.
      - **Bilerek küçük kalanlar:** Etkinlik süresi rozeti (11 px), Oyna düğmesindeki "LEVEL" etiketi (11 px) ve albümdeki "?" işaretleri. Ayar anahtarları satırın tamamıyla dokunulabildiği için sorun değil.
-6. [ ] **Performans.**
+6. [x] **Performans.**
    - Köy sahnesi, ekran gizliyken ya da sekme değişince çizmeyi bırakmalı.
    - Kare süresi ölçülür; köyde ve oyunda 16 ms'yi aşan yerler düzeltilir.
+   - **Yapıldı (2026-11-08):**
+     - **Gizli ekranlar:** Kare döngüsü yalnızca açık ekranı çiziyor; köy başka ekrandayken çizilmiyor. Sekme gizlenince tarayıcı döngüyü zaten durduruyor. Sürekli çalışan zamanlayıcı yok; reklam ve müzik geçişindekiler kısa ömürlü.
+     - **Kare süresi:** 3x piksel yoğunluklu telefon taklidiyle ölçüldü (masaüstü işlemci, yalnızca JavaScript süresi): ana sayfa 0,7 ms, köy 1,0 ms, oyun 0,4 ms, harita 0,5 ms, gardırop 0,1 ms; en kötü kare 2,6 ms. Telefonda 4-6 kat yavaş olsa bile 16 ms'nin altında.
+     - **Asıl yük boyamadaydı:** Ana sayfa sahnesi her karede 1,8 MP, köy 0,9 MP boyuyordu. Sahne tuvallerinde piksel yoğunluğu 2x ile sınırlandı: ana sayfa 0,8 MP, köy 0,4 MP. Köy fotoğrafı kendi çözünürlüğünü kullandığı için etkilenmedi.
+     - **Ek düzeltme:**  artık yalnızca yükseklik değiştiğinde de tuvali güncelliyor.
+     - **Denenmedi:** Gerçek telefonda boyama süresi ölçülmedi.
 7. [ ] **Çevrimdışı ses.**
    - Müzik ve jingle'lar servis çalışanında güvenli biçimde önbelleğe alınır; tarayıcının parça parça yükleme isteklerine dikkat edilir.
    - Uçak modunda oyun açılınca müzik de çalmalı.
