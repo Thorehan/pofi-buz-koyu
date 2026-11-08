@@ -2291,7 +2291,10 @@ function openTown(k) {
 
 // Ana ekranda tek satırlık köy haberi: tüccar limanda > yeni gazete > evcil dost acıktı
 // "Yeni" kartları: bir özellik açıldığında bir kez anlatılır. Oyuncu köy sekmelerinde ya da mağazada kendisi aramak zorunda kalmaz.
+// İlk yapı: hiç yapı yokken kar tanesi önerilen yapıya yetince bir kez (denetimde 20 level oynayıp yapı kurmayan oyuncu görüldü).
+const firstBuild = () => { const s = suggestion(P); return !Object.keys(P.village).length && s && P.flakes >= s.cost ? s.b : null; };
 const UNLOCKS = [
+  { id: 'firstBuild', when: () => !!firstBuild(), ico: 'flake', title: 'İlk yapını kur', text: () => `Kar tanelerin yetiyor: ${firstBuild()?.name || 'ilk yapını'} kurabilirsin! Yapılar köyünü büyütür ve kalıcı bonus verir. Level bitirdikçe yeni kar tanesi kazanırsın.`, go: () => { villageTab = 'build'; showScreen('village'); const b = firstBuild(); if (b) openSheet(b.id); } },
   { id: 'album', when: () => P.level >= ALBUM.from, ico: 'fish', title: 'Nadir balıklar', text: 'Bazı levellerde parıltılı bir balık çıkar. Topla, Görevler ekranındaki albümüne girer; seti tamamlayınca ödül var.' },
   { id: 'pet', when: () => !P.pet && petUnlocked(P, villageLevel(P)), ico: 'pet', title: 'Evcil dost', text: 'Artık bir dost sahiplenebilirsin. Köyde Pofi\'nin peşinden yürür, beslenince hediye getirir.', go: () => { showScreen('village'); showPet(); } },
   { id: 'harbor', when: () => (P.land || 1) === 1 && villageLevel(P) >= DISTRICTS[1].vl, ico: 'merchant', title: 'Buz Limanı', text: 'Köy büyüdü, yeni araziyi açabilirsin. Limana gezgin tüccar da uğrar.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(1); } },
@@ -2349,7 +2352,7 @@ function showUnlock() {
     <span class="new-tag">YENİ</span>
     <h2>${u.title}</h2>
     <div class="unlock-ico">${ui(u.ico)}</div>
-    <p>${u.text}</p>
+    <p>${typeof u.text === 'function' ? u.text() : u.text}</p>
     <button id="ulOk" class="btn green big">${u.go ? 'Göster' : 'Tamam'}</button>
     ${u.go ? '<button id="ulLater" class="btn link">Sonra</button>' : ''}`);
   $('ulOk').onclick = () => { closeOverlay(); u.go?.(); };
