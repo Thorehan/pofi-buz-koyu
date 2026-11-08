@@ -335,9 +335,20 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Hız ve cihazlar**
 
-4. [ ] **Yükleme boyutu.**
+4. [x] **Yükleme boyutu.**
    - İlk açılışta indirilen toplam boyut ve dosya sayısı ölçülür.
    - Hemen gerekmeyen müzik ve görseller gerektiğinde yüklenir; sonuç belgeye yazılır.
+   - **Yapıldı (2026-11-08, `fa9fa8e`):**
+     - **Ölçüm:** Sıfır kayıtla giriş ekranına kadar indirilenler ölçüldü.
+       - Önce: 2,4 MB ham, 58 dosya. En büyükleri kuzey ışıkları katmanı (857 KB), `main.js` (240 KB), köy zemini (189 KB), level verisi (177 KB) ve logo (84 KB).
+       - Müzik açılışta hiç inmiyor; ilk dokunuşta çalan parça akışla geliyor.
+     - **Değişenler:**
+       - Kuzey ışıkları katmanı köy Lv5'ten önce hiç görünmediği hâlde herkese açılışta iniyordu. Artık köy Lv5'e gelince isteniyor. Dosya 1152×768'e indirilip sıkıştırıldı: 857 → 311 KB; gece sahnesinde görünüm aynı.
+       - Logo ekranda en çok 330 px görünüyor: 1254 → 768 px, 84 → 32 KB.
+       - Askıdaki güçlendiricilerin (kazma, kürek, düdük) görselleri artık ikon setinden geldiği için açılış listesinden çıktı (30 KB).
+       - Bu üçü servis çalışanının önceden indirme listesinden de çıktı.
+     - **Sonuç:** Açılış 2,4 → 1,5 MB ham. Kod ve veri (903 KB) GitHub Pages'te sıkıştırılmış gelir (~258 KB), bu yüzden telefona gerçekten inen yaklaşık 0,85 MB: 548 KB görsel, 258 KB kod ve veri, gerisi yazı tipi.
+     - **Sonraya not:** En büyük kalan kalemler köy zemini (189 KB, ilk ekranda görünüyor) ve level verisi (sıkıştırılmış ~40 KB). Bunlar için şimdilik gerek yok.
 5. [ ] **iPhone'da müzik düzeyi.**
    - iPhone Safari müzik elemanının ses düzeyini değiştirmeye izin vermiyor. Müzik Web Audio üzerinden çalınır, düzey kaydırıcısı orada da çalışır.
    - Yumuşak geçiş, reklamda susma ve jingle kısma aynı kalır.
@@ -417,3 +428,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `61d3c99` Evcil dostların kendi uyku yerleri.
 - 2026-11-08 · `e4f4625` Kazanma müziği seyrek: tam hâli en çok 4 dakikada bir.
 - 2026-11-08 · `dea8582` Köy düzeni küçük düzeltmeler: etkinlik çadırı görünür, festival pankartı, bölge etiketi, yapılar biraz küçük.
+- 2026-11-08 · `fa9fa8e` Yükleme boyutu: açılış 2,4 → 1,5 MB ham (~0,85 MB sıkıştırılmış).
