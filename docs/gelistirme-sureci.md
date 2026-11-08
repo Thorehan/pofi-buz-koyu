@@ -264,9 +264,23 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Oyuncuyu kaybettirmeyecek işler**
 
-1. [ ] **Yarım kalan levele dönüş.**
+1. [x] **Yarım kalan levele dönüş.**
    - Önce mevcut davranışa bakılır: level ortasında uygulama kapanınca ya da arka plana gidince ne oluyor?
    - Oyuncu geri dönünce level kaldığı hamleden sürer (tahta, hamle sayısı, geri al geçmişi). Level kazanılınca ya da çıkılınca bu durum silinir.
+   - **Yapıldı (2026-11-08):**
+     - **Eski davranış:** Yarım level hiç saklanmıyordu. Uygulama kapanınca ya da telefon sayfayı bellekten atınca level baştan başlıyordu.
+     - **Yeni davranış:**
+       - Her hamlede o levelde yapılan hamlelerin listesi ayrı bir anahtarda tutuluyor (`pofi.run.v1`); oyun kaydının biçimi değişmedi.
+       - Aynı level yeniden açılınca hamleler motorda yeniden oynatılıyor; tahta, hamle sayısı ve geri al geçmişi geri geliyor. Ekranda "Kaldığın yerden devam · 3 hamle" yazıyor.
+       - Hamle sınırı, kullanılan ipucu ve ek hamleler de korunuyor; nadir balık aynı kalıyor.
+     - **Silinme:** Kazanınca, kaybedince, baştan alınca, levelden geri çıkınca ve kayıt sıfırlanınca. Level verisi güncellenip hamleler geçersiz kalırsa level sessizce baştan başlıyor.
+     - **Kapsam:** Normal leveller, günlük bulmaca (aynı gün), etkinlik levelleri (aynı hafta), yan yollar ve usta levelleri. İstatistikte devam edilen level yeni deneme sayılmıyor.
+     - **Deneme:**
+       - Level 37'de 3 hamle yapıldı, oyun kapatılıp açıldı: level 3. hamleden sürdü.
+       - Geri al çalıştı, level 3 yıldızla bitti ve kayıt silindi.
+       - Geri çıkınca ve baştan alınca kayıt silindi.
+       - Pipi'li level 500'ün devam etmesi oyun içi testte de geçti.
+     - **Araç:** `tools/oyun-testi.html` her levelden önce yarım level kaydını temizliyor; ilk denemede kalmış bir kayıt yüzünden test yanlış alarm vermişti.
 2. [ ] **Kayıt güvenliği.**
    - Kayıt yazılamazsa (depolama dolu, gizli sekme) oyuncuya bir kez küçük bir uyarı çıkar.
    - Son sağlam kaydın yedek kopyası tutulur; ana kayıt bozuksa oyun o kopyadan açılır. Duman testi bunu dener.
@@ -341,3 +355,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `13367e5` Gizli test paneli: levele git, ilerlemeyi taşı, oyunun saatini ileri al, kaydı sıfırla.
 - 2026-11-08 · `6042119` Oyun içi mekanik testi (21/21 geçti); baştan alınca mekanik kartı yeniden açılmıyor; Q ile Pipi seçimi.
 - 2026-11-08 · `e0dd51e` Metin denetimi: sayıya göre ekler (`js/tr.js`), Türkçe büyük harf, yazım düzeltmeleri.
+- 2026-11-08 · `676ca70` Yarım kalan level: kaldığı hamleden sürer.
