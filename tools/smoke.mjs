@@ -123,6 +123,24 @@ try {
 } catch (e) { fail(`Yedek testi patladı: ${e.message}`); }
 notes.push('Yedek: dolu kayıt koda çevrilip geri açıldı, her alan aynı');
 
+// yeni sürüm denetimi: imza dosya değişince değişiyor mu, ağ yokken sessiz mi?
+const UP = await import(pathToFileURL(rel('js/update.js')).href);
+try {
+  const page = new URL('https://x.github.io/pofi/');
+  const files = UP.codeFiles([{ name: 'https://x.github.io/pofi/js/main.js?v=2' }, { name: 'https://x.github.io/pofi/css/style.css' },
+    { name: 'https://x.github.io/pofi/assets/art/a.webp' }, { name: 'https://fonts.example/f.css' }, { name: 'https://x.github.io/pofi/sw.js' }], page);
+  if (files.join(',') !== '/pofi/,/pofi/css/style.css,/pofi/js/main.js') fail(`Sürüm denetimi yanlış dosyalara bakıyor: ${files.join(',')}`);
+  const server = { '/pofi/': { etag: 'a' }, '/pofi/css/style.css': { 'last-modified': 'Sun', 'content-length': '10' }, '/pofi/js/main.js': { etag: 'b' } };
+  const head = async p => { if (!server[p]) throw new Error('ağ yok'); return new Map(Object.entries(server[p])); };
+  const s1 = await UP.codeSignature(files, head), s2 = await UP.codeSignature(files, head);
+  if (!s1 || s1 !== s2) fail('Sürüm imzası değişmediği hâlde farklı çıktı');
+  server['/pofi/css/style.css']['content-length'] = '11';
+  if ((await UP.codeSignature(files, head)) === s1) fail('Dosya değiştiği hâlde sürüm imzası aynı kaldı');
+  delete server['/pofi/js/main.js'];
+  if ((await UP.codeSignature(files, head)) !== null) fail('Ağ yokken sürüm denetimi sessiz kalmadı');
+} catch (e) { fail(`Sürüm denetimi testi patladı: ${e.message}`); }
+notes.push('Yeni sürüm: imza dosya değişince değişiyor, ağ yokken denetim atlanıyor');
+
 // ---------- 4. servis çalışanı: çevrimdışı ses ----------
 // sw.js sahte önbellek ve sahte ağla çalıştırılır (tarayıcı paneli servis çalışanı kaydına izin vermiyor).
 try {

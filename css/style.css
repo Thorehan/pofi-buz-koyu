@@ -1169,6 +1169,16 @@ body { background: #8fbfe2; }
 .badge-box .bdg.story { cursor: pointer; }
 .badge-box .bdg.story span { text-decoration: underline dotted; text-underline-offset: 2px; }
 .badge-box .bdg-hint { grid-column: 1 / -1; text-align: center; font-size: 12px; color: var(--ink-soft); }
+/* yeni sürüm şeridi (ana sayfa, cüzdanın altında yan düğmelerin arasında; alttaki Oyna düğmesini kapatmasın) */
+.upd-bar {
+  position: absolute; left: 50%; top: calc(max(10px, env(safe-area-inset-top)) + 54px); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; width: max-content; max-width: calc(100% - 140px);
+  background: rgba(29, 53, 87, .95); color: #fff; padding: 4px 2px 4px 12px; border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(29, 53, 87, .3); z-index: 20; font-size: 14px; font-weight: 600; white-space: nowrap; animation: fade .2s;
+}
+.upd-bar .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
+.upd-x { width: 34px; height: 40px; border: none; background: none; padding: 0; display: grid; place-items: center; cursor: pointer; }
+.upd-x .ui { width: 20px; height: 20px; }
 /* nasıl oynanır */
 .howto-rules { display: flex; flex-direction: column; gap: 6px; text-align: left; margin: 4px 0 8px; }
 .howto-rules > div { background: var(--paper-d); border-radius: 12px; padding: 6px 10px; }

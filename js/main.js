@@ -22,6 +22,7 @@ import { drawPofi, drawFish, roundRect } from './draw.js';
 import { loadArt, setArtEnabled, accentHue, onArtLoad, art } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { backupEncode, backupDecode } from './backup.js';
+import { watchUpdates } from './update.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
@@ -182,6 +183,7 @@ function showScreen(name) {
   if (name === 'map') openMap();
   if (name === 'home' || name === 'village') setTimeout(() => { if (screen === name && !overlayOpen()) showUnlock(); }, 900);
   if (name === 'ach') renderAch();
+  renderUpdBar();
   if (name === 'shop') { renderShop(); if (P.shopSeen !== today()) { P.shopSeen = today(); save(P); } }
   if (name === 'settings') { renderSettings(); renderErrCount(); }
   if (name === 'home') { ensureEvent(P); if (P.eventNote) { const n = P.eventNote; P.eventNote = null; persist(); setTimeout(() => toast(`${n.name} bitti: kalan ${n.tokens} jeton ${n.coins} coin oldu`, 3200), 600); } }
@@ -2394,6 +2396,19 @@ function showAway() {
   $('awGo').onclick = () => { closeOverlay(); villageTab = 'life'; showScreen('village'); };
   track('away_card', { mins, lines: lines.length });
 }
+// Yeni sürüm yayına alındıysa ana sayfada küçük bir şerit çıkar (köyün üstü bölge adıyla dolu); oyun sırasında araya girmez.
+// "Yenile" kaydı yazıp sayfayı yeniden yükler (servis çalışanı kodu ağdan alır). Çarpı bu oturumluk gizler.
+let updReady = false, updHidden = false;
+function renderUpdBar() {
+  if (!$('updBar')) return;
+  $('updBar').classList.toggle('hidden', !updReady || updHidden || screen !== 'home');
+}
+if ($('updBar')) {
+  $('updGo').onclick = () => { track('update_reload'); persist(); location.reload(); };
+  $('updX').onclick = () => { updHidden = true; renderUpdBar(); };
+  window.__pofiUpdateCheck = watchUpdates(() => { updReady = true; track('update_seen'); renderUpdBar(); });
+}
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') { P.lastSeen = Date.now(); save(P); return; }
   noteAway();
