@@ -136,3 +136,4 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 - 2026-11-08 · `e0a1c77` Performans: kare süreleri ölçüldü (en kötü 2,6 ms), sahne tuvalleri 2x yoğunlukla (boyanan piksel yarıdan az).
 - 2026-11-08 · `a617238` Çevrimdışı ses: müzik önbelleğe alınıyor, parça istekleri önbellekten; duman testine servis çalışanı denetimi eklendi.
 - 2026-11-08 · `f5a75cd` Pofi'nin yolu: altı bölümlük bölge sonu hikâye kartları, Görevler'den yeniden okunur.
+- 2026-11-08 · `a30c62d` Gazete: oyuncu verisinden 7 yeni haber türü, 34 bilmece.
