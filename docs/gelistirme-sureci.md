@@ -260,9 +260,52 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
       - **Duman testi:** Bundan sonra `ek()` kurallarını, sayıdan sonra sabit ek yazılmasını ve Türkçe olmayan büyük/küçük harf çevirisini yakalıyor.
       - **Deneme:** Köy ekranında kilitli yapılar "Köy Lv3'te / Lv5'te / Lv7'de açılır", yükseltme "Lv2'ye yükselt", ana sayfa "Level 5'ten sonra" diyor. Konsolda hata yok.
 
+### Tur 3 (2026-11-08'de başladı)
+
+**Oyuncuyu kaybettirmeyecek işler**
+
+1. [ ] **Yarım kalan levele dönüş.**
+   - Önce mevcut davranışa bakılır: level ortasında uygulama kapanınca ya da arka plana gidince ne oluyor?
+   - Oyuncu geri dönünce level kaldığı hamleden sürer (tahta, hamle sayısı, geri al geçmişi). Level kazanılınca ya da çıkılınca bu durum silinir.
+2. [ ] **Kayıt güvenliği.**
+   - Kayıt yazılamazsa (depolama dolu, gizli sekme) oyuncuya bir kez küçük bir uyarı çıkar.
+   - Son sağlam kaydın yedek kopyası tutulur; ana kayıt bozuksa oyun o kopyadan açılır. Duman testi bunu dener.
+3. [ ] **İnternetsiz ilk açılış.**
+   - Servis çalışanı kurulurken temel dosyaları (html, js, css, level verisi, ilk ekranların görselleri) önceden indirir.
+   - Oyun bir kez açıldıktan sonra uçak modunda baştan açılabilir; duman testi sahte ağla dener.
+
+**Hız ve cihazlar**
+
+4. [ ] **Yükleme boyutu.**
+   - İlk açılışta indirilen toplam boyut ve dosya sayısı ölçülür.
+   - Hemen gerekmeyen müzik ve görseller gerektiğinde yüklenir; sonuç belgeye yazılır.
+5. [ ] **iPhone'da müzik düzeyi.**
+   - iPhone Safari müzik elemanının ses düzeyini değiştirmeye izin vermiyor. Müzik Web Audio üzerinden çalınır, düzey kaydırıcısı orada da çalışır.
+   - Yumuşak geçiş, reklamda susma ve jingle kısma aynı kalır.
+6. [ ] **Uzun oturum denetimi.**
+   - Oyun hızlandırılmış olarak 30 dakikalık ekran geçişleri ve levellerle oynatılır.
+   - Bellek, DOM düğüm sayısı, zamanlayıcı ve dinleyici birikmesi ve hatalar ölçülür; sızıntı varsa düzeltilir.
+
+**Erişilebilirlik ve akış**
+
+7. [ ] **Renk körlüğü denetimi.**
+   - Mekanik karoları (plaka ve kapılar, numaralı balıklar, kilitler, oklar) üç renk körlüğü taklidiyle incelenir.
+   - Yalnızca renkle ayrılan yerlere şekil ya da işaret eklenir; yeni görsel üretilmez.
+8. [ ] **Hareketi azalt seçeneği.**
+   - Ayarlar'a anahtar eklenir; telefonun "hareketi azalt" ayarına da uyar.
+   - Açıkken sallanma, zıplama, ekran sarsıntısı ve parçacıklar sadeleşir; oyunun anlaşılması bozulmaz.
+9. [ ] **Köye ilk giriş akışı.**
+   - "Köyüne bir isim ver" sorusu ilk yapı kurulduktan sonraya ertelenir; yeni oyuncu ilk girişte iki pencereyi art arda görmez.
+
+**Test**
+
+10. [ ] **Oyun içi testi genişletmek.**
+    - `tools/oyun-testi.html` yan yolları, usta levellerini, günlük bulmacayı ve etkinlik levellerini de oynar.
+    - Her türde kazanma, ödül ekranı ve haritaya dönüş denetlenir.
+
 ## Durum
 
-Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Döngü durdu. Yeni iş, "Karar bekleyenler"den senin kararınla ya da listeye eklenen yeni maddelerle başlar.
+Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü işaretlenmemiş ilk maddeden devam ediyor.
 
 ## Karar bekleyenler
 
