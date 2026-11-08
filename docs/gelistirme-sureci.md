@@ -199,9 +199,14 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
        - Pencere açıkken ve yazı kutusunda yazarken oyun tuşları artık çalışmıyor. Eskiden pencere açıkken oklar Pofi'yi arkada kaydırabiliyordu.
      - **Deneme:** Oyunda sağ/aşağı ile 2 hamle yapıldı. Z geri aldı, R sıfırladı, H bir ipucu harcadı. Pencere açıkken oklar, R ve Z işlemedi; Esc pencereyi ve yapı panelini kapattı; kapanınca oklar yeniden çalıştı. Mağazadaki fiyat düğmesi "coin 50" diye okunuyor.
      - **Denenmedi:** Gerçek ekran okuyucuyla (TalkBack, VoiceOver) dinleme. Harita ve köy sahnesi tuval olduğu için oradaki level ve yapı seçimleri ekran okuyucuyla yapılamıyor; bu ancak ayrı bir liste görünümüyle çözülür.
-7. [ ] **Geniş ekran düzeni.**
+7. [x] **Geniş ekran düzeni.**
    - 768 px (tablet) ve 1280 px (masaüstü) genişlikte bütün ana ekranlar ölçülür.
    - Düzen ortalanır, gereksiz uzayan ve bozulan yerler düzeltilir; telefon düzeni değişmez.
+   - **Yapıldı (2026-11-08):**
+     - **Durum:** Oyun zaten 480 px'lik ortalanmış bir sütun. Pencere, yapı paneli, bildirim ve yeni sürüm şeridi de bu sütunun içinde; ekrana sabitlenmiş öğe yok.
+     - **Ölçüm:** 768×1024 (tablet dikey) ve 1280×720 (dizüstü) boyutlarında 8 ekran tarandı: ana sayfa, harita, oyun, köy, mağaza, gardırop, ayarlar, görevler. Hiçbir öğe sütun dışına taşmıyor, yatay kaydırma yok, konsolda hata yok. Tablette oyun tahtası 480×774 ile düzgün; 720 yükseklikte köy ekranı kısa bir telefondaki kadar sıkışık.
+     - **Düzeltmeler:** Geniş ekranda sütunun kenarına hafif gölge eklendi, eskiden arka planla birleşiyordu. Fareli cihazlarda kaydırma çubukları ince ve ahşap renginde. 375 px telefonda gölge yok, ekranlar yeniden tarandı, değişiklik yok.
+     - **Sonraya not:** Masaüstünde iki yan boş kalıyor. İstenirse ileride bu boşluğa köy manzarası gibi bir arka plan görseli konabilir; bu ücretli görsel gerektirir.
 
 **Mustafa ve test**
 
@@ -249,3 +254,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `17a6562` İlk yapı kartı: kar tanesi yetince bir kez "İlk yapını kur", önerilen yapının paneline götürür.
 - 2026-11-08 · `e6438e9` Ses düzeyi ayarları: müzik ve efekt için ayrı kaydırıcı.
 - 2026-11-08 · `483e38b` Erişilebilirlik ve klavye: okunur fiyatlar, etiketler, R/H/Esc kısayolları.
+- 2026-11-08 · `eb6fc2f` Geniş ekran: tablet ve masaüstünde taşma yok; sütun gölgesi, ince kaydırma çubukları.
