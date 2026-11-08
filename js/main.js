@@ -118,12 +118,18 @@ const popcount = m => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; 
 
 function persist() { P.lastSeen = Date.now(); save(P); updateWallet(); }
 
+// Köy sahnesindeki yükseltme oku: yalnızca önerilen sıradaki yapıda (kuruluysa ve kar tanesi yetiyorsa).
+function upgradeHint() {
+  const s = suggestion(P);
+  return s && s.lv > 0 && P.flakes >= s.cost ? [s.b.id] : [];
+}
 function updateWallet() {
   $('coins').textContent = P.coins;
   $('flakes').textContent = P.flakes;
   $('playLevel').textContent = P.level;
   $('dotVillage').classList.toggle('hidden', !canAffordAny(P) && !recipeReady() && !districtReady() && !homesReady().length && !taskDone() && !guestDone());
-  $('dotShop').classList.toggle('hidden', freeCoinsLeft() <= 0);
+  // Mağaza noktası: ücretsiz coin hakkı varken günde bir kez, mağaza açılana kadar (sürekli yanmasın).
+  $('dotShop').classList.toggle('hidden', freeCoinsLeft() <= 0 || P.shopSeen === today());
   renderNextCard();
   renderDailyButtons();
   renderEventCard();
@@ -174,7 +180,7 @@ function showScreen(name) {
   if (name === 'map') openMap();
   if (name === 'home' || name === 'village') setTimeout(() => { if (screen === name && !overlayOpen()) showUnlock(); }, 900);
   if (name === 'ach') renderAch();
-  if (name === 'shop') renderShop();
+  if (name === 'shop') { renderShop(); if (P.shopSeen !== today()) { P.shopSeen = today(); save(P); } }
   if (name === 'settings') renderSettings();
   if (name === 'home') { ensureEvent(P); if (P.eventNote) { const n = P.eventNote; P.eventNote = null; persist(); setTimeout(() => toast(`${n.name} bitti: kalan ${n.tokens} jeton ${n.coins} coin oldu`, 3200), 600); } }
   updateWallet();
@@ -1358,6 +1364,8 @@ function renderVillage() {
   const slotsOpen = DECOR_SLOTS.filter(s => Math.floor(s.at[0]) < (P.land || 1));
   const dcCard = `<button class="b-card district" data-decor><b>${ui('decor')} Süsler · ${slotsOpen.filter(s => P.decor[s.id]).length}/${slotsOpen.length} yer dolu</b><small>Fener, bank, çam, buz heykelciği…</small><span class="act">Süsle ${coinIco}${Math.min(...DECOR_ITEMS.filter(d => !d.event && !d.merchant).map(d => discounted(P, d.price)))}+</span></button>`;
   const firstTip = Object.keys(P.village).length ? '' : `<p class="sheet-note first-tip">Level bitirdikçe kar tanesi kazanırsın. Kar tanesiyle ilk yapını kur: ${flakeIco} yetiyorsa kartta kırmızı nokta görünür.</p>`;
+  // Nokta yalnızca önerilen sıradaki yapıda yanar; parası yeten diğerleri yalnızca yeşil çerçeveli kalır.
+  const sug = suggestion(P), sugId = sug && P.flakes >= sug.cost ? sug.b.id : null;
   const buildCards = () => firstTip + dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
@@ -1367,7 +1375,7 @@ function renderVillage() {
     const act = cost === null ? capText(b) : lv === 0 ? `Kur ${flakeIco}${cost}` : `Lv${lv + 1} ${flakeIco}${cost}`;
     const buffNow = BUFF_TEXT[b.buff](b.values[Math.max(0, lv - 1)]);
     const thumb = `<img class="b-thumb" src="assets/art/bld_${b.id}_s${P.village[b.id]?.style || 0}_lv${Math.min(Math.max(lv, 1), 3)}.webp" alt="" onerror="this.remove()">`;
-    return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}">${thumb}<b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span>${ready ? '<i class="dot"></i>' : ''}</button>`;
+    return `<button class="b-card${ready ? ' ready' : ''}" data-b="${b.id}">${thumb}<b>${b.name}</b>${dots(lv, max)}<small>${lv ? buffNow : 'Kurulunca: ' + buffNow}</small><span class="act">${act}</span>${ready && b.id === sugId ? '<i class="dot"></i>' : ''}</button>`;
   }).join('');
   // Sekmeler: Köy hayatı ilk yapıdan sonra, Projeler Çam Ormanı açılınca görünür. Seçili sekme yoksa Yapılar açılır.
   const tabs = { build: true, life: Object.keys(P.village).length > 0, proj: (P.land || 1) >= 3 };
@@ -1375,7 +1383,7 @@ function renderVillage() {
   const lifeCount = Object.keys(P.village).length;
   $('vTabs').classList.toggle('hidden', lifeCount === 0);
   // Kakao satış düğmesi Köy hayatı'nda: stant yarıdan fazla dolunca sekmede işaret çıkar.
-  const cocoaFull = cocoaRate() > 0 && cocoaNow() >= cocoaCap() / 2;
+  const cocoaFull = cocoaRate() > 0 && cocoaNow() >= cocoaCap(); // stant dolunca üretim durur
   const dotsOn = { build: canAffordAny(P) || districtReady(), life: villagersHere().some(v => friendReady(v.id)) || cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || ordersReady() > 0 || festClaimable() || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
   $('vTabs').querySelectorAll('.vtab').forEach(b => {
     const k = b.dataset.vt;
@@ -4171,7 +4179,7 @@ function frame(now) {
     village.draw(t, dt, {
       ...villageScene(),
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
-      upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
+      upgradable: upgradeHint(),
       cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, pier: pierInfo(), orders: orderMarks(), homeReady: homesReady(), task: taskMarker(),
       merchant: !!merchantToday(),
     });

@@ -50,9 +50,18 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Sorun 1, nokta yığılması:** 20 levelden sonra ana sayfada aynı anda 7 kırmızı nokta yanıyor (günlük bulmaca, gazete, harita, görevler, etkinlik, mağaza, köy). İlk açılışta da mağaza noktası yanıyor (ücretsiz coin videosu). Madde 3'te ele alınacak.
      - **Sorun 2, erken açılan özellikler:** Etkinlik kartı ve harita ilk açılıştan itibaren görünüyor; yeni oyuncu ilk dakikada 5 yan düğme görüyor. Bu bir tasarım kararı, "Karar bekleyenler"e yazıldı.
      - **Gözlem:** 20 level ve yaklaşık 985 coin biriktiği hâlde köyde hiç yapı kurulmamış olabiliyor; oyunu yalnızca köy noktası yönlendiriyor. İlk yapıya yönlendiren bir ipucu madde 3 ile birlikte düşünülebilir.
-3. [ ] **Kırmızı nokta düzeni.**
+3. [x] **Kırmızı nokta düzeni.**
    - Her noktanın kaynağı tek tek listelenir.
    - Nokta yalnızca "şimdi yapılacak bir iş" varken yanar. Sürekli yanan noktalar kaldırılır ya da kart içindeki yazıya dönüşür.
+   - **Nokta kaynakları (2026-11-08):**
+     - Ana sayfa: günlük ödül alınmadıysa, günlük bulmaca açık ve bitmediyse, gazetenin okunmamış sayısı, haritada açılacak yıldız sandığı, görev ya da başarım ödülü, etkinlikte alınacak ödül.
+     - Alt menü: mağaza (ücretsiz coin hakkı) ve köy (yapılacak iş varsa).
+     - Köy: Yapılar ve Köy hayatı sekmeleri ile kartlar (sipariş, festival, evcil dost, dostluk, tarif, iç mekân).
+   - **Değişenler:**
+     - Mağaza noktası artık günde bir kez yanıyor ve mağaza açılınca sönüyor; eskiden ücretsiz video hakkı olduğu sürece hep yanıyordu.
+     - Yapı kartlarında nokta yalnızca önerilen sıradaki yapıda (en ucuz, kar tanesi yeten). Parası yeten diğer kartlar yalnızca yeşil çerçeveli; sahnedeki yükseltme oku da tek.
+     - Köy hayatı sekmesinin kakao noktası standın yarısı dolunca değil, tamamen dolunca (üretim durunca) yanıyor.
+   - **Sonuç:** Zengin test kaydında köyde 10 yeşil kart, 1 nokta ve 1 ok. Ana sayfada kalan noktaların her biri yapılacak gerçek bir işe bağlı.
 4. [ ] **Hata günlüğü.**
    - Oyunda yakalanan hatalar cihazda küçük bir günlükte tutulur (son 30 kayıt).
    - Ayarlar'daki "Oynanış verisi" yanına "Hata kaydını kopyala" düğmesi eklenir. Mustafa test ederken sorun bildirebilsin diye.

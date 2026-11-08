@@ -55,6 +55,7 @@ function defaults() {
     lastSeen: null, // oyunun en son açık olduğu an ("Sen yokken" kartı için)
     pierFish: 0, // iskelenin tuttuğu balık (kesirli)
     orders: null, // { day, list: [{ giver, kind, n, done }], bonus } — sipariş panosu (günlük)
+    shopSeen: '', // mağazanın açıldığı gün (nokta günde bir kez yanar)
     festival: null, // { month, pts, claimed: [bool], given: { cups, fish, coins } } — ayın köy festivali
     pierTs: null,
     flakeTrade: null, // { day, n } — pazarda bugün alınan kar tanesi (fiyat merdiveni)
