@@ -239,13 +239,30 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Bulunan hata:** Mekanik kartı ("YENİ · Kaydır!") level kazanılana kadar her başlatışta açılıyordu: baştan alınca, "tekrar dene"de, hamle bitince. Artık kart oturum başına bir kez çıkıyor; oyun kapanıp açılırsa ve level hâlâ kazanılmadıysa bir kez daha hatırlatıyor.
      - **Eksik kapandı:** Pipi'li levellerde penguen yalnızca dokunarak seçiliyordu. Artık Q ya da boşluk tuşuyla da seçiliyor (klavye maddesinin devamı).
      - **Not:** Araç her turda değil, mekanik ya da oyun ekranı değiştiğinde çalıştırılmalı. Duman testi her turda çalışmaya devam ediyor.
-10. [ ] **Metin denetimi.**
+10. [x] **Metin denetimi.**
     - Bütün oyun yazıları taranır: yazım hataları, tutarsız kelimeler ("level" / "bölüm" gibi), büyük İ ve küçük ı hataları.
     - Düzeltmeler tek commit; anlamı değişen metin olursa not düşülür.
+    - **Yapıldı (2026-11-08):**
+      - **Kapsam:** Kod ve sayfadaki 558 metin ile ayar dosyasındaki 493 metin okundu: hikâye, bilmeceler, mekanik kartları, köylü sözleri, etkinlikler, eşya adları.
+      - **Sayı ekleri (en çok hata):** 14 yerde ek sayıdan bağımsız sabit yazılmıştı. Bu yüzden "Köy Lv7'te açılır", "Lv2'e yükselt", "Level 6'i bitir" gibi yanlışlar çıkıyordu. Yeni `ek()` yardımcısı (`js/tr.js`) eki sayının okunuşuna göre seçiyor: "Lv7'de", "Lv2'ye", "6'yı", "40'tan".
+      - **Büyük harf:** Harita penceresinde bölge adı "FENER TEPESI" çıkıyordu, artık "TEPESİ". Elle yazılmış büyük başlıkların hepsi zaten doğruydu.
+      - **Yazım ve terimler:**
+        - "Kar topu" → "Kartopu" (mekanik ve etkinlik adları, "Kartopu kalesi" ile aynı).
+        - "Balık / Yıldız / Fener / Lale şapka" → "… şapkası".
+        - "halde" → "hâlde".
+        - "Kaşif" → "Kâşif".
+        - "level'i" → "leveli".
+        - Yapı panelindeki İngilizce "buff" → "bonus".
+      - **Anlamı değişen iki metin:**
+        - Balina Göçü etkinliği: "Salla suları aş." → "Sallarla suları aş." ("salla" fiil gibi okunuyordu).
+        - Dünya Penguen Günü: "25 Nisan ve 23 Nisan Çocuk Şenliği." → "23 Nisan Çocuk Bayramı ve 25 Nisan Dünya Penguen Günü."
+      - **Tutarlı olanlar:** Bulmacalar her yerde "level", köy ve yapılar "seviye/Lv", hikâye "bölüm". Karışma yok.
+      - **Duman testi:** Bundan sonra `ek()` kurallarını, sayıdan sonra sabit ek yazılmasını ve Türkçe olmayan büyük/küçük harf çevirisini yakalıyor.
+      - **Deneme:** Köy ekranında kilitli yapılar "Köy Lv3'te / Lv5'te / Lv7'de açılır", yükseltme "Lv2'ye yükselt", ana sayfa "Level 5'ten sonra" diyor. Konsolda hata yok.
 
 ## Durum
 
-Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemiş ilk maddeden devam ediyor.
+Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Döngü durdu. Yeni iş, "Karar bekleyenler"den senin kararınla ya da listeye eklenen yeni maddelerle başlar.
 
 ## Karar bekleyenler
 
@@ -280,3 +297,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `eb6fc2f` Geniş ekran: tablet ve masaüstünde taşma yok; sütun gölgesi, ince kaydırma çubukları.
 - 2026-11-08 · `13367e5` Gizli test paneli: levele git, ilerlemeyi taşı, oyunun saatini ileri al, kaydı sıfırla.
 - 2026-11-08 · `6042119` Oyun içi mekanik testi (21/21 geçti); baştan alınca mekanik kartı yeniden açılmıyor; Q ile Pipi seçimi.
+- 2026-11-08 · `e0dd51e` Metin denetimi: sayıya göre ekler (`js/tr.js`), Türkçe büyük harf, yazım düzeltmeleri.
