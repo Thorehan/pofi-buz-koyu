@@ -806,6 +806,8 @@ export const MUSIC = {
   ],
   village: { day: ['assets/music/village_day.m4a', 'assets/music/village_aurora.m4a'], night: 'assets/music/village_aurora.m4a' },
   jingles: { win: 'assets/music/jingle_win.m4a' },
+  // Kazanma müziği (5 sn) art arda çalınca yoruyor: tam hâli en çok bu kadar saniyede bir çalar, arada kısa zafer sesi.
+  jingleGapSec: 240,
 };
 
 // Kıyafet boyama: sahip olunan bir şapka ya da atkı için renk başına bir kez ödenir (COLORS paleti).

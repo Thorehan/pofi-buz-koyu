@@ -609,6 +609,7 @@ function statTime() {
   return s;
 }
 
+let lastWinJingle = -Infinity; // tam kazanma müziğinin en son çaldığı an
 function win() {
   run.finished = true;
   clearRunSnap();
@@ -686,7 +687,10 @@ function win() {
     board.burst(run.st.p, '#ffd166', 24, board.s * 5, 1, board.s * 4);
     board.burst(run.st.p, '#8fd0ff', 24, board.s * 5, 1, board.s * 4);
     board.celebrate();
-    if (!playJingle(MUSIC.jingles.win)) sfx.win();
+    // tam kazanma müziği seyrek; arada (ve müzik çalamazsa) kısa zafer sesi
+    const now = performance.now();
+    if (now - lastWinJingle >= MUSIC.jingleGapSec * 1000 && playJingle(MUSIC.jingles.win)) lastWinJingle = now;
+    else sfx.win();
   }, 150);
   // Haftalık etkinlik jetonu (etkinlik levelinde ilk bitiriş çok daha fazla verir)
   const ev = ensureEvent(P);
