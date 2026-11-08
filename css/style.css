@@ -37,6 +37,15 @@ html, body {
   overflow: hidden;
 }
 
+/* Geniş ekran (tablet, masaüstü): oyun 480 px'lik ortalanmış sütun olarak kalır; sütun kenarına hafif gölge
+   ki arka plandan ayrılsın. Fareli cihazlarda kaydırma çubukları ince ve oyunun renginde. Telefon düzeni değişmez. */
+@media (min-width: 520px) {
+  #app { box-shadow: 0 0 0 1px rgba(29, 53, 87, .08), 0 0 40px rgba(29, 53, 87, .22); }
+}
+@media (hover: hover) and (pointer: fine) {
+  #app * { scrollbar-width: thin; scrollbar-color: rgba(109, 67, 34, .45) transparent; }
+}
+
 .hidden { display: none !important; }
 .invisible { visibility: hidden; }
 
