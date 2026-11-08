@@ -1,4 +1,4 @@
-import { setErrContext, errList, errText, clearErrors } from './errlog.js'; // önce yüklenir: açılış hataları da yakalanır
+import { setErrContext, errList, errText, clearErrors, logError } from './errlog.js'; // önce yüklenir: açılış hataları da yakalanır
 import { parseLevel, simulate, solve, won, generateLevel, starsFor, T, tileOf } from './engine.js';
 import { BoardView, paintTile } from './board.js';
 import { VillageView, phaseOf, drawDecor } from './village.js';
@@ -4251,7 +4251,34 @@ $('mapMissing').onclick = () => {
 };
 
 let last = performance.now(), slowTick = 0;
+// Kare döngüsü hataya dayanıklı: bir karede çizim hatası olursa hata günlüğe yazılır, tuvaller sıfırlanır
+// (yarıda kalan save/clip durumu sonraki kareye taşınmasın) ve döngü sonraki karede sürer. Oyun donmaz.
+// Aynı hata her karede tekrarlarsa günlükte tek satır kalır; sayacı 5 sn'de bir topluca artar (her karede depolamaya yazılmaz).
+let frameErr = { key: '', at: 0, n: 0, wait: 0 };
 function frame(now) {
+  try { drawFrame(now); } catch (e) { frameFailed(e, now); }
+  requestAnimationFrame(frame);
+}
+function frameFailed(e, now) {
+  const key = String(e?.message || e);
+  const fresh = key !== frameErr.key;
+  frameErr.n = fresh ? 1 : frameErr.n + 1;
+  frameErr.wait = fresh ? 1 : frameErr.wait + 1;
+  if (fresh || now - frameErr.at > 5000) {
+    logError(`Kare (${screen}): ${key}`, e?.stack, frameErr.wait);
+    frameErr.at = now;
+    frameErr.wait = 0;
+  }
+  frameErr.key = key;
+  if (fresh || frameErr.n % 60 === 0) resetCanvases();
+}
+function resetCanvases() {
+  for (const v of [village, visitView, homeView]) { try { if (v.W) v.resize(); } catch { /* sonraki karede yine denenir */ } }
+  try { if (run) board.resize(); } catch { /* yoksay */ }
+  // fitCanvas ile her karede çizilenler: genişlik 0 olunca sonraki karede durumu temiz yeniden ayrılır
+  for (const id of ['mapCanvas', 'homePofi', 'roomCanvas', 'wardrobePofi', 'wardrobeFloatPofi']) { const cv = $(id); if (cv) cv.width = 0; }
+}
+function drawFrame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   const t = now / 1000;
@@ -4305,7 +4332,6 @@ function frame(now) {
       }
     }
   }
-  requestAnimationFrame(frame);
 }
 
 noteAway();

@@ -16,17 +16,18 @@ function write(list) {
 // O anki ekran ve level gibi bilgiler (main.js verir).
 export function setErrContext(fn) { context = fn; }
 
-export function logError(message, stack = '') {
+// count: bu kayıt kaç kez yaşandı (kare döngüsü birikmiş kare sayısını tek seferde verir).
+export function logError(message, stack = '', count = 1) {
   const list = read(), last = list[list.length - 1];
   const m = String(message || 'Bilinmeyen hata').slice(0, 300);
   const s = String(stack || '').split('\n').slice(0, 4).map(x => x.trim()).filter(Boolean).join(' | ').slice(0, 400);
   if (last && last.m === m && last.s === s) {
-    last.n = (last.n || 1) + 1;
+    last.n = (last.n || 1) + count;
     last.t = Date.now();
   } else {
     let c = {};
     try { c = context() || {}; } catch { /* bağlam alınamazsa boş kalır */ }
-    list.push({ t: Date.now(), m, s, n: 1, ...c });
+    list.push({ t: Date.now(), m, s, n: count, ...c });
     while (list.length > MAX) list.shift();
   }
   write(list);
