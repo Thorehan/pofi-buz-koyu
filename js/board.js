@@ -575,7 +575,13 @@ export class BoardView {
     window.addEventListener('keydown', e => {
       if (!this.active) return;
       const dir = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 }[e.code];
-      if (dir !== undefined) { e.preventDefault(); this.input(dir); }
+      if (dir !== undefined) { e.preventDefault(); this.input(dir); return; }
+      // Pipi'li levelde Q ya da boşluk seçili pengueni değiştirir (dokunmadan oynanabilsin)
+      if ((e.code === 'KeyQ' || e.code === 'Space') && this.S?.q >= 0 && !this.anim && !this.target) {
+        e.preventDefault();
+        this.sel = 1 - this.sel;
+        this.onSelect?.(this.sel);
+      }
     });
     window.addEventListener('resize', () => this.L && this.resize());
   }

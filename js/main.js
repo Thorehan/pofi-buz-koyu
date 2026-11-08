@@ -304,6 +304,7 @@ function levelDef(n) {
   return n <= LEVELS.length ? LEVELS[n - 1] : generateLevel(n);
 }
 
+const introsShown = new Set(); // bu oturumda mekanik kartı gösterilen leveller
 function startLevel(n, daily = false, evk = null, master = null, side = null) {
   preloadJingle(MUSIC.jingles.win);
   let def;
@@ -367,8 +368,10 @@ function startLevel(n, daily = false, evk = null, master = null, side = null) {
   }
   track(daily ? 'daily_puzzle_start' : 'level_start', { level: def.n, tier: def.tier, min: def.min });
 
+  // Mekanik kartı level kazanılana kadar her oturumda bir kez çıkar; baştan alınca ya da "tekrar dene"de yeniden açılmaz.
   const intro = !daily && INTRO[def.n];
-  if (intro && !P.stars[def.n]) {
+  if (intro && !P.stars[def.n] && !introsShown.has(def.n)) {
+    introsShown.add(def.n);
     openOverlay(`<span class="new-tag">YENİ</span><h2>${intro.title}</h2><canvas class="intro-icon" id="introIcon"></canvas><p>${intro.text}</p><button id="introOk" class="btn primary big">Anladım</button>`);
     drawIntroIcon($('introIcon'), intro.icon);
     $('introOk').onclick = closeOverlay;
@@ -4125,7 +4128,7 @@ $('btnShare').onclick = shareVillage;
 $('btnVisit').onclick = askVisit;
 $('btnVisitBack').onclick = leaveVisit;
 $('btnCocoa2').onclick = async () => { if (await showRewarded('cocoa_x2')) sellCocoa(2); };
-// Klavye (masaüstü): oklar ve WASD Pofi'yi kaydırır (board.js), Z ya da Backspace geri alır, R baştan başlatır, H ipucu verir,
+// Klavye (masaüstü): oklar ve WASD Pofi'yi kaydırır, Q ya da boşluk Pipi'ye geçer (board.js), Z ya da Backspace geri alır, R baştan başlatır, H ipucu verir,
 // Esc açık pencereyi ya da yapı panelini kapatır. Yazı yazılırken ve pencere açıkken oyun tuşları çalışmaz
 // (bu dinleyici yakalama aşamasında, board.js'tekinden önce çalışır).
 const typingIn = e => !!e.target.closest?.('input:not([type=checkbox]):not([type=range]), textarea, [contenteditable]');

@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pofi · Oyun içi mekanik testi</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 16px; color: #1d3557; background: #f3f8fc; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p { margin: 4px 0 10px; color: #5a6f8c; }
+  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+  input { font: inherit; padding: 6px 8px; border: 1px solid #b8cde0; border-radius: 6px; width: 320px; max-width: 100%; }
+  button { font: inherit; padding: 7px 14px; border: 0; border-radius: 6px; background: #ff8a3d; color: #fff; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  .wrap { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  iframe { width: 375px; height: 700px; border: 1px solid #b8cde0; border-radius: 8px; background: #fff; flex: none; }
+  table { border-collapse: collapse; background: #fff; min-width: 520px; }
+  th, td { border: 1px solid #dde8f2; padding: 4px 8px; text-align: left; vertical-align: top; }
+  th { background: #e9f2fa; }
+  .ok { color: #2f8f4e; font-weight: 600; } .bad { color: #c0392b; font-weight: 600; } .run { color: #b7791f; }
+  #sum { font-weight: 600; margin: 8px 0; }
+</style>
+</head>
+<body>
+<h1>Oyun içi mekanik testi</h1>
+<p>Her mekaniğin ilk levelini gerçek oyun arayüzünde açar ve çözüm hamlelerini klavyeyle oynar (Pipi'ye Q ile geçer). Her levelde şunlar denetlenir: geri al (Z), baştan (R), çözümle kazanma, 3 yıldız ve konsol hataları. Yerel sunucuda açılır: <code>python -m http.server 5174</code>, sonra <code>http://localhost:5174/tools/oyun-testi.html</code>. Bu cihazdaki oyun kaydı test bitince geri yüklenir.</p>
+<div class="bar">
+  <label>Leveller <input id="levels" placeholder="boş: her mekaniğin ilk leveli"></label>
+  <button id="go">Başlat</button>
+  <span id="status"></span>
+</div>
+<div id="sum"></div>
+<div class="wrap">
+  <iframe id="game" title="Oyun"></iframe>
+  <table><thead><tr><th>Level</th><th>Mekanik</th><th>Çözüm</th><th>Geri al</th><th>Baştan</th><th>Kazanma</th><th>Hata</th></tr></thead><tbody id="rows"></tbody></table>
+</div>
+<script type="module">
+import { parseLevel, solve, simulate, won } from '../js/engine.js';
+import { INTRO } from '../js/config.js';
+
+const $ = id => document.getElementById(id);
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const KEYS = ['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft']; // board.js: 0 yukarı, 1 sağ, 2 aşağı, 3 sol; 4-7 aynı yönler Pipi ile
+const dateKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+let LEVELS = null;
+// Sekme ya da panel gizliyse tarayıcı kare döngüsünü (rAF) durdurur; o zaman oyun zamanlayıcıyla döndürülür.
+const rafWorks = () => new Promise(r => { requestAnimationFrame(() => r(true)); setTimeout(() => r(false), 300); });
+let slowRaf = false;
+
+// Oyunu yükler; sayfa betikleri çalışmadan önce gizli sekmede takılan iki şeyi değiştirir
+// (rAF yerine zamanlayıcı, görsel çözme beklemesi yok) ve hataları toplar.
+async function boot(save) {
+  const f = $('game');
+  // Önceki oyun kapanırken kendi kaydını yazar: önce kapat, sonra test kaydını koy.
+  f.src = 'about:blank';
+  await wait(300);
+  localStorage.setItem('pofi.v1', JSON.stringify(save));
+  localStorage.setItem('pofi.err.v1', '[]');
+  f.src = `../index.html?test=${Date.now()}`;
+  await new Promise((res, rej) => {
+    const t0 = Date.now();
+    const iv = setInterval(() => {
+      try {
+        const w = f.contentWindow;
+        if (w.location.href.includes('index.html') && !w.__t) {
+          w.__t = 1;
+          w.HTMLImageElement.prototype.decode = function () { return Promise.resolve(); };
+          if (slowRaf) w.requestAnimationFrame = cb => w.setTimeout(() => cb(w.performance.now()), 16);
+          w.__errs = [];
+          w.addEventListener('error', e => w.__errs.push(e.message));
+          w.addEventListener('unhandledrejection', e => w.__errs.push(String(e.reason?.message || e.reason)));
+          clearInterval(iv); res();
+        }
+      } catch { /* yükleniyor */ }
+      if (Date.now() - t0 > 10000) { clearInterval(iv); rej(new Error('oyun yüklenmedi')); }
+    }, 1);
+  });
+  const w = f.contentWindow, d = w.document;
+  const screen = () => d.getElementById('app')?.dataset.screen;
+  for (let i = 0; i < 60 && screen() !== 'home'; i++) {
+    if (screen() === 'intro') d.getElementById('screenIntro').click();
+    await wait(250);
+  }
+  if (screen() !== 'home') throw new Error(`ana sayfa açılmadı (${screen()})`);
+  await closeOverlays(d);
+  return { w, d };
+}
+const overlayOpen = d => !d.getElementById('overlay').classList.contains('hidden');
+async function closeOverlays(d) {
+  for (let i = 0; i < 6; i++) {
+    await wait(400);
+    if (!overlayOpen(d)) continue;
+    const btns = [...d.getElementById('overlayCard').querySelectorAll('button')].filter(b => b.offsetParent && !b.disabled);
+    (btns.find(b => /^(Anladım|Tamam|Başla|Oyna|Devam|Sonra|Kapat)$/.test(b.textContent.trim())) || btns[0])?.click();
+  }
+}
+const moves = d => +d.getElementById('hudMoves').textContent;
+// Bir hamle: tuşa basar, hamle sayısı artana ve kayma bitene kadar bekler.
+async function press(w, d, code, expectMoves) {
+  for (let tries = 0; tries < 3; tries++) {
+    d.body.dispatchEvent(new w.KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }));
+    for (let i = 0; i < 30; i++) { await wait(50); if (expectMoves === undefined || moves(d) === expectMoves) break; }
+    await wait(450); // kayma animasyonu
+    if (expectMoves === undefined || moves(d) === expectMoves) return true;
+  }
+  return false;
+}
+
+async function testLevel(n) {
+  const def = LEVELS[n - 1];
+  const { L, S } = parseLevel(def);
+  const sol = solve(L, S, 400000);
+  const row = { n, mech: INTRO[n]?.title || '', sol: sol ? `${sol.length} hamle (min ${def.min})` : 'çözüm yok', undo: '-', restart: '-', win: '-', errs: [] };
+  if (!sol) return row;
+  const stars = Object.fromEntries(Array.from({ length: n - 1 }, (_, i) => [i + 1, 3]));
+  const save = {
+    profile: { name: 'Test', method: 'guest', createdAt: Date.now() }, level: n, coins: 500, hints: 3, flakes: 0, stars,
+    villageName: 'Test', unlocksSeen: null, storySeen: null, dailyRewardDay: dateKey(), lastSeen: Date.now(),
+  };
+  const { w, d } = await boot(save);
+  d.getElementById('btnPlay').click();
+  await wait(900);
+  await closeOverlays(d);
+  if (d.getElementById('app').dataset.screen !== 'game') { row.win = 'oyun açılmadı'; return row; }
+  const title = d.querySelector('#screenGame')?.innerText.match(/Level\s*(\d+)/)?.[1];
+  if (+title !== n) row.errs.push(`açılan level ${title}`);
+  // Seçili penguen (Pipi'li levellerde): Q ile değişir, baştan alınca Pofi'ye döner.
+  let sel = 0;
+  const step = async (dir, expect) => {
+    const who = dir >= 4 ? 1 : 0;
+    if (S.q >= 0 && who !== sel) { await press(w, d, 'KeyQ'); sel = who; }
+    return press(w, d, KEYS[dir % 4], expect);
+  };
+  // geri al ve baştan: çözümün başından en çok 2 hamle (level bitmesin diye son hamle hariç);
+  // çözüm tek hamleyse kazandırmayan başka bir hamle denenir
+  const alt = [0, 1, 2, 3].find(x => x !== sol[0] && simulate(L, S, x) && !won(L, simulate(L, S, x).state));
+  const probe = sol.length >= 2 ? sol.slice(0, Math.min(2, sol.length - 1)) : alt === undefined ? [] : [alt];
+  for (let i = 0; i < probe.length; i++) await step(probe[i], i + 1);
+  const before = moves(d);
+  if (!probe.length) row.undo = row.restart = 'denenmedi';
+  else {
+    await press(w, d, 'KeyZ', before - 1);
+    row.undo = moves(d) === before - 1 ? 'ok' : `hamle ${before}→${moves(d)}`;
+    await press(w, d, 'KeyR', 0);
+    row.restart = moves(d) === 0 ? 'ok' : `hamle ${moves(d)}`;
+    sel = 0;
+  }
+  // çözüm
+  for (let i = 0; i < sol.length; i++) {
+    const last = i === sol.length - 1;
+    if (!(await step(sol[i], last ? undefined : i + 1)) && !last) { row.win = `${i + 1}. hamle işlemedi`; break; }
+  }
+  if (row.win === '-') {
+    let got = null;
+    for (let i = 0; i < 40 && !got; i++) {
+      await wait(200);
+      const st = overlayOpen(d) && d.querySelector('#overlayCard .stars');
+      if (st) got = st.querySelectorAll('.star.on').length;
+    }
+    row.win = got === null ? 'sonuç ekranı çıkmadı' : got === 3 ? 'ok · 3 yıldız' : `${got} yıldız`;
+  }
+  const log = JSON.parse(localStorage.getItem('pofi.err.v1') || '[]').map(e => e.m);
+  row.errs.push(...new Set([...w.__errs, ...log]));
+  return row;
+}
+
+const cls = v => (v === 'ok' || String(v).startsWith('ok') ? 'ok' : v === '-' ? '' : 'bad');
+function render(rows) {
+  $('rows').innerHTML = rows.map(r => `<tr><td>${r.n}</td><td>${r.mech}</td><td>${r.sol}</td>
+    <td class="${cls(r.undo)}">${r.undo}</td><td class="${cls(r.restart)}">${r.restart}</td><td class="${r.running ? 'run' : cls(r.win)}">${r.running ? 'oynanıyor…' : r.win}</td>
+    <td class="${r.errs.length ? 'bad' : ''}">${r.errs.join('<br>') || ''}</td></tr>`).join('');
+}
+
+async function run(list) {
+  $('go').disabled = true;
+  const keep = { save: localStorage.getItem('pofi.v1'), err: localStorage.getItem('pofi.err.v1') };
+  const rows = [];
+  window.__result = null;
+  try {
+    LEVELS = LEVELS || await (await fetch('../data/levels.json', { cache: 'no-cache' })).json();
+    slowRaf = !(await rafWorks());
+    for (const n of list) {
+      const r = { n, mech: INTRO[n]?.title || '', sol: '', undo: '', restart: '', win: '', errs: [], running: true };
+      rows.push(r); render(rows); $('status').textContent = `Level ${n} oynanıyor (${rows.length}/${list.length})`;
+      try { Object.assign(r, await testLevel(n)); } catch (e) { r.win = `hata: ${e.message}`; }
+      r.running = false; render(rows);
+    }
+  } finally {
+    $('game').src = 'about:blank';
+    await wait(300); // oyun kapanırken kaydını yazar; sonra asıl kayıt geri konur
+    if (keep.save === null) localStorage.removeItem('pofi.v1'); else localStorage.setItem('pofi.v1', keep.save);
+    if (keep.err === null) localStorage.removeItem('pofi.err.v1'); else localStorage.setItem('pofi.err.v1', keep.err);
+    $('go').disabled = false;
+  }
+  const bad = rows.filter(r => [r.undo, r.restart].some(v => v !== 'ok' && v !== 'denenmedi') || !String(r.win).startsWith('ok') || r.errs.length);
+  $('sum').innerHTML = bad.length ? `<span class="bad">${bad.length}/${rows.length} levelde sorun var.</span>` : `<span class="ok">${rows.length}/${rows.length} level geçti.</span>`;
+  $('status').textContent = 'Bitti. Oyun kaydı geri yüklendi.';
+  window.__result = rows;
+  return rows;
+}
+
+$('go').onclick = () => {
+  const typed = $('levels').value.split(/[\s,]+/).map(Number).filter(n => n >= 1 && n <= 1000);
+  run(typed.length ? typed : Object.keys(INTRO).map(Number).sort((a, b) => a - b));
+};
+window.__run = run;
+</script>
+</body>
+</html>
