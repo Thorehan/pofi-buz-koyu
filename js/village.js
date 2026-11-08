@@ -941,6 +941,8 @@ export class VillageView {
         if (slot) this.onDecorSlot?.(slot);
         return;
       }
+      const bub = this.bubbleHit(x, y);
+      if (bub) { this.onBubble?.(bub); return; }
       const evk = this.eventHit(x, y);
       if (evk) { this.onEvent?.(evk); return; }
       const tk = this.townHit(x, y);
@@ -1290,6 +1292,16 @@ export class VillageView {
     return null;
   }
 
+  // Sahnedeki toplama balonları (stantta fincan, iskelede balık): dokununca toplanır.
+  bubbleHit(sx, sy) {
+    const { cam, W, H } = this;
+    const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
+    for (const [k, x, y, r] of this.bubbles || []) if (Math.hypot(wx - x, wy - y) < r + 10) return k;
+    return null;
+  }
+  // Sipariş teslim edilince köylünün üstünde kalp ve coin.
+  coinsAt(id, coins) { const v = this.vs.get(id); if (v) { this.hearts(v.x, v.y - 0.04); this.coinBurst(v.x, v.y, coins); } }
+
   eventHit(sx, sy) {
     const { cam, W, H } = this;
     const wx = (sx - W / 2) / cam.z + cam.x, wy = (sy - H / 2) / cam.z + cam.y;
@@ -1391,7 +1403,7 @@ export class VillageView {
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
   // photo: fotoğraf karesi (ok, kar yağışı ve panel düğmesi çizilmez)
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy', friendReady = [], scene = false }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, pier = null, orders = [], land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy', friendReady = [], scene = false }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     this.clock = time;
@@ -1630,6 +1642,11 @@ export class VillageView {
       this.custBubbles = bubbles;
       this.cocoaInfo = cocoa;
     }
+    // İskelede biriken balık: bir işe yarayacaksa (sipariş ya da aç evcil dost) balonla gösterilir.
+    if (pier?.want && pier.fish >= 1 && village.pier) {
+      const lv = Math.min(village.pier.lv, 3);
+      markers.push([AT.pier[0] * W + u * 0.105, AT.pier[1] * H - u * [0.13, 0.15, 0.17][lv - 1], 'fish']);
+    }
     if (vl >= 10) for (const [fx, fy] of [[0.58, 0.71], [0.9, 0.86]]) items.push([fy * H, () => iceSculpture(ctx, fx * W, fy * H, u, time)]);
     this.slotPos = [];
     for (const sl of DECOR_SLOTS) {
@@ -1662,7 +1679,9 @@ export class VillageView {
             wave: st.act === 'warm' ? Math.max(0, Math.sin(time * 2 + i)) * 0.5 : 0,
           });
           if (st.act === 'fish' && !moving && !cheer) rod(ctx, x, y, size, st.face, st.x > 1, time + i);
+          const ord = orders.find(o => o.giver === v.id);
           if (task?.giver === v.id) taskMark(ctx, x, y - size * 1.05 - bob, u, time, task.done);
+          else if (ord) orderMark(ctx, x, y - size * 1.05 - bob, u, time, ord);
           else if (friendReady.includes(v.id)) heartMark(ctx, x, y - size * 1.05 - bob, u, time);
         }]);
       });
@@ -1710,8 +1729,11 @@ export class VillageView {
     else if (vl >= 8) this.bunting(ctx, W, H, u, time);
     this.lockRects = [];
     for (let i = land; i < n; i++) this.lockedPanel(ctx, i, W, H, u, time, vl);
+    this.bubbles = [];
     for (const [x, y, kind] of markers) {
+      if (kind === 'cups' || kind === 'fish') this.bubbles.push([kind, x, y - u * 0.035, u * 0.07]);
       if (kind === 'cups') cupBubble(ctx, x, y, u, time, this.cocoaInfo);
+      else if (kind === 'fish') fishBubble(ctx, x, y, u, time, pier.fish);
       else if (kind === 'home') homeMarker(ctx, x, y, u, time);
       else if (kind === 'slot' || kind === 'slotSel') slotMarker(ctx, x, y, u, time, kind === 'slotSel');
       else if (kind === 'proj') homeMarker(ctx, x, y, u, time);
@@ -2500,6 +2522,45 @@ function heartMark(ctx, x, y, u, t) {
   ctx.bezierCurveTo(x - r * 1.7, cy - r * 0.3, x - r * 0.8, cy - r * 1.6, x, cy - r * 0.5);
   ctx.bezierCurveTo(x + r * 0.8, cy - r * 1.6, x + r * 1.7, cy - r * 0.3, x, cy + r);
   ctx.fill();
+}
+
+// İskele balonu: balık simgesi ve sayı.
+function fishBubble(ctx, x, y, u, t, n) {
+  const b = Math.sin(t * 3 + 1) * u * 0.006;
+  const w = u * 0.13, h = u * 0.065;
+  ctx.fillStyle = '#ffffff';
+  roundRect(ctx, x - w / 2, y - h + b, w, h, h / 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x - u * 0.012, y + b);
+  ctx.lineTo(x, y + u * 0.018 + b);
+  ctx.lineTo(x + u * 0.012, y + b);
+  ctx.fill();
+  fishIcon(ctx, x - w * 0.22, y - h * 0.5 + b, u * 0.05);
+  ctx.fillStyle = '#1d3557';
+  ctx.font = `700 ${Math.round(u * 0.036)}px Fredoka, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(n), x + w * 0.16, y - h / 2 + b + 1);
+}
+function fishIcon(ctx, x, y, s) {
+  const im = art('obj_fish');
+  if (im) { ctx.drawImage(im, x - s / 2, y - s / 2, s, s); return; }
+  ctx.fillStyle = '#ff9f43';
+  ellipse(ctx, x, y, s * 0.38, s * 0.24);
+  ctx.fill();
+}
+// Siparişi olan köylü: istediği şeyin simgesi; stok yetiyorsa yeşil halka.
+function orderMark(ctx, x, y, u, t, o) {
+  const b = Math.abs(Math.sin(t * 3)) * u * 0.01, r = u * 0.03, cy = y - b;
+  ctx.fillStyle = '#ffffff';
+  circle(ctx, x, cy, r);
+  ctx.fill();
+  ctx.strokeStyle = o.ready ? '#3cc977' : '#c9a27a';
+  ctx.lineWidth = o.ready ? 3 : 2;
+  ctx.stroke();
+  if (o.kind === 'fish') fishIcon(ctx, x, cy, r * 1.5);
+  else mug(ctx, x - r * 0.1, cy + r * 0.05, u * 0.011, t);
 }
 
 function taskMark(ctx, x, y, u, t, done) {

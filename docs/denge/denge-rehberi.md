@@ -129,3 +129,12 @@ Yan yollar haritada her 15 levelde bir çıkan isteğe bağlı bulmacalardır; a
 - Döner tablanın üstündeki ok artık bir sonraki hamlenin çıkışını gösteriyor. Döner tablalı levelleri biraz kolaylaştırmış olabilir.
 
 Oynanış verisi: test oyuncusu Ayarlar > Oynanış verisi'nden CSV indirir. Level başına deneme, bitirme, hamlesi biten, yarıda bırakma, baştan alma, ipucu, rota, ek hamle, çıkmaz, süre ve en iyi hamle içerir. Usta levelleri `U1`, yan yollar `Y1` gibi yazılır. Veri cihazda durur, kendiliğinden hiçbir yere gitmez.
+
+## Sipariş panosu ve boşta üretim
+
+Köylüler her gün 3 sipariş verir. Siparişler, sen yokken üreten iki yapıdan karşılanır: kakao standının fincanı ve iskelenin balığı. Ayarlar `js/config.js` içindeki `ORDERS` nesnesinde.
+
+- `coinPer`: birim başına ödenen coin (fincan 9, balık 25). Karşılaştırma için stantta fincan 5 coin'den satılır (tariflerle artar). İskele balığının başka bir coin karşılığı yok.
+- `min`/`max`/`capShare`: sipariş adedi. Adet, yapının birikim sınırının `capShare` katını geçmez, böylece her sipariş bir dolumda karşılanabilir.
+- `friendPts`: teslim başına dostluk puanı. `bonusFlakes`: günün üç siparişi de bitince verilen kar tanesi.
+- Ölçü: bir sipariş yaklaşık bir-iki level ödülü kadar olmalı. Boşta kazanç level oynamaktan daha kârlı olmamalı, yoksa bulmaca değer kaybeder.

@@ -27,7 +27,7 @@ import {
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, FRIEND, VILLAGER_LIFE, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
-  SIDE_LEVELS, SIDE_REWARD, GOALS, PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
+  SIDE_LEVELS, SIDE_REWARD, GOALS, ORDERS, PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient, setMusic, playJingle, preloadJingle } from './sound.js';
 
@@ -76,6 +76,17 @@ village.onDistrict = i => showDistrict(i);
 village.onVillager = id => talkTo(id);
 village.onEvent = kind => { sfx.ui(); if (kind === 'tent') showScreen('event'); else showGuest(); };
 village.onDecorSlot = id => { village.decorSel = id; village.decorPreview = null; renderDecor(); };
+village.onBubble = k => {
+  // Fincan balonu: açık kakao siparişlerine yetecek kadarı ayrılır, fazlası satılır; fazla yoksa pano açılır.
+  if (k === 'cups') {
+    const keep = orderList().filter(o => !o.done && o.kind === 'cups').reduce((a, o) => a + o.n, 0);
+    if (Math.floor(cocoaNow()) - keep >= 1) sellCocoa(1, keep);
+    else if (keep) { sfx.ui(); showOrders(); }
+    return;
+  }
+  sfx.ui();
+  if (k === 'fish') { if (orderList().some(o => !o.done && o.kind === 'fish')) showOrders(); else if (P.pet) showPet(); }
+};
 village.onTown = k => {
   sfx.ui();
   if (k === 'merchant') showMerchant();
@@ -1010,6 +1021,102 @@ function pierNow() {
 function bankPier() { P.pierFish = pierNow(); P.pierTs = Date.now(); }
 const petFood = () => fishToday(P) + Math.floor(pierNow());
 
+// ---------- Sipariş panosu ----------
+// Köylüler stanttaki fincanı ve iskelenin balığını ister. Liste günde bir yenilenir.
+const ordersOn = () => villageLevel(P) >= ORDERS.vl && villagersHere().length > 0
+  && Object.values(ORDERS.kinds).some(k => bLevel(P, k.needs));
+const orderCap = kind => (kind === 'cups' ? cocoaCap() : pierCap());
+const orderStock = kind => Math.floor(kind === 'cups' ? cocoaNow() : pierNow());
+const orderCoins = o => o.n * ORDERS.kinds[o.kind].coinPer;
+function ensureOrders() {
+  if (!ordersOn()) return null;
+  const day = dateKey();
+  if (P.orders?.day === day) return P.orders;
+  const kinds = Object.keys(ORDERS.kinds).filter(k => bLevel(P, ORDERS.kinds[k].needs));
+  const givers = [...villagersHere()].sort(() => Math.random() - 0.5);
+  const first = Math.floor(Math.random() * kinds.length), list = [];
+  for (let i = 0; i < ORDERS.slots; i++) {
+    const kind = kinds[(first + i) % kinds.length], K = ORDERS.kinds[kind];
+    const hi = Math.max(K.min, Math.min(K.max, Math.floor(orderCap(kind) * K.capShare)));
+    list.push({ giver: givers[i % givers.length].id, kind, n: K.min + Math.floor(Math.random() * (hi - K.min + 1)), done: false });
+  }
+  P.orders = { day, list, bonus: false };
+  save(P);
+  return P.orders;
+}
+const orderList = () => ensureOrders()?.list || [];
+const orderReady = o => !o.done && orderStock(o.kind) >= o.n;
+const ordersReady = () => orderList().filter(orderReady).length;
+// Sahne: siparişi olan köylülerin üstünde işaret (aynı köylünün tek işareti olur: ilk açık siparişi).
+function orderMarks() {
+  const seen = new Set(), out = [];
+  for (const o of orderList()) if (!o.done && !seen.has(o.giver)) { seen.add(o.giver); out.push({ giver: o.giver, kind: o.kind, ready: orderReady(o) }); }
+  return out;
+}
+// İskele balonu yalnızca balık bir işe yarayacaksa çıkar: balık siparişi ya da aç evcil dost.
+const pierInfo = () => ({
+  fish: Math.floor(pierNow()),
+  want: orderList().some(o => !o.done && o.kind === 'fish') || !!(P.pet && !petFedToday(P)),
+});
+function deliverOrder(i) {
+  const o = orderList()[i];
+  if (!o || !orderReady(o)) return;
+  if (o.kind === 'cups') {
+    P.cocoaCups = cocoaNow() - o.n;
+    P.cocoaTs = Date.now();
+    P.ach.cups = (P.ach.cups || 0) + o.n;
+  } else {
+    bankPier();
+    P.pierFish = Math.max(0, P.pierFish - o.n);
+  }
+  o.done = true;
+  const coins = orderCoins(o), v = VILLAGERS.find(x => x.id === o.giver);
+  P.coins += coins;
+  let bonus = '';
+  if (!P.orders.bonus && P.orders.list.every(x => x.done)) {
+    P.orders.bonus = true;
+    P.flakes += ORDERS.bonusFlakes;
+    bonus = ` · günün siparişleri tamam, +${ORDERS.bonusFlakes} ❄`;
+  }
+  friendAdd(o.giver, ORDERS.friendPts);
+  save(P);
+  track('order_deliver', { kind: o.kind, n: o.n, coins });
+  updateWallet();
+  sfx.coin();
+  village.coinsAt(o.giver, coins);
+  toast(`${v.name}: "Çok teşekkürler!" · +${coins} coin${bonus}`, 2600);
+  if (screen === 'village') renderVillage();
+}
+function showOrders() {
+  const list = orderList();
+  if (!list.length) return;
+  const rows = list.map((o, i) => {
+    const v = VILLAGERS.find(x => x.id === o.giver), K = ORDERS.kinds[o.kind], have = orderStock(o.kind);
+    const ico = o.kind === 'cups' ? '☕' : ui('fish');
+    const act = o.done ? '<span class="check">✓</span>'
+      : `<button class="btn green" data-ord="${i}" ${have < o.n ? 'disabled' : ''}>Ver · ${coinIco}${orderCoins(o)}</button>`;
+    return `<div class="ord-row${o.done ? ' done' : ''}"><canvas class="ord-face" data-face="${o.giver}"></canvas>
+      <div class="ord-txt"><b>${v.name}</b><small>${ico} ${o.n} ${K.name}${o.done ? ' · teslim edildi' : ` · elinde ${Math.min(have, 999)}`}</small></div>${act}</div>`;
+  }).join('');
+  const left = list.filter(o => !o.done).length;
+  const stock = Object.keys(ORDERS.kinds).filter(k => bLevel(P, ORDERS.kinds[k].needs))
+    .map(k => (k === 'cups' ? `☕ Stant: <b>${orderStock(k)}</b>/${cocoaCap()} fincan` : `${ui('fish')} İskele: <b>${orderStock(k)}</b>/${Math.round(pierCap())} balık`)).join(' · ');
+  openOverlay(`
+    <span class="new-tag">SİPARİŞ PANOSU</span>
+    <h2>Köyün siparişleri</h2>
+    <small class="breakdown">Stant ve iskele sen yokken de üretir. Siparişleri buradan karşıla; yarın yeni siparişler gelir.</small>
+    <div class="ord-stock">${stock}</div>
+    <div class="ord-list">${rows}</div>
+    <small class="breakdown">${left ? `Bugünün hepsini bitirince +${ORDERS.bonusFlakes} kar tanesi` : P.orders.bonus ? 'Bugünün siparişleri tamam. Yarın yenileri gelir.' : ''}</small>
+    <button id="ordClose" class="btn link">Kapat</button>`);
+  $('overlayCard').querySelectorAll('.ord-face').forEach(cv => {
+    const v = VILLAGERS.find(x => x.id === cv.dataset.face);
+    drawPofi(fitCanvas(cv, 44, 44), 22, 42, 34, { outfit: v.outfit });
+  });
+  $('overlayCard').querySelectorAll('[data-ord]').forEach(b => { b.onclick = () => { deliverOrder(+b.dataset.ord); showOrders(); }; });
+  $('ordClose').onclick = closeOverlay;
+}
+
 const recipeReady = () => { const r = nextRecipe(P); return !!r && villageLevel(P) >= r.vl && P.coins >= discounted(P, r.price); };
 
 function renderCocoa() {
@@ -1027,8 +1134,9 @@ function renderCocoa() {
 }
 
 // Satış: coin hemen kaydedilir; köy ekranında Pofi fincanları yolculara götürür, sayaç servis anında artar.
-function sellCocoa(mult) {
-  const cups = Math.floor(cocoaNow());
+// keep: siparişler için ayrılan fincan (satılmaz).
+function sellCocoa(mult, keep = 0) {
+  const cups = Math.floor(cocoaNow()) - keep;
   if (cups < 1 || village.sale) return;
   const coins = cups * cupPrice(P) * mult;
   P.cocoaCups = cocoaNow() - cups;
@@ -1041,7 +1149,7 @@ function sellCocoa(mult) {
   const done = () => {
     updateWallet();
     sfx.coin();
-    toast(`${cups} fincan satıldı · +${coins} coin`);
+    toast(`${cups} fincan satıldı · +${coins} coin${keep ? ` · ${keep} fincan siparişe ayrıldı` : ''}`);
     renderCocoa();
   };
   if (screen !== 'village' || !village.playSale({ cups, coins, pier: !!P.village.pier, done })) done();
@@ -1154,7 +1262,7 @@ function renderVillage() {
   $('vTabs').classList.toggle('hidden', lifeCount === 0);
   // Kakao satış düğmesi Köy hayatı'nda: stant yarıdan fazla dolunca sekmede işaret çıkar.
   const cocoaFull = cocoaRate() > 0 && cocoaNow() >= cocoaCap() / 2;
-  const dotsOn = { build: canAffordAny(P) || districtReady(), life: villagersHere().some(v => friendReady(v.id)) || cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
+  const dotsOn = { build: canAffordAny(P) || districtReady(), life: villagersHere().some(v => friendReady(v.id)) || cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || ordersReady() > 0 || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
   $('vTabs').querySelectorAll('.vtab').forEach(b => {
     const k = b.dataset.vt;
     b.classList.toggle('hidden', !tabs[k]);
@@ -1637,6 +1745,13 @@ function villagerLine(v) {
 function talkTo(id) {
   const v = VILLAGERS.find(x => x.id === id), t = ensureTask(), f = friendOf(id);
   if (t && !t.claimed && t.giver === id) { showTask(); return; }
+  const ord = orderList().find(o => !o.done && o.giver === id);
+  if (ord && orderReady(ord)) { sfx.ui(); showOrders(); return; }
+  if (ord && !(village.speechOn() && village.speech.id === id)) {
+    village.say(id, `${v.name}: "${ord.n} ${ORDERS.kinds[ord.kind].name} lazım. ${ord.kind === 'cups' ? 'Stant dolunca' : 'İskele tutunca'} getirir misin?"`);
+    sfx.ui();
+    return;
+  }
   // yeni hikâyesi varsa ya da konuşurken bir daha dokunulursa dostluk penceresi açılır
   if (friendReady(id) || (village.speechOn() && village.speech.id === id)) { showFriend(id); return; }
   if (f.talk !== dateKey()) { f.talk = dateKey(); friendAdd(id, FRIEND.talkPts); village.heartsAt(id); }
@@ -2003,6 +2118,11 @@ function townCards() {
   if (P.level > 5) cards.push(`<button class="b-card district town" data-town="gazette"><b>${ui('gazette')} Köy Gazetesi · Sayı ${gazetteIssue()}</b><small>${land >= 2 ? (here ? 'Gezgin tüccar bugün limanda' : nm ? `Tüccar ${dayName(nm)} günü geliyor` : '') : 'Haftanın haberleri, zor leveli ve bilmecesi'}</small><span class="act">${gazetteUnread() ? 'Yeni sayı!' : 'Oku'}</span>${gazetteUnread() ? '<i class="dot"></i>' : ''}</button>`);
   if (land >= 2) cards.push(`<button class="b-card district town${here ? ' ready' : ''}" data-town="merchant"><b>${ui('merchant')} Gezgin tüccar</b><small>${here ? 'Kaptan Mors limanda! Nadir kıyafet, süs ve gizemli paket' : 'Haftada 1-2 gün limana uğrar; günü gazetede'}</small><span class="act">${here ? 'Tezgâha git' : nm ? `${dayName(nm)} gelir` : 'Yolda'}</span>${here ? '<i class="dot"></i>' : ''}</button>`);
   if (P.village.market) cards.push(`<button class="b-card district town" data-town="market"><b>${ui('market')} Balık pazarı · kar tanesi</b><small>Coin ile kar tanesi; fiyat bugün aldıkça artar</small><span class="act">1 ${flakeIco} = ${coinIco}${fmt(flakePrice(tradeN(P)))}</span></button>`);
+  if (ordersOn()) {
+    const list = orderList(), left = list.filter(o => !o.done).length, rd = ordersReady();
+    const first = list.find(o => !o.done), fv = first && VILLAGERS.find(x => x.id === first.giver);
+    cards.unshift(`<button class="b-card district town${rd ? ' ready' : ''}" data-town="orders"><b>${ui('villagers')} Sipariş panosu · ${list.length - left}/${list.length}</b><small>${left ? `${fv.name} ${first.n} ${ORDERS.kinds[first.kind].name} istiyor${left > 1 ? ` · ${left - 1} sipariş daha` : ''}` : 'Bugünün siparişleri tamam · yarın yenileri gelir'}</small><span class="act">${rd ? `${rd} hazır` : left ? 'Bak' : '✓'}</span>${rd ? '<i class="dot"></i>' : ''}</button>`);
+  }
   const vl = villageLevel(P);
   if (P.pet) {
     const fed = petFedToday(P), canFeed = !fed && petFood() >= PET.feedFish;
@@ -2029,6 +2149,7 @@ function openTown(k) {
   else if (k === 'merchant') { village.goPanel(1); showMerchant(); }
   else if (k === 'market') showMarket();
   else if (k === 'pet') showPet();
+  else if (k === 'orders') showOrders();
   else if (k.startsWith('proj:')) { village.goPanel(2); showProject(k.slice(5)); }
 }
 
@@ -2041,6 +2162,7 @@ const UNLOCKS = [
   { id: 'trade', when: () => !!P.village.market, ico: 'market', title: 'Kar tanesi takası', text: 'Balık pazarında coin ile kar tanesi alabilirsin. Fiyat gün içinde aldıkça artar, ertesi gün başa döner.' },
   { id: 'forest', when: () => (P.land || 1) === 2 && villageLevel(P) >= DISTRICTS[2].vl, ico: 'project', title: 'Çam Ormanı', text: 'Yeni arazi açılabilir. Köy projelerine coin yatırırsın, biten proje kalıcı bonus verir.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(2); } },
   { id: 'sides', when: () => P.level > SIDE_LEVELS.every, ico: 'tab_village', title: 'Yan yollar', text: 'Haritada yolun kenarında tabelalar belirdi. Her biri farklı hedefli, isteğe bağlı bir bulmaca: eve dön, kasayı yerleştir, buzları kır.', go: () => showScreen('map') },
+  { id: 'orders', when: ordersOn, ico: 'villagers', title: 'Sipariş panosu', text: 'Köylüler her gün sipariş veriyor: stanttan kakao, iskeleden balık. Teslim et, coin ve dostluk kazan. Köyde siparişi olan köylünün üstünde işaret çıkar.', go: () => { showScreen('village'); showOrders(); } },
   { id: 'master', when: () => P.level > MASTER_LEVELS[0].after, ico: 'castle', title: 'Usta kalesi', text: 'Haritada bölge sonunda bir buz kalesi belirdi. Çok zor ama ödülü ve rozeti özel.', go: () => showScreen('map') },
 ];
 // Eski kayıtlar: zaten açık olanlar için kart çıkmaz.
@@ -2082,6 +2204,8 @@ function awayLines() {
     if (n > 0) lines.push(`${ui('market')} İskele <b>${n} balık</b> tuttu`);
     lines.push(petFood() >= PET.feedFish ? `${ui('pet')} ${name} acıktı, besleyebilirsin` : `${ui('pet')} ${name} uyukluyor`);
   }
+  const rd = ordersOn() ? ordersReady() : 0;
+  if (rd) lines.push(`${ui('villagers')} Sipariş panosunda <b>${rd} sipariş</b> teslime hazır`);
   if (merchantToday() && (P.land || 1) >= 2) lines.push(`${ui('merchant')} Gezgin tüccar bugün limanda`);
   if (P.level > 5 && gazetteUnread()) lines.push(`${ui('gazette')} Köy Gazetesi'nin ${gazetteIssue()}. sayısı çıktı`);
   return lines;
@@ -2117,6 +2241,7 @@ function renderTownStrip() {
   if (merchantToday() && (P.land || 1) >= 2) { html = `${ui('merchant')} <b>Gezgin tüccar bugün limanda</b>`; go = 'merchant'; }
   else if (gazetteUnread() && P.level > 5) { html = `${ui('gazette')} <b>Köy Gazetesi · Sayı ${gazetteIssue()} çıktı</b>`; go = 'gazette'; }
   else if (P.pet && !petFedToday(P) && petFood() >= PET.feedFish) { html = `${ui('pet')} <b>${esc(petInfo().name)} acıktı</b>`; go = 'pet'; }
+  else if (ordersOn() && ordersReady()) { html = `${ui('villagers')} <b>${ordersReady()} sipariş teslime hazır</b>`; go = 'orders'; }
   el.classList.toggle('hidden', !go);
   if (!go) return;
   el.innerHTML = `${html}<span>›</span>`;
@@ -3922,7 +4047,7 @@ function frame(now) {
       ...villageScene(),
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: BUILDINGS.filter(b => P.village[b.id] && nextCost(P, b) !== null && P.flakes >= nextCost(P, b)).map(b => b.id),
-      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, homeReady: homesReady(), task: taskMarker(),
+      cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, pier: pierInfo(), orders: orderMarks(), homeReady: homesReady(), task: taskMarker(),
       merchant: !!merchantToday(),
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }

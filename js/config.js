@@ -685,6 +685,18 @@ export const RIDDLES = [
   { q: 'Hep önündedir ama göremezsin. Nedir?', a: 'Gelecek' },
 ];
 
+// Sipariş panosu: köydeki köylüler her gün birkaç sipariş verir. Siparişler boşta üreten yapılardan karşılanır:
+// kakao standının fincanı, iskelenin balığı. Teslim edince coin ve dostluk puanı; o günün hepsi bitince küçük bonus.
+// Adet, yapının birikim sınırına göre seçilir (capShare: sınırın en fazla bu kadarı), böylece her sipariş karşılanabilir.
+// Ertesi gün liste yenilenir. Dengesi Mustafa'da (coinPer: birim başına coin).
+export const ORDERS = {
+  slots: 3, vl: 3, friendPts: 2, bonusFlakes: 1,
+  kinds: {
+    cups: { needs: 'cocoa', min: 4, max: 14, capShare: 0.5, coinPer: 9, name: 'fincan kakao' },
+    fish: { needs: 'pier', min: 2, max: 6, capShare: 0.4, coinPer: 25, name: 'balık' },
+  },
+};
+
 // Müzik (Mustafa, docs/pofi-muzik-suno.html). Hepsi -16 LUFS'a eşitlendi, AAC 112 kbps (assets/music).
 // home: menüler, harita, etkinlik. game: level aralığına göre (from: o levelden itibaren). village: gündüz iki parça
 // sırayla çalar; gece (köy Lv6+ ve 20:00-06:00, sahne de geceyken) kuzey ışıkları parçası döner. Boş bırakılan yerde

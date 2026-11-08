@@ -54,6 +54,7 @@ function defaults() {
     // coin harcama yerleri (2026-11-04)
     lastSeen: null, // oyunun en son açık olduğu an ("Sen yokken" kartı için)
     pierFish: 0, // iskelenin tuttuğu balık (kesirli)
+    orders: null, // { day, list: [{ giver, kind, n, done }], bonus } — sipariş panosu (günlük)
     pierTs: null,
     flakeTrade: null, // { day, n } — pazarda bugün alınan kar tanesi (fiyat merdiveni)
     merchant: null, // { visit, bought: { ürün: adet } } — tüccarın son ziyareti

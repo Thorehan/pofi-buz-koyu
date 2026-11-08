@@ -1160,6 +1160,17 @@ body { background: #8fbfe2; }
 .sheet-x, .hb-x { font-size: 0 !important; background: var(--paper-d) url(../assets/art/ui_close.webp) center/18px no-repeat !important; }
 /* reklam düğmesi: film ikonu ve küçük yazı */
 .btn.ad::before { padding-left: 20px; background: rgba(0, 0, 0, .22) url(../assets/art/ui_ad.webp) 2px center/16px no-repeat; }
+/* sipariş panosu */
+.ord-stock { font-size: 13px; color: var(--wood-d); background: var(--paper-d); border-radius: 10px; padding: 6px 10px; margin: 6px 0; }
+.ord-stock .ui { width: 18px; height: 18px; vertical-align: -4px; }
+.ord-list { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 4px; text-align: left; }
+.ord-row { display: flex; align-items: center; gap: 8px; background: var(--paper); border: 2px solid var(--line); border-radius: 14px; padding: 6px 8px; }
+.ord-row.done { opacity: .6; }
+.ord-face { width: 44px; height: 44px; flex: none; background: var(--paper-d); border-radius: 50%; }
+.ord-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ord-txt small { color: var(--wood-d); font-size: 12.5px; }
+.ord-txt .ui { width: 16px; height: 16px; vertical-align: -3px; }
+.ord-row .btn { padding: 8px 10px; font-size: 14px; white-space: nowrap; }
 .vtab { white-space: nowrap; font-size: 13.5px; padding-left: 4px; padding-right: 4px; }
 .vtab .ui { width: 20px; height: 20px; }
 .rs-chest .ui { width: 26px; height: 26px; }
