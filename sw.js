@@ -15,7 +15,7 @@ const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css',
   'js/ads.js', 'js/art.js', 'js/backup.js', 'js/board.js', 'js/clock.js', 'js/config.js',
   'js/draw.js', 'js/engine.js', 'js/errlog.js', 'js/interior.js', 'js/live.js', 'js/main.js',
-  'js/meta.js', 'js/save.js', 'js/sound.js', 'js/stats.js', 'js/town.js', 'js/townart.js',
+  'js/meta.js', 'js/motion.js', 'js/save.js', 'js/sound.js', 'js/stats.js', 'js/town.js', 'js/townart.js',
   'js/tr.js', 'js/update.js', 'js/village.js',
   'data/goals.json', 'data/levels.json', 'data/masters.json',
 ];

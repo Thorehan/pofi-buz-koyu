@@ -2,6 +2,7 @@
 import { ek } from './tr.js';
 import { roundRect, circle, ellipse, drawPofi, drawSeal } from './draw.js';
 import { art, tinted, BLD, BLD_Z2 } from './art.js';
+import { motion } from './motion.js';
 import { DISTRICTS, DECOR_SLOTS, VILLAGER_CHAT } from './config.js';
 import { drawPet, drawPetBed, drawToy, drawWalrus, drawStall, drawMerchantBoat, drawProject } from './townart.js';
 
@@ -2242,6 +2243,7 @@ export class VillageView {
 
   // Köy Lv11: gökyüzünde her 2,5 saniyede bir havai fişek.
   fireworks(ctx, W, H, u, t) {
+    if (motion.reduced) return; // hareketi azalt: havai fişek yok
     const slot = Math.floor(t / 2.5), k = (t / 2.5) % 1;
     for (let j = 0; j < 2; j++) {
       const seed = slot * 2 + j;
@@ -2280,7 +2282,9 @@ export class VillageView {
 
   // Haftanın havası (gazetede yazar): bol kar, ayaz ve güneş (seyrek), hafif tipi (rüzgârlı), kuzey ışıkları (normal).
   snowfall(ctx, W, H, t, weather = 'heavy') {
-    const count = { heavy: 70, clear: 10, blizzard: 60, aurora: 30 }[weather] ?? 40, wind = weather === 'blizzard' ? 60 : 0, fall = weather === 'blizzard' ? 1.5 : 1;
+    // hareketi azalt: kar seyrek ve rüzgârsız
+    const calm = motion.reduced;
+    const count = Math.round(({ heavy: 70, clear: 10, blizzard: 60, aurora: 30 }[weather] ?? 40) * (calm ? 0.3 : 1)), wind = weather === 'blizzard' && !calm ? 60 : 0, fall = weather === 'blizzard' && !calm ? 1.5 : 1;
     ctx.fillStyle = 'rgba(255,255,255,.85)';
     for (let k = 0; k < count; k++) {
       const sx = (k * 0.618) % 1, sp = (18 + (k % 5) * 6) * fall;

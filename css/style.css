@@ -1193,6 +1193,11 @@ body { background: #8fbfe2; }
 .upd-bar .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
 .upd-x { width: 34px; height: 40px; border: none; background: none; padding: 0; display: grid; place-items: center; cursor: pointer; }
 .upd-x .ui { width: 20px; height: 20px; }
+/* hareketi azalt (html.calm): animasyonlar ve geçişler anında biter; sonsuz nabız/zıplama durur */
+html.calm *, html.calm *::before, html.calm *::after {
+  animation-duration: .001s !important; animation-iteration-count: 1 !important; animation-delay: 0s !important;
+  transition-duration: .001s !important; transition-delay: 0s !important; scroll-behavior: auto !important;
+}
 /* gizli test paneli */
 .dev-sec { display: flex; flex-direction: column; gap: 6px; text-align: left; background: var(--paper-d); border-radius: 12px; padding: 8px 10px; margin: 4px 0; }
 .dev-sec > b { color: var(--wood-d); font-size: 15px; }

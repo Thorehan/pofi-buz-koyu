@@ -2,6 +2,7 @@
 import { T, tileOf, isRamp, simulate } from './engine.js';
 import { roundRect, circle, ellipse, drawPofi, drawPofiBelly, drawFish, drawSeal } from './draw.js';
 import { art, tinted } from './art.js';
+import { motion } from './motion.js';
 
 export const STEP = 0.075; // saniye / hücre
 
@@ -767,6 +768,7 @@ export class BoardView {
 
   burst(c, color, n, speed, life = 0.6, up = 0, shape = null) {
     const [x, y] = this.cellXY(c);
+    if (motion.reduced) { n = Math.ceil(n / 4); speed *= 0.5; up *= 0.5; } // hareketi azalt: az ve yavaş parçacık
     for (let k = 0; k < n; k++) {
       const a = Math.random() * Math.PI * 2, v = speed * (0.4 + Math.random() * 0.8);
       this.parts.push({ x: x + this.s / 2, y: y + this.s / 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v - up, life: life * (0.6 + Math.random() * 0.6), col: color, r: this.s * (0.04 + Math.random() * 0.04) * (shape === 'star' ? 1.8 : 1), shape });
@@ -865,6 +867,7 @@ export class BoardView {
 
   // Bölüm sonu konfeti yağmuru: tahtanın üstünden renkli kâğıtlar dökülür.
   confetti() {
+    if (motion.reduced) return; // hareketi azalt: konfeti yok (yıldızlar ve sonuç ekranı yeterli)
     const cols = ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff', '#a46bff', '#ff9f43'];
     for (let k = 0; k < 70; k++) {
       this.parts.push({

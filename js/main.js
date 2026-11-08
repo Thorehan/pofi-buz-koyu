@@ -24,6 +24,7 @@ import { loadArt, setArtEnabled, accentHue, onArtLoad, art } from './art.js';
 import { load, save, resetSave, onSaveFail, loadInfo } from './save.js';
 import { backupEncode, backupDecode } from './backup.js';
 import { ek } from './tr.js';
+import { applyMotion, osPrefersReduced } from './motion.js';
 import { watchUpdates } from './update.js';
 import { showRewarded, track } from './ads.js';
 import {
@@ -38,6 +39,7 @@ import { sfx, unlock, configure as configureSound, setAmbient, setMusic, playJin
 
 const $ = id => document.getElementById(id);
 const P = load(); // oyuncu kaydı
+applyMotion(P.settings.calm); // hareketi azalt: oyuncu seçmediyse cihaz ayarına uyar
 // Kayıt güvenliği: yazılamazsa bir kez uyar; ana kayıt bozuksa yedekten açıldığını söyle (ikisi de hata kaydına düşer).
 onSaveFail(e => {
   logError(`Kayıt yazılamadı: ${e?.name || ''} ${e?.message || e}`);
@@ -3835,6 +3837,8 @@ function renderAch() {
 function renderSettings() {
   $('setName').value = P.profile?.name || '';
   $('setHaptics').checked = !!P.settings.haptics;
+  $('setCalm').checked = applyMotion(P.settings.calm);
+  $('calmNote').textContent = P.settings.calm === undefined ? (osPrefersReduced() ? '(cihaz ayarına göre açık)' : '') : '';
   $('setSfx').checked = P.settings.sfx !== false;
   $('setAmbient').checked = P.settings.ambient !== false;
   $('setMusic').checked = P.settings.music !== false;
@@ -3876,6 +3880,13 @@ $('setName').onchange = () => {
   P.profile.name = name;
   persist();
   toast('Adın güncellendi');
+};
+$('setCalm').onchange = () => {
+  P.settings.calm = $('setCalm').checked;
+  applyMotion(P.settings.calm);
+  $('calmNote').textContent = '';
+  persist();
+  track('calm', { on: P.settings.calm });
 };
 $('setHaptics').onchange = () => {
   P.settings.haptics = $('setHaptics').checked;
