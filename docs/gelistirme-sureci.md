@@ -210,3 +210,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `dd29944` Ayarlar'da "Nasıl oynanır": kurallar ve karşılaşılan mekanikler.
 - 2026-11-08 · `5ba529f` Kayıt yedeği: duman testinde yedek denetimi, `<` içeren adlı yedek artık yükleniyor.
 - 2026-11-08 · `f39322b` Kare döngüsü hataya dayanıklı: çizim hatası günlüğe yazılır, oyun donmaz.
+- 2026-11-08 · `e6cf565` Yeni sürüm şeridi: yayına alınan sürüm fark edilince ana sayfada "Yenile".
