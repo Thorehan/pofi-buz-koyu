@@ -35,8 +35,8 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 ## Sıradaki işler
 
-1. [ ] **Otomatik duman testi** (`tools/smoke.mjs`). Her tur bu testle başlar.
-   - İlk 300 level çözülebilir olmalı ve çözüm uzunluğu kayıtlı en kısa çözümle eşleşmeli.
+1. [x] **Otomatik duman testi** (`tools/smoke.mjs`). Her tur bu testle başlar.
+   - Bütün leveller çözülebilir olmalı ve çözüm uzunluğu kayıtlı en kısa çözümle eşleşmeli.
    - Yan yollar ve usta levelleri çözülebilir olmalı.
    - Ayar dosyasında tutarlılık bakılır: her başarımın sayacı var mı, her ikon dosyası var mı, her müzik dosyası var mı.
    - Kayıt göçü test edilir: boş kayıt ve eski kayıt hatasız açılmalı.
