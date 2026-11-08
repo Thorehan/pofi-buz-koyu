@@ -21,7 +21,7 @@ import {
 import { drawRoom, drawItemIcon } from './interior.js';
 import { drawPofi, drawFish, roundRect } from './draw.js';
 import { loadArt, setArtEnabled, accentHue, onArtLoad, art } from './art.js';
-import { load, save, resetSave } from './save.js';
+import { load, save, resetSave, onSaveFail, loadInfo } from './save.js';
 import { backupEncode, backupDecode } from './backup.js';
 import { ek } from './tr.js';
 import { watchUpdates } from './update.js';
@@ -38,6 +38,15 @@ import { sfx, unlock, configure as configureSound, setAmbient, setMusic, playJin
 
 const $ = id => document.getElementById(id);
 const P = load(); // oyuncu kaydı
+// Kayıt güvenliği: yazılamazsa bir kez uyar; ana kayıt bozuksa yedekten açıldığını söyle (ikisi de hata kaydına düşer).
+onSaveFail(e => {
+  logError(`Kayıt yazılamadı: ${e?.name || ''} ${e?.message || e}`);
+  setTimeout(() => toast('Kayıt yapılamıyor: tarayıcı depolaması dolu ya da kapalı. Bu oturumdaki ilerleme kaybolabilir.', 4200), 600);
+});
+if (loadInfo.broken) {
+  logError(`Kayıt bozuktu, ${loadInfo.from === 'backup' ? 'yedekten açıldı' : 'yedek de yoktu, yeni kayıt açıldı'}`);
+  setTimeout(() => toast(loadInfo.from === 'backup' ? 'Kayıt okunamadı; son yedekten açıldı.' : 'Kayıt okunamadı ve yedek yoktu. Ayarlar > Hata kaydı ile bize bildirebilirsin.', 4200), 3500);
+}
 // Askıya alınan güçlendiriciler (kazma, kürek, düdük): eldekiler mağaza fiyatı kadar coin olarak iade edilir.
 {
   let refund = 0;

@@ -1,6 +1,14 @@
 import { ECON } from './config.js';
 
 const KEY = 'pofi.v1';
+// Kayıt güvenliği: son sağlam kaydın kopyası (en çok 30 sn geriden gelir). Ana kayıt okunamazsa oyun bundan açılır.
+// Okunamayan ana kayıt silinmez, BROKEN anahtarına taşınır (sonradan incelenebilsin).
+const BAK = 'pofi.v1.bak';
+const BROKEN = 'pofi.v1.broken';
+const BAK_EVERY = 30000;
+let lastBak = 0, failed = false, onFail = null;
+// load() sonrası: { from: 'main' | 'backup' | 'new', broken: bool }
+export const loadInfo = { from: 'new', broken: false };
 
 function defaults() {
   return {
@@ -72,11 +80,30 @@ function defaults() {
   };
 }
 
-export function load() {
+// Okunabilir ve oyunun açılabileceği bir kayıt mı? (eksik alanlar varsayılanla dolar)
+const usable = s => s && typeof s === 'object' && !Array.isArray(s) && Number.isInteger(s.level) && s.level >= 1 && Number.isFinite(s.coins)
+  && s.stars && typeof s.stars === 'object' && s.village && typeof s.village === 'object';
+function parse(key) {
+  let raw = null;
+  try { raw = localStorage.getItem(key); } catch { return { raw: null, s: null }; }
+  if (raw === null) return { raw, s: null };
   try {
-    const s = JSON.parse(localStorage.getItem(KEY));
-    if (s) return migrate({ ...defaults(), ...s });
-  } catch { /* kayıt yok veya erişilemiyor */ }
+    const s = migrate({ ...defaults(), ...JSON.parse(raw) });
+    return { raw, s: usable(s) ? s : null };
+  } catch { return { raw, s: null }; }
+}
+
+export function load() {
+  const main = parse(KEY);
+  if (main.s) { loadInfo.from = 'main'; return main.s; }
+  const bak = parse(BAK);
+  if (main.raw !== null) {
+    // ana kayıt var ama bozuk: üzerine yazılmadan önce kenara alınır
+    loadInfo.broken = true;
+    try { localStorage.setItem(BROKEN, main.raw); } catch { /* yer yoksa tutulamaz */ }
+  }
+  if (bak.s) { loadInfo.from = 'backup'; return bak.s; }
+  loadInfo.from = 'new';
   return defaults();
 }
 
@@ -95,10 +122,24 @@ function migrate(s) {
   return s;
 }
 
+// Kayıt yazılamazsa (depolama dolu, gizli sekme, tarayıcı izin vermiyor) bir kez haber verilir.
+export function onSaveFail(fn) { onFail = fn; }
+
 export function save(s) {
-  try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* yoksay */ }
+  try {
+    const json = JSON.stringify(s);
+    localStorage.setItem(KEY, json);
+    failed = false;
+    const now = Date.now();
+    if (now - lastBak >= BAK_EVERY && usable(s)) { localStorage.setItem(BAK, json); lastBak = now; }
+    return true;
+  } catch (e) {
+    if (!failed) { failed = true; onFail?.(e); }
+    return false;
+  }
 }
 
 export function resetSave() {
-  try { localStorage.removeItem(KEY); } catch { /* yoksay */ }
+  try { localStorage.removeItem(KEY); localStorage.removeItem(BAK); } catch { /* yoksay */ }
+  lastBak = 0;
 }

@@ -93,6 +93,36 @@ try {
 } catch (e) { fail(`Kayıt testi patladı: ${e.message}`); }
 notes.push('Kayıt: boş, eski ve bozuk kayıt denendi');
 
+// kayıt güvenliği: yedek kopya, bozuk kayıttan yedeğe dönüş, yazılamama uyarısı
+try {
+  for (const k of Object.keys(store)) delete store[k];
+  const good = { ...SV.load(), level: 44, coins: 1234 };
+  SV.resetSave();
+  if (!SV.save(good)) fail('Kayıt yazılamadı');
+  if (!store['pofi.v1.bak']) fail('İlk kayıtta yedek kopya alınmadı');
+  store['pofi.v1'] = '{"level":44,"coi'; // yarım yazılmış kayıt
+  const back = SV.load();
+  if (back.level !== 44 || back.coins !== 1234 || SV.loadInfo.from !== 'backup' || !SV.loadInfo.broken) fail('Bozuk kayıt yedekten açılmadı');
+  if (store['pofi.v1.broken'] !== '{"level":44,"coi') fail('Bozuk kayıt kenara alınmadı');
+  store['pofi.v1'] = JSON.stringify({ level: 'x', coins: 5 }); // okunuyor ama kullanılamaz
+  if (SV.load().level !== 44) fail('Kullanılamaz kayıt yedeğe dönmedi');
+  delete store['pofi.v1.bak'];
+  store['pofi.v1'] = '{bozuk';
+  if (SV.load().level !== 1 || SV.loadInfo.from !== 'new') fail('Yedek yokken bozuk kayıt boş kayda dönmedi');
+  let warned = 0;
+  SV.onSaveFail(() => warned++);
+  const realSet = globalThis.localStorage.setItem;
+  globalThis.localStorage.setItem = () => { throw Object.assign(new Error('dolu'), { name: 'QuotaExceededError' }); };
+  const r1 = SV.save(good), r2 = SV.save(good);
+  globalThis.localStorage.setItem = realSet;
+  if (r1 !== false || r2 !== false || warned !== 1) fail(`Yazılamayan kayıt bir kez uyarmadı (uyarı ${warned})`);
+  if (!SV.save(good)) fail('Depolama düzelince kayıt yine yazılmadı');
+  SV.resetSave();
+  if (store['pofi.v1'] || store['pofi.v1.bak']) fail('Sıfırlama yedeği silmedi');
+  for (const k of Object.keys(store)) delete store[k];
+} catch (e) { fail(`Kayıt güvenliği testi patladı: ${e.message}`); }
+notes.push('Kayıt güvenliği: yedek kopya, bozuk kayıttan yedeğe dönüş, yazılamama uyarısı');
+
 // yedek kodu: dolu bir kayıt koda çevrilip geri açılınca aynı mı? (sıkıştırmalı ve sıkıştırmasız)
 const BK = await import(pathToFileURL(rel('js/backup.js')).href);
 try {
