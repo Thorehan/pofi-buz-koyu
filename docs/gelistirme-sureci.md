@@ -377,9 +377,20 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Erişilebilirlik ve akış**
 
-7. [ ] **Renk körlüğü denetimi.**
+7. [x] **Renk körlüğü denetimi.**
    - Mekanik karoları (plaka ve kapılar, numaralı balıklar, kilitler, oklar) üç renk körlüğü taklidiyle incelenir.
    - Yalnızca renkle ayrılan yerlere şekil ya da işaret eklenir; yeni görsel üretilmez.
+   - **Yapıldı (2026-11-08, `09c7e32`):**
+     - **Yöntem:** 31 karo ve nesne (açık/kapalı, basılı/boş durumlarıyla) oyunun kendi çizim koduyla bir tabloya çizildi. Tablo normal, kırmızı körlüğü (protanopi), yeşil körlüğü (döteranopi) ve mavi-sarı körlüğü (tritanopi) renk süzgeçlerinden geçirildi.
+     - **Bulunan 1, kol kapısı ve plaka kapısı:** İki kapı türü yalnızca renkle ayrılıyordu (mavi ve yeşil). Kırmızı-yeşil körlüğünde ikisi aynı gri-mor tona düşüyor, hangisinin kolla hangisinin plakayla açıldığı anlaşılmıyordu. Plaka kapısının köşesine küçük yuvarlak bir plaka rozeti eklendi; kapı açıkken soluk.
+     - **Bulunan 2, kasa hedefi:** Kasa oturunca hedef çerçevesi yalnızca kırmızıdan yeşile dönüyordu. Artık boşken kesik ve kayan, oturunca düz ve durgun çizgi.
+     - **Sorunsuz olanlar:**
+       - Kolun açık/kapalı hâli kolun yatış yönünden de anlaşılıyor.
+       - Basılı plaka parlak, eriyen karın altında su birikintisi var.
+       - Kırılgan kaya daha açık tonda ve çatlayınca şekli değişiyor.
+       - Anahtar balığın anahtar halkası var, sıralı balıklarda numara var.
+       - Ok, rampa, tabla ve bayrağın yönü şekille gösteriliyor.
+     - **Not:** Yeni görsel üretilmedi; rozet ve çizgi kodla çiziliyor.
 8. [ ] **Hareketi azalt seçeneği.**
    - Ayarlar'a anahtar eklenir; telefonun "hareketi azalt" ayarına da uyar.
    - Açıkken sallanma, zıplama, ekran sarsıntısı ve parçacıklar sadeleşir; oyunun anlaşılması bozulmaz.
@@ -450,3 +461,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `fa9fa8e` Yükleme boyutu: açılış 2,4 → 1,5 MB ham (~0,85 MB sıkıştırılmış).
 - 2026-11-08 · `b13d052` Müzik Web Audio üzerinden (iPhone düzey kaydırıcısı); iki parçanın üst üste çalması düzeltildi.
 - 2026-11-08 · `80a5c19` Uzun oturum: müzik elemanı birikmesi giderildi, adı eksik evcil dost hatası; 20 turda bellek sabit.
+- 2026-11-08 · `09c7e32` Renk körlüğü: plaka kapısı rozeti, kasa hedefi düz çizgi.
