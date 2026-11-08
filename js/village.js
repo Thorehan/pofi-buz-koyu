@@ -96,6 +96,11 @@ const EV_GUEST = [0.68, 0.728];
 const PET_BED = [0.485, 0.64];
 // Dost yatağın üstüne yerleşince ayağının tabandan yüksekliği (u cinsinden; 0: yatak yok, karda kıvrılır).
 const PET_BED_LIFT = [0, 0.01, 0.016, 0.005];
+// Yanında olmayan dostların kendi uyku yerleri (hepsi aynı yatağın yanına yığılmasın):
+// baykuş çam ağacının dalına tüner; diğerleri kendi küçük yataklarında uyur (yatak kademesi ana dostunkiyle aynı).
+// sort: çizim sırası için y (dal, ağacın önünde çizilsin diye ağacın tabanından biraz aşağıda sayılır).
+const PET_PERCH = { at: [0.112, 0.5], sort: 0.605 };
+const PET_NOOKS = [[0.505, 0.84], [0.845, 0.625]]; // kulübe ile buz pisti arası; kale ile kardan adam arası
 // Gezgin tüccar (Buz Limanı): tezgâh rıhtımın sol ucunda, Kaptan Mors tezgâhın sol önünde (arkasında durunca
 // tezgâhtaki mallar onu kapatıyordu; sağ önü kıyıya denk gelir), teknesi limanın sağ ucunda.
 // Tüccarın geldiği günlerde morsun yanındaki h5 süs yeri gizlenir.
@@ -1844,7 +1849,12 @@ export class VillageView {
         this.otherPets.set(kind, st);
       }
       const asleep = !pet.awake || phase === 'night';
-      const tx = asleep ? PET_BED[0] + (i ? 0.11 : -0.11) : st.tx, ty = asleep ? PET_BED[1] + 0.015 : promenadeY(st.tx) + off;
+      // kendi uyku yeri: baykuş dalda, diğerleri sırayla kendi yataklarında
+      const perch = kind === 'owl';
+      const nook = PET_NOOKS[pet.others.filter(k => k !== 'owl').indexOf(kind) % PET_NOOKS.length];
+      const home = perch ? PET_PERCH.at : nook;
+      if (asleep && !perch) items.push([home[1] * H - 1, () => drawPetBed(ctx, home[0] * W, home[1] * H, u, pet.bed)]);
+      const tx = asleep ? home[0] : st.tx, ty = asleep ? home[1] : promenadeY(st.tx) + off;
       const dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy);
       let moving = false;
       if (d > 0.01 && (asleep || st.wait <= 0)) {
@@ -1860,10 +1870,13 @@ export class VillageView {
       if (!asleep) this.petGreet(st, time, pet);
       const pose = asleep && !moving ? 'sleep' : moving ? 'walk' : time < st.play ? 'happy' : 'stand';
       const x = st.x * W, y = st.y * H;
+      // yatağında yatağın içine oturur; dalda ağacın önünde görünür
+      const atHome = pose === 'sleep', lift = atHome && !perch ? PET_BED_LIFT[pet.bed] * u : 0;
+      const sortY = atHome && perch ? PET_PERCH.sort * H : y;
       this.townPos.push(['pet', x, y - size * 0.4, size * 0.7]);
-      items.push([y, () => {
-        drawPet(ctx, x, y, size, { kind, pose, face: st.face, t: time + i, collar: pet.collar });
-        if (pose === 'sleep') zzz(ctx, x + st.face * size * 0.2, y - size * 0.5, u, time + i, '#3f6fa8');
+      items.push([sortY, () => {
+        drawPet(ctx, x, y - lift, size, { kind, pose, face: st.face, t: time + i, collar: pet.collar });
+        if (pose === 'sleep') zzz(ctx, x + st.face * size * 0.2, y - lift - size * 0.5, u, time + i, '#3f6fa8');
       }]);
     });
   }
