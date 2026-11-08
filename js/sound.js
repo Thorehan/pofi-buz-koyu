@@ -4,7 +4,7 @@
 const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];
 
 let ctx = null, master, sfxBus, ambBus, noiseBuf;
-let musicOn = true, musicTrack = null, musicAudio = null, musicFade = 0, musicList = [], musicIdx = 0, musicHeld = 0, musicLevel = 1;
+let musicOn = true, musicTrack = null, musicAudio = null, musicList = [], musicIdx = 0, musicHeld = 0, musicLevel = 1;
 let sfxOn = true, ambientOn = true, ambientWanted = false, ambientNodes = null, dropTimer = 0;
 // Ayarlardaki düzeyler (0-1). Efekt düzeyi kodla üretilen sesleri, jingle'ı ve ortam çanını; müzik düzeyi müziği ölçekler.
 let sfxVol = 1, musicVol = 1;
@@ -33,7 +33,7 @@ function ac() {
 // Tarayıcılar sesi ilk dokunuştan önce başlatmaz; her dokunuşta çağrılır.
 export function unlock() {
   const c = ac();
-  if (c && c.state === 'suspended' && !document.hidden) c.resume().then(syncAmbient);
+  if (c && c.state === 'suspended' && !document.hidden) c.resume().then(() => { syncAmbient(); syncMusic(); });
   syncMusic();
 }
 
@@ -53,7 +53,7 @@ export function configure({ sfx, ambient, music = true, sfxLevel = 1, musicLevel
   musicVol = Math.max(0, Math.min(1, mLevel));
   if (ctx) sfxBus.gain.setTargetAtTime(sfxVol, ctx.currentTime, 0.03);
   // kaydırıcı sürüklenirken müzik anında yeni düzeye geçer (yumuşak geçiş beklenmez)
-  if (mChanged && musicAudio && !musicAudio.paused) { clearInterval(musicFade); musicAudio.volume = musicTarget(); }
+  if (mChanged && musicAudio && !musicAudio.paused) { clearInterval(musicAudio.__fade); setVol(musicAudio, musicTarget()); }
   syncAmbient();
   syncMusic();
 }
@@ -61,12 +61,36 @@ export function configure({ sfx, ambient, music = true, sfxLevel = 1, musicLevel
 // ---------- müzik: dosyadan çalar (ses efektleri gibi kodla üretilmez); ekran değişince yumuşak geçiş ----------
 const MUSIC_VOL = 0.55;
 const musicTarget = () => MUSIC_VOL * musicVol * musicLevel;
+// iPhone Safari müzik elemanının volume değerini yok sayar (hep tam ses): düzey kaydırıcısı, yumuşak geçiş ve
+// jingle sırasında kısma orada çalışmıyordu. Bu yüzden müzik ve jingle elemanları Web Audio'ya bağlanır;
+// düzey elemanın kendi kazanç düğümünden ayarlanır. Bağlanamazsa (eski tarayıcı) eski yol: eleman.volume.
+function wire(a) {
+  if (a.__wired) return;
+  a.__wired = true;
+  const c = ac();
+  if (!c?.createMediaElementSource) return;
+  try {
+    const g = c.createGain();
+    g.gain.value = a.volume;
+    c.createMediaElementSource(a).connect(g);
+    g.connect(c.destination);
+    a.volume = 1;
+    a.__gain = g;
+  } catch { a.__gain = null; }
+}
+const getVol = a => (a.__gain ? a.__gain.gain.value : a.volume);
+function setVol(a, v) {
+  v = Math.max(0, Math.min(1, v));
+  if (a.__gain) { a.__gain.gain.cancelScheduledValues(0); a.__gain.gain.value = v; } else a.volume = v;
+}
 function fadeTo(audio, to, then) {
-  clearInterval(musicFade);
-  musicFade = setInterval(() => {
-    const v = audio.volume + (to > audio.volume ? 0.05 : -0.05);
-    audio.volume = Math.max(0, Math.min(1, v));
-    if (Math.abs(audio.volume - to) < 0.051) { audio.volume = to; clearInterval(musicFade); then?.(); }
+  // Her parçanın kendi zamanlayıcısı: eskiden tek ortak zamanlayıcı vardı; eski parça kısılırken yeni parça
+  // başlarsa kısma iptal oluyor, eski parça o düzeyde çalmaya devam ediyordu (iki parça üst üste).
+  clearInterval(audio.__fade);
+  audio.__fade = setInterval(() => {
+    const cur = getVol(audio);
+    setVol(audio, cur + (to > cur ? 0.05 : -0.05));
+    if (Math.abs(getVol(audio) - to) < 0.051) { setVol(audio, to); clearInterval(audio.__fade); then?.(); }
   }, 40);
 }
 // src: bu ekranın parçası, sırayla çalınacak parça listesi ya da null. Aynı parça sürüyorsa dokunulmaz.
@@ -98,8 +122,12 @@ function syncMusic(instant = false) {
   if (!musicAudio) return;
   if (!musicOn || document.hidden || musicHeld) { musicAudio.pause(); return; }
   // tarayıcı ilk dokunuştan önce izin vermez; unlock() yeniden dener
-  const a = musicAudio, p = a.play();
-  if (p) p.then(() => { if (instant) a.volume = musicTarget(); else fadeTo(a, musicTarget()); }).catch(() => {});
+  const a = musicAudio;
+  if (ctx?.state === 'running') wire(a); // dokunuştan sonra (bağlantı askıdaki sese giderse müzik susar)
+  const p = a.play();
+  // play() sözü geç döner: o arada ekran değişip bu parça kısılmaya başladıysa sesi yeniden açılmaz
+  // (eskiden açılıyordu ve eski parça yenisinin altında çalmaya devam ediyordu).
+  if (p) p.then(() => { if (a !== musicAudio) return; if (instant) setVol(a, musicTarget()); else fadeTo(a, musicTarget()); }).catch(() => {});
 }
 // Reklam sırasında müzik susar; bitince kaldığı yerden yumuşakça döner.
 export function holdMusic(on) {
@@ -119,7 +147,8 @@ export function playJingle(src) {
   const j = jingles[src];
   if (j.readyState < 2) return false;
   j.currentTime = 0;
-  j.volume = 0.8 * sfxVol;
+  wire(j);
+  setVol(j, 0.8 * sfxVol);
   const p = j.play();
   if (!p) return false;
   musicLevel = 0.2;
