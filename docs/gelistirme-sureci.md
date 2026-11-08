@@ -129,3 +129,4 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 - 2026-11-08 · `8c65860` Dokunma alanı ve yazı boyu denetimi: düğmeler en az 40 px, yazılar en az 12 px, 360 px'te taşma yok.
 - 2026-11-08 · `e0a1c77` Performans: kare süreleri ölçüldü (en kötü 2,6 ms), sahne tuvalleri 2x yoğunlukla (boyanan piksel yarıdan az).
 - 2026-11-08 · `a617238` Çevrimdışı ses: müzik önbelleğe alınıyor, parça istekleri önbellekten; duman testine servis çalışanı denetimi eklendi.
+- 2026-11-08 · `f5a75cd` Pofi'nin yolu: altı bölümlük bölge sonu hikâye kartları, Görevler'den yeniden okunur.
