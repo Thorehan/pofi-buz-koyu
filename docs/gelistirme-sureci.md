@@ -178,9 +178,27 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
        - Müzik düzeyi bütün parçalara ve jingle sırasındaki kısmaya uygulanıyor.
      - **Deneme:** Müzik %40'a çekilince parçanın düzeyi 0,55'ten 0,22'ye indi. Köye geçince yeni parça da 0,22 ile başladı. Müzik kapatılınca kaydırıcı soluklaştı ve parça durdu; açılınca kaldığı düzeyden devam etti. 375 px'te taşma yok.
      - **Sınır:** iPhone Safari müzik elemanının ses düzeyini değiştirmeye izin vermiyor, orada müzik kaydırıcısı etkisiz kalabilir; açma/kapama çalışır. Efekt kaydırıcısı Web Audio ile çalıştığı için iPhone'da da etkili. Gerçek telefonda denenmedi.
-6. [ ] **Erişilebilirlik ve klavye.**
+6. [x] **Erişilebilirlik ve klavye.**
    - Yalnızca ikonu olan düğmelere ekran okuyucu etiketi (`aria-label`) eklenir.
    - Masaüstü kısayolları: oklar ve WASD kaydırma (varsa korunur), Z geri al, R baştan, H ipucu, Esc pencere kapatma.
+   - **Yapıldı (2026-11-08):**
+     - **Tarama:** Ana sayfa, harita, oyun, köy (üç sekme ve yapı paneli), mağaza, gardırop ve ayarlar oyun içinde tarandı. İkon setine geçerken araç çubuğu ve geri düğmesi zaten etiketlenmişti.
+     - **Eksikler:**
+       - Haritadaki iki sandık düğmesi etiketsizdi.
+       - Fiyat düğmelerindeki coin, kar tanesi ve ipucu simgeleri okunmuyordu; düğme yalnızca "120" diye okunuyordu.
+       - Köylü listesindeki dostluk düğmesinde yalnızca kalp işaretleri vardı.
+     - **Düzeltmeler:**
+       - Fiyat simgeleri artık "coin 120" diye okunuyor, cüzdan da öyle.
+       - Çizilmiş ikonlar yanlarındaki yazının süsü sayılıp ekran okuyucudan gizlendi.
+       - Dostluk düğmesi "Bobo ile dostluk: 2/3 kalp" diye okunuyor.
+       - Duman testi artık `index.html` ve `main.js` şablonlarında yazısız ve etiketsiz düğme arıyor.
+     - **Klavye:** Oklar ve WASD kaydırma ile Z/Backspace geri alma zaten vardı. Yeni kısayollar:
+       - **R:** Baştan başlatır.
+       - **H:** İpucu verir.
+       - **Esc:** Açık penceredeki Kapat/Sonra/Vazgeç düğmesine basar ya da yapı panelini kapatır.
+       - Pencere açıkken ve yazı kutusunda yazarken oyun tuşları artık çalışmıyor. Eskiden pencere açıkken oklar Pofi'yi arkada kaydırabiliyordu.
+     - **Deneme:** Oyunda sağ/aşağı ile 2 hamle yapıldı. Z geri aldı, R sıfırladı, H bir ipucu harcadı. Pencere açıkken oklar, R ve Z işlemedi; Esc pencereyi ve yapı panelini kapattı; kapanınca oklar yeniden çalıştı. Mağazadaki fiyat düğmesi "coin 50" diye okunuyor.
+     - **Denenmedi:** Gerçek ekran okuyucuyla (TalkBack, VoiceOver) dinleme. Harita ve köy sahnesi tuval olduğu için oradaki level ve yapı seçimleri ekran okuyucuyla yapılamıyor; bu ancak ayrı bir liste görünümüyle çözülür.
 7. [ ] **Geniş ekran düzeni.**
    - 768 px (tablet) ve 1280 px (masaüstü) genişlikte bütün ana ekranlar ölçülür.
    - Düzen ortalanır, gereksiz uzayan ve bozulan yerler düzeltilir; telefon düzeni değişmez.
@@ -230,3 +248,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `e6cf565` Yeni sürüm şeridi: yayına alınan sürüm fark edilince ana sayfada "Yenile".
 - 2026-11-08 · `17a6562` İlk yapı kartı: kar tanesi yetince bir kez "İlk yapını kur", önerilen yapının paneline götürür.
 - 2026-11-08 · `e6438e9` Ses düzeyi ayarları: müzik ve efekt için ayrı kaydırıcı.
+- 2026-11-08 · `483e38b` Erişilebilirlik ve klavye: okunur fiyatlar, etiketler, R/H/Esc kısayolları.
