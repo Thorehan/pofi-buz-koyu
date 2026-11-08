@@ -1193,6 +1193,14 @@ body { background: #8fbfe2; }
 .upd-bar .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
 .upd-x { width: 34px; height: 40px; border: none; background: none; padding: 0; display: grid; place-items: center; cursor: pointer; }
 .upd-x .ui { width: 20px; height: 20px; }
+/* gizli test paneli */
+.dev-sec { display: flex; flex-direction: column; gap: 6px; text-align: left; background: var(--paper-d); border-radius: 12px; padding: 8px 10px; margin: 4px 0; }
+.dev-sec > b { color: var(--wood-d); font-size: 15px; }
+.dev-sec > small { font-size: 12px; color: var(--ink-soft); }
+.dev-sec .field { margin: 0; }
+.dev-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.dev-row .btn { flex: 1 1 auto; min-height: 40px; padding: 0 10px; font-size: 14px; }
+.dev-clock { color: #c0392b; font-size: 12px; }
 /* nasıl oynanır */
 .howto-rules { display: flex; flex-direction: column; gap: 6px; text-align: left; margin: 4px 0 8px; }
 .howto-rules > div { background: var(--paper-d); border-radius: 12px; padding: 6px 10px; }

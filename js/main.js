@@ -1,3 +1,4 @@
+import { clockShift, setDev, shiftText } from './clock.js'; // önce yüklenir: test saati kayması varsa bütün modüller onu görür
 import { setErrContext, errList, errText, clearErrors, logError } from './errlog.js'; // önce yüklenir: açılış hataları da yakalanır
 import { parseLevel, simulate, solve, won, generateLevel, starsFor, T, tileOf } from './engine.js';
 import { BoardView, paintTile } from './board.js';
@@ -3820,6 +3821,43 @@ for (const [id, key] of [['Sfx', 'sfxVol'], ['Music', 'musicVol']]) {
 }
 $('setAmbient').onchange = () => { P.settings.ambient = $('setAmbient').checked; persist(); applySoundSettings(); };
 $('btnReplayIntro').onclick = runIntro;
+
+// Gizli test paneli (Mustafa'nın denge testi için): Ayarlar'ın altındaki sürüm yazısına 3 sn içinde 7 dokunuş.
+// Yalnızca levele gitme, oyunun saatini ileri alma ve kaydı sıfırlama. Coin ya da eşya ekleme yok (her oyuncunun kodunda durur).
+let verTaps = [];
+if ($('aboutVer')) $('aboutVer').onclick = () => {
+  const now = performance.now();
+  verTaps = [...verTaps.filter(t => now - t < 3000), now];
+  const left = 7 - verTaps.length;
+  if (left <= 0) { verTaps = []; showDevPanel(); }
+  else if (left <= 3) toast(`Test paneli: ${left} dokunuş daha`, 900);
+};
+if (clockShift && $('aboutVer')) $('aboutVer').insertAdjacentHTML('beforeend', `<br><b class="dev-clock">Test saati: ${shiftText()}</b>`);
+function showDevPanel() {
+  const when = new Date().toLocaleString('tr-TR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  openOverlay(`
+    <span class="new-tag">TEST PANELİ</span>
+    <h2>Test paneli</h2>
+    <p class="muted">Denge ve test için. Coin ya da eşya eklemez; değişiklikler yalnızca bu cihazda.</p>
+    <div class="dev-sec"><b>Level</b><small>Şu an level ${P.level}</small>
+      <label class="field light"><input id="dvLevel" type="number" inputmode="numeric" min="1" max="1000" value="${P.level}" aria-label="Level numarası"></label>
+      <div class="dev-row"><button id="dvPlay" class="btn primary">Oyna</button><button id="dvMove" class="btn secondary">İlerlemeyi buraya taşı</button></div>
+      <small>Oyna ilerlemeyi değiştirmez (kazanırsan ileri gider). Taşımak açık leveli değiştirir, yıldızlar kalır.</small></div>
+    <div class="dev-sec"><b>Oyunun saati</b><small>${when} · kayma: ${shiftText()}</small>
+      <div class="dev-row">${[['+1 saat', 36e5], ['+6 saat', 216e5], ['+1 gün', 864e5], ['+7 gün', 6048e5]].map(([t, ms]) => `<button class="btn secondary" data-shift="${ms}">${t}</button>`).join('')}</div>
+      <div class="dev-row"><button id="dvClock0" class="btn secondary" ${clockShift ? '' : 'disabled'}>Gerçek saate dön</button></div>
+      <small>Günlük ödül, sipariş, festival, tüccar, gece/gündüz ve kakao birikimi bu saate göre çalışır. Değişince oyun yenilenir.</small></div>
+    <div class="dev-sec"><b>Kayıt</b><div class="dev-row"><button id="dvReset" class="btn secondary">Kaydı sıfırla…</button></div></div>
+    <button id="dvClose" class="btn link">Kapat</button>`, 'dev');
+  const lv = () => Math.max(1, Math.min(1000, Math.floor(+$('dvLevel').value || 0)));
+  $('dvPlay').onclick = () => { const n = lv(); closeOverlay(); track('dev_play', { n }); startLevel(n); };
+  $('dvMove').onclick = () => { const n = lv(); P.level = n; persist(); track('dev_move', { n }); closeOverlay(); toast(`İlerleme level ${n}'e taşındı`); showScreen('home'); };
+  $('overlayCard').querySelectorAll('[data-shift]').forEach(b => { b.onclick = () => { setDev({ shift: clockShift + +b.dataset.shift }); persist(); location.reload(); }; });
+  $('dvClock0').onclick = () => { setDev({ shift: 0 }); persist(); location.reload(); };
+  $('dvReset').onclick = () => $('btnReset').click();
+  $('dvClose').onclick = closeOverlay;
+}
+
 $('btnReset').onclick = () => {
   openOverlay(`<h2>Emin misin?</h2><p>Leveller, coinler, köy ve gardırop silinir. Bu geri alınamaz.</p>
     <button id="rsYes" class="btn primary big" style="background:#e5484d;box-shadow:0 5px 0 #b3363a">Evet, sıfırla</button>
@@ -4235,7 +4273,7 @@ function showStats() {
 $('btnStats').onclick = showStats;
 
 // Hata kaydı: bu cihazda yakalanan hatalar (js/errlog.js). Kopyalanan metin test edene gönderilir.
-setErrContext(() => ({ ekran: screen, level: P?.level, oyun: run && !run.finished ? (run.def?.n ?? null) : null }));
+setErrContext(() => ({ ekran: screen, level: P?.level, oyun: run && !run.finished ? (run.def?.n ?? null) : null, ...(clockShift ? { saat: shiftText() } : {}) }));
 function renderErrCount() {
   const n = errList().length;
   if (!$('errCount')) return; // eski önbellekli HTML'de satır yoksa oyun yine açılsın

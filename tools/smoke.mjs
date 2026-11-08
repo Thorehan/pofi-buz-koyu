@@ -131,6 +131,21 @@ try {
 } catch (e) { fail(`Yedek testi patladı: ${e.message}`); }
 notes.push('Yedek: dolu kayıt koda çevrilip geri açıldı, her alan aynı');
 
+// test saati: kayma yokken Date'e dokunulmaz, kayma varken new Date() ve Date.now() kayar, tarih verilince kaymaz
+try {
+  const RealDate = Date;
+  globalThis.localStorage.setItem('pofi.dev.v1', JSON.stringify({ shift: 864e5 }));
+  const CK = await import(pathToFileURL(rel('js/clock.js')).href + '?kayma');
+  const off = Date.now() - RealDate.now(), nd = new Date().getTime() - RealDate.now(), fixed = new Date(2026, 0, 1).getFullYear();
+  globalThis.Date = RealDate;
+  if (Math.abs(off - 864e5) > 1000 || Math.abs(nd - 864e5) > 1000) fail('Test saati kayması uygulanmadı');
+  if (fixed !== 2026) fail('Test saati verilen tarihi bozdu');
+  if (CK.shiftText(864e5 + 3 * 36e5) !== '+1 gün 3 saat' || CK.shiftText(0) !== 'yok') fail(`Test saati yazısı yanlış: ${CK.shiftText(864e5 + 3 * 36e5)}`);
+  globalThis.localStorage.removeItem('pofi.dev.v1');
+  await import(pathToFileURL(rel('js/clock.js')).href + '?yok');
+  if (Date !== RealDate) fail('Kayma yokken Date değiştirildi');
+} catch (e) { fail(`Test saati denemesi patladı: ${e.message}`); }
+
 // yeni sürüm denetimi: imza dosya değişince değişiyor mu, ağ yokken sessiz mi?
 const UP = await import(pathToFileURL(rel('js/update.js')).href);
 try {
