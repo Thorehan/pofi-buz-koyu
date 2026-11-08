@@ -1078,6 +1078,7 @@ function deliverOrder(i) {
     P.pierFish = Math.max(0, P.pierFish - o.n);
   }
   o.done = true;
+  P.ach.orders = (P.ach.orders || 0) + 1;
   const coins = orderCoins(o), v = VILLAGERS.find(x => x.id === o.giver);
   P.coins += coins;
   let bonus = '';
@@ -2557,6 +2558,12 @@ function gazetteHard() {
   return gzHard.n;
 }
 
+// Gazete için: en çok dostluk puanı olan köylü (hiç puan yoksa null) ve kusursuz bitirilen level sayısı.
+function bestFriend() {
+  const here = villagersHere().filter(v => (P.friends[v.id]?.pts || 0) > 0);
+  return here.sort((a, b) => P.friends[b.id].pts - P.friends[a.id].pts)[0] || null;
+}
+const perfectCount = () => Object.values(P.stars).filter(v => v === 3).length;
 function gazetteNews() {
   const issue = gazetteIssue(), vname = P.villageName || 'Köyümüz', vs = villagersHere().map(v => v.name);
   const who = k => vs.length ? vs[(issue + k) % vs.length] : 'Pofi';
@@ -2572,7 +2579,17 @@ function gazetteNews() {
     vs.length > 1 && `${who(1)} ile ${who(2)} kardan adam yarışması için havuç biriktiriyor.`,
     P.village.lights && 'Fener dizisi geceleri köyü aydınlatıyor; gece yürüyüşleri çok sevildi.',
     `Hava durumu: ${weatherNow().name}. Atkınızı unutmayın!`,
-    festOn() && `${festTheme().name} sürüyor: köy festivale %${Math.floor((ensureFestival().pts / festMax()) * 100)} hazır, ay sonuna ${festDaysLeft()} gün var.`,
+    // oyuncunun kendi verisinden haberler
+    P.ach.orders > 0 && `Sipariş panosu hiç boş kalmıyor: Pofi bugüne dek köylülere ${fmt(P.ach.orders)} sipariş teslim etti.`,
+    bestFriend() && `${bestFriend().name} ile Pofi'nin dostluğu dillere destan (${friendHearts(friendOf(bestFriend().id))}). İkisini en çok iskelede birlikte görüyoruz.`,
+    P.dailyPuzzleStreak >= 3 && P.dailyPuzzleDay >= yesterdayKey() && `Günün bulmacası serisi ${P.dailyPuzzleStreak} güne ulaştı. Bulmaca köşemizin en sadık okuru belli oldu.`,
+    P.pet && (P.ach.feeds || 0) > 0 && `${petInfo().name} bugüne dek ${fmt(P.ach.feeds)} kez beslendi; köyün en tombul dostu seçilmeye aday.`,
+    (P.storySeen?.length || 0) > 0 && P.storySeen.length < STORY.length && `Pofi'nin haritasında sıradaki durak: ${MAP_REGIONS[P.storySeen.length].name}. Köylüler yol hikâyelerini merakla bekliyor.`,
+    perfectCount() >= 10 && `Pofi ${fmt(perfectCount())} leveli kusursuz bitirdi. Buz pistinde ondan hızlısını gören olmadı.`,
+    (P.ach.merchant || 0) > 0 && `Kaptan Mors: "Bu köyle şimdiye dek ${P.ach.merchant} kez alışveriş yaptık. Kuzeyde en sevdiğim liman burası."`,
+    festOn() && (ensureFestival().pts > 0
+      ? `${festTheme().name} sürüyor: köy festivale %${Math.floor((ensureFestival().pts / festMax()) * 100)} hazır, ay sonuna ${festDaysLeft()} gün var.`
+      : `${festTheme().name} başladı! Köy kakao ve balık bağışı bekliyor; ay sonuna ${festDaysLeft()} gün var.`),
   ].filter(Boolean);
   // her sayıda farklı üç haber
   const out = [], n = Math.min(3, lines.length);

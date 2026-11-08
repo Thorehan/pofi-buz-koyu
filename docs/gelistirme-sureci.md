@@ -101,9 +101,15 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Yeniden okuma:** Görevler ekranında okunmuş bölgenin rozetine dokununca bölüm yeniden açılıyor.
      - **Eski kayıtlar:** Geçilmiş bölümler okunmuş sayılıyor, art arda kart çıkmıyor; Görevler'den okunabiliyor.
      - **Not:** Metinler bir öneri. Sen ya da Mustafa değiştirmek isterseniz yalnızca `STORY` düzenlenir.
-9. [ ] **Gazete zenginleştirme.**
+9. [x] **Gazete zenginleştirme.**
    - Haftanın sipariş sayısı, festival durumu, köylü dostlukları ve nadir balık gibi gerçek oyuncu verisinden haberler.
    - Bilmece havuzu genişletilir.
+   - **Yapıldı (2026-11-08):**
+     - **Yeni haber türleri:** Oyuncunun kendi verisinden yedi haber: teslim edilen sipariş sayısı, en yakın köylü dostu ve kalpleri, günlük bulmaca serisi, evcil dostun kaç kez beslendiği, "Pofi'nin yolu"ndaki sıradaki durak, kusursuz bitirilen level sayısı ve Kaptan Mors'tan yapılan alışveriş sayısı.
+     - **Festival haberi:** Puan yokken "%0 hazır" yerine "festival başladı" diyor.
+     - **Sayaç:** Teslim edilen siparişler için yeni sayaç `P.ach.orders`.
+     - **Bilmeceler:** 16'dan 34'e çıktı, tekrar yok; artık 34 haftada bir başa dönüyor.
+     - **Deneme:** Beş farklı haftada gazete açıldı, hata çıkmadı. Her sayı yine üç haber seçiyor.
 10. [ ] **Ayarlar'a "Nasıl oynanır" sayfası.**
     - Mekanikler mevcut karo görselleriyle anlatılır.
     - Her mekanik ilk göründüğü levelden sonra açılır.
