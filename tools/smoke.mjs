@@ -222,7 +222,7 @@ try {
     return body ? new Response(body, { status: 200, headers: { 'Content-Type': 'audio/mp4' } }) : new Response('yok', { status: 404 });
   };
   const stores = new Map();
-  const keyOf = k => (typeof k === 'string' ? k : new URL(k.url).pathname);
+  const keyOf = k => new URL(typeof k === 'string' ? k : k.url, 'http://localhost/').pathname;
   const cachesMock = {
     open: async name => {
       if (!stores.has(name)) stores.set(name, new Map());
@@ -234,7 +234,7 @@ try {
   };
   const handlers = {};
   const selfMock = { addEventListener: (t, fn) => { handlers[t] = fn; }, skipWaiting() {}, clients: { claim: async () => {} } };
-  new Function('self', 'caches', 'fetch', 'location', read('sw.js'))(selfMock, cachesMock, netFetch, { origin: 'http://localhost' });
+  new Function('self', 'caches', 'fetch', 'location', read('sw.js'))(selfMock, cachesMock, netFetch, { origin: 'http://localhost', href: 'http://localhost/sw.js' });
   const fire = async (path, range) => {
     const waits = [];
     let res;
@@ -260,6 +260,30 @@ try {
   const r5 = await fire(P);
   if (r5.status !== 200 || (await r5.arrayBuffer()).byteLength !== size) fail('Ses: çevrimdışı tam dosya isteği hatalı');
   notes.push('Servis çalışanı: ses önbelleğe giriyor, çevrimdışı parça ve tam istekler önbellekten karşılanıyor');
+
+  // İlk açılış çevrimdışı: kurulumda indirilen liste eksiksiz mi, kurulumdan sonra ağ yokken oyun dosyaları geliyor mu?
+  const sw = read('sw.js');
+  const listOf = name => { const a = sw.indexOf(`const ${name} = [`), b = sw.indexOf('];', a); return [...sw.slice(a, b).matchAll(/'([^']+)'/g)].map(m => m[1]); };
+  const core = listOf('CORE'), coreMedia = listOf('CORE_MEDIA');
+  const { readdirSync } = await import('node:fs');
+  for (const f of [...readdirSync(rel('js')).filter(x => x.endsWith('.js')).map(x => `js/${x}`), ...readdirSync(rel('data')).filter(x => x.endsWith('.json')).map(x => `data/${x}`)]) if (!core.includes(f)) fail(`Çevrimdışı listede yok: ${f} (sw.js CORE)`);
+  const artSrc = read('js/art.js');
+  const preArt = [...artSrc.slice(artSrc.indexOf('const PRELOAD'), artSrc.indexOf('];', artSrc.indexOf('const PRELOAD'))).matchAll(/'([a-z_0-9]+)'/g)].map(m => `assets/art/${m[1]}.webp`);
+  const cssArt = [...css.matchAll(/url\(\.\.\/(assets\/[^)]+)\)/g)].map(m => m[1]);
+  for (const f of new Set([...preArt, ...cssArt])) if (!coreMedia.includes(f)) fail(`Çevrimdışı listede yok: ${f} (sw.js CORE_MEDIA)`);
+  for (const f of [...core, ...coreMedia]) if (f !== './' && !existsSync(rel(f))) fail(`Çevrimdışı listedeki dosya yok: ${f}`);
+  // kurulum: sahte ağda bütün dosyalar diskten gelir
+  for (const f of [...core, ...coreMedia]) files['/' + (f === './' ? '' : f)] = readFileSync(rel(f === './' ? 'index.html' : f));
+  online = true;
+  const installWaits = [];
+  handlers.install({ waitUntil: p => installWaits.push(p) });
+  await Promise.all(installWaits);
+  online = false;
+  for (const p of ['/', '/index.html', '/js/main.js', '/js/engine.js', '/data/levels.json', '/css/style.css', `/${coreMedia[coreMedia.length - 1]}`]) {
+    const r = await fire(p);
+    if (!r || r.status !== 200) fail(`Çevrimdışı ilk açılış: ${p} önbellekten gelmedi`);
+  }
+  notes.push(`Çevrimdışı ilk açılış: kurulumda ${core.length} kod ve ${coreMedia.length} görsel dosyası önceden indiriliyor`);
 } catch (e) { fail(`Servis çalışanı testi patladı: ${e.message}`); }
 
 // ---------- sonuç ----------
