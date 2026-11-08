@@ -143,9 +143,15 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Günlük:** "Kare (ekran): mesaj" olarak tek satır yazılıyor. Aynı hata sürerse yeni satır açılmıyor, kare sayacı 5 sn'de bir topluca artıyor; her karede depolamaya yazılmıyor.
      - **Deneme:** Ana sayfada çizime kasıtlı hata verildi. 383 kare boyunca köy sahnesi çizilmeye devam etti, günlükte tek satır ("x295") oluştu, hata bitince Pofi yeniden çizildi.
      - **Not:** Çizim dışındaki hatalar (düğme tıklaması gibi) zaten döngüyü durdurmuyordu; onlar eskisi gibi günlüğe yazılıyor.
-3. [ ] **"Yeni sürüm hazır" bildirimi.**
+3. [x] **"Yeni sürüm hazır" bildirimi.**
    - Servis çalışanı yeni sürümü fark edince oyunda küçük bir "Yeni sürüm hazır · Yenile" şeridi çıkar.
    - Oyun sırasında araya girmez; ana sayfada ya da köyde gösterilir.
+   - **Yapıldı (2026-11-08):**
+     - **Nasıl fark ediliyor:** Sürüm dosyası ya da derleme adımı yok. Oyun açılıştan 8 sn sonra yüklediği kod dosyalarının (html, js, css, json) sunucudaki imzasını alıyor; bunun için HEAD isteği yapıyor, imza ETag ya da tarih ve boyut (`js/update.js`). Sonra uygulama öne gelince (en az 10 dk arayla) ve açık kaldıkça 30 dk'da bir yeniden bakıyor. Bir dosya değişmişse yeni sürüm var demektir. Ağ yoksa denetim sessizce atlanıyor.
+     - **Şerit:** Yalnızca ana sayfada, cüzdanın altında, yan düğmelerin arasında çıkıyor: "Yeni sürüm · Yenile · ×". Köyde göstermekten vazgeçildi, çünkü köy ekranının üstündeki bölge adının üstüne biniyordu. Alt kısma koymak da denendi, orada Oyna düğmesini kapatıyordu.
+     - **Düğmeler:** "Yenile" kaydı yazıp sayfayı yeniden yüklüyor; servis çalışanı kodu ağdan aldığı için yeni sürüm açılıyor. Çarpı şeridi bu oturum için gizliyor.
+     - **Deneme:** Yerel sunucuda bir dosyanın tarihi değiştirildi. Şerit ana sayfada çıktı, köy ve mağazada gizlendi, ana sayfaya dönünce yine göründü. Çarpı gizledi, Yenile sayfayı yeniledi. Duman testi imzanın dosya değişince değiştiğini ve ağ yokken sessiz kaldığını sahte ağla deniyor.
+     - **Denenmedi:** GitHub Pages'te gerçek yayın sonrası, yani ETag ile deneme. Bir sonraki gönderimden sonra telefonda açık kalan oyunda görülebilir.
 
 **Oyuncu deneyimi**
 
