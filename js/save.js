@@ -40,7 +40,7 @@ function defaults() {
     priceRamp: null, // { day, pack, route, moves5 } — bugün coin'le alınan adetler (PRICE_RAMP)
     villageName: null, // köy ekranına ilk girişte sorulur; ilk isim ücretsiz, değiştirmek VILLAGE_RENAME_PRICE
     task: null, // { day, type, need, have, giver, claimed } — köylünün günlük işi
-    settings: { haptics: true, sfx: true, ambient: true, music: true },
+    settings: { haptics: true, sfx: true, ambient: true, music: true, sfxVol: 100, musicVol: 100 }, // düzeyler 0-100
     sides: {}, // { yan yol sırası: en iyi yıldız }
     goalsSeen: [], // anlatılmış hedef türleri
     friends: {}, // { köylü: { pts, ch: okunan bölüm, talk: gün, gift: gün } }

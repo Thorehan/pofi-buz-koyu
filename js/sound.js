@@ -6,6 +6,8 @@ const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 15
 let ctx = null, master, sfxBus, ambBus, noiseBuf;
 let musicOn = true, musicTrack = null, musicAudio = null, musicFade = 0, musicList = [], musicIdx = 0, musicHeld = 0, musicLevel = 1;
 let sfxOn = true, ambientOn = true, ambientWanted = false, ambientNodes = null, dropTimer = 0;
+// Ayarlardaki düzeyler (0-1). Efekt düzeyi kodla üretilen sesleri, jingle'ı ve ortam çanını; müzik düzeyi müziği ölçekler.
+let sfxVol = 1, musicVol = 1;
 
 function ac() {
   if (!ctx) {
@@ -16,6 +18,7 @@ function ac() {
     master.gain.value = 0.9;
     master.connect(ctx.destination);
     sfxBus = ctx.createGain();
+    sfxBus.gain.value = sfxVol;
     sfxBus.connect(master);
     ambBus = ctx.createGain();
     ambBus.gain.value = 0;
@@ -41,16 +44,23 @@ document.addEventListener('visibilitychange', () => {
 });
 document.addEventListener('visibilitychange', () => syncMusic());
 
-export function configure({ sfx, ambient, music = true }) {
+export function configure({ sfx, ambient, music = true, sfxLevel = 1, musicLevel: mLevel = 1 }) {
   sfxOn = sfx;
   ambientOn = ambient;
   musicOn = music;
+  sfxVol = Math.max(0, Math.min(1, sfxLevel));
+  const mChanged = musicVol !== mLevel;
+  musicVol = Math.max(0, Math.min(1, mLevel));
+  if (ctx) sfxBus.gain.setTargetAtTime(sfxVol, ctx.currentTime, 0.03);
+  // kaydırıcı sürüklenirken müzik anında yeni düzeye geçer (yumuşak geçiş beklenmez)
+  if (mChanged && musicAudio && !musicAudio.paused) { clearInterval(musicFade); musicAudio.volume = musicTarget(); }
   syncAmbient();
   syncMusic();
 }
 
 // ---------- müzik: dosyadan çalar (ses efektleri gibi kodla üretilmez); ekran değişince yumuşak geçiş ----------
 const MUSIC_VOL = 0.55;
+const musicTarget = () => MUSIC_VOL * musicVol * musicLevel;
 function fadeTo(audio, to, then) {
   clearInterval(musicFade);
   musicFade = setInterval(() => {
@@ -89,7 +99,7 @@ function syncMusic(instant = false) {
   if (!musicOn || document.hidden || musicHeld) { musicAudio.pause(); return; }
   // tarayıcı ilk dokunuştan önce izin vermez; unlock() yeniden dener
   const a = musicAudio, p = a.play();
-  if (p) p.then(() => { if (instant) a.volume = MUSIC_VOL * musicLevel; else fadeTo(a, MUSIC_VOL * musicLevel); }).catch(() => {});
+  if (p) p.then(() => { if (instant) a.volume = musicTarget(); else fadeTo(a, musicTarget()); }).catch(() => {});
 }
 // Reklam sırasında müzik susar; bitince kaldığı yerden yumuşakça döner.
 export function holdMusic(on) {
@@ -109,18 +119,18 @@ export function playJingle(src) {
   const j = jingles[src];
   if (j.readyState < 2) return false;
   j.currentTime = 0;
-  j.volume = 0.8;
+  j.volume = 0.8 * sfxVol;
   const p = j.play();
   if (!p) return false;
   musicLevel = 0.2;
-  if (musicAudio && !musicAudio.paused) fadeTo(musicAudio, MUSIC_VOL * musicLevel);
-  const back = () => { musicLevel = 1; if (musicAudio && !musicAudio.paused) fadeTo(musicAudio, MUSIC_VOL); };
+  if (musicAudio && !musicAudio.paused) fadeTo(musicAudio, musicTarget());
+  const back = () => { musicLevel = 1; if (musicAudio && !musicAudio.paused) fadeTo(musicAudio, musicTarget()); };
   j.onended = back;
   p.catch(back);
   return true;
 }
 
-const ready = () => sfxOn && ctx && ctx.state === 'running';
+const ready = () => sfxOn && sfxVol > 0 && ctx && ctx.state === 'running';
 
 function tone(freq, { type = 'sine', dur = 0.3, vol = 0.2, attack = 0.005, when = 0, slideTo = 0, dest = sfxBus } = {}) {
   const t = ctx.currentTime + when;
@@ -316,7 +326,7 @@ function syncAmbient() {
   }
   const t = ctx.currentTime;
   ambBus.gain.cancelScheduledValues(t);
-  ambBus.gain.setTargetAtTime(want ? 1 : 0, t, 0.4);
+  ambBus.gain.setTargetAtTime(want ? sfxVol : 0, t, 0.4);
   if (!want && ambientNodes) {
     ambientNodes = null;
     clearTimeout(dropTimer);

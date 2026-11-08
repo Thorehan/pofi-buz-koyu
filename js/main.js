@@ -99,7 +99,8 @@ village.onTown = k => {
 };
 board.outfit = P.outfit;
 
-const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false, music: P.settings.music !== false });
+const volOf = k => Math.max(0, Math.min(100, Number.isFinite(P.settings[k]) ? P.settings[k] : 100));
+const applySoundSettings = () => configureSound({ sfx: P.settings.sfx !== false, ambient: P.settings.ambient !== false, music: P.settings.music !== false, sfxLevel: volOf('sfxVol') / 100, musicLevel: volOf('musicVol') / 100 });
 applySoundSettings();
 loadArt();
 setArtEnabled(P.settings.art !== false);
@@ -3757,6 +3758,7 @@ function renderSettings() {
   $('setSfx').checked = P.settings.sfx !== false;
   $('setAmbient').checked = P.settings.ambient !== false;
   $('setMusic').checked = P.settings.music !== false;
+  renderVolumes();
   $('setMusic').closest('.set-row').classList.toggle('hidden', !MUSIC.home);
   $('setArt').checked = P.settings.art !== false;
   $('setAccount').textContent = { guest: 'Misafir', google: 'Google', apple: 'Apple' }[P.profile?.method] || 'Misafir';
@@ -3800,9 +3802,21 @@ $('setHaptics').onchange = () => {
   persist();
   if (P.settings.haptics) navigator.vibrate?.(20);
 };
-$('setSfx').onchange = () => { P.settings.sfx = $('setSfx').checked; persist(); applySoundSettings(); sfx.ui(); };
+$('setSfx').onchange = () => { P.settings.sfx = $('setSfx').checked; persist(); applySoundSettings(); sfx.ui(); renderVolumes(); };
 $('setArt').onchange = () => { P.settings.art = $('setArt').checked; persist(); setArtEnabled(P.settings.art); };
-$('setMusic').onchange = () => { P.settings.music = $('setMusic').checked; persist(); applySoundSettings(); };
+$('setMusic').onchange = () => { P.settings.music = $('setMusic').checked; persist(); applySoundSettings(); renderVolumes(); };
+// Ses düzeyleri: sürüklerken anında uygulanır, bırakınca kaydedilir. Efekt düzeyinde örnek ses çalar.
+function renderVolumes() {
+  for (const [id, key, on] of [['Sfx', 'sfxVol', 'sfx'], ['Music', 'musicVol', 'music']]) {
+    $('vol' + id).value = volOf(key);
+    $('vol' + id + 'Val').textContent = `%${volOf(key)}`;
+    $('row' + id + 'Vol').classList.toggle('off', P.settings[on] === false);
+  }
+}
+for (const [id, key] of [['Sfx', 'sfxVol'], ['Music', 'musicVol']]) {
+  $('vol' + id).oninput = () => { P.settings[key] = +$('vol' + id).value; $('vol' + id + 'Val').textContent = `%${P.settings[key]}`; applySoundSettings(); };
+  $('vol' + id).onchange = () => { persist(); if (id === 'Sfx') sfx.ui(); track('volume', { kind: key, v: P.settings[key] }); };
+}
 $('setAmbient').onchange = () => { P.settings.ambient = $('setAmbient').checked; persist(); applySoundSettings(); };
 $('btnReplayIntro').onclick = runIntro;
 $('btnReset').onclick = () => {

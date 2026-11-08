@@ -728,6 +728,11 @@ img.tok.sm { width: 18px; height: 18px; vertical-align: -4px; }
 .set-row input:not(.switch):focus { border-color: var(--primary); }
 .set-row.action { cursor: pointer; color: var(--blue-d); }
 .set-row.danger { color: #e5484d; }
+/* ses düzeyi kaydırıcıları (ilgili anahtarın altında, kapalıyken soluk) */
+.set-row.vol-row { min-height: 48px; padding-left: 44px; font-size: 14px; color: var(--ink-soft); }
+.set-row input.vol { flex: 1; width: auto; min-width: 0; height: 40px; padding: 0; border: none; background: none; accent-color: var(--primary); cursor: pointer; }
+.set-row .vol-val { width: 40px; text-align: right; font-size: 14px; color: var(--ink-soft); font-weight: 600; }
+.set-row.vol-row.off { opacity: .45; }
 .muted { color: var(--ink-soft); }
 .switch { appearance: none; -webkit-appearance: none; width: 50px; height: 30px; border-radius: 15px; background: #c9d6e3; position: relative; cursor: pointer; transition: background .2s; flex: none; margin: 0; }
 .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s; }

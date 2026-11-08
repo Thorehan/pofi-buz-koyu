@@ -222,7 +222,9 @@
     <div class="set-group">
       <label class="set-row"><span>Oyuncu adı</span><input id="setName" maxlength="16" autocomplete="nickname"></label>
       <label class="set-row"><span><i class="ui ui-sound"></i>Ses efektleri</span><input type="checkbox" id="setSfx" class="switch"></label>
+      <label class="set-row vol-row" id="rowSfxVol"><span>Efekt düzeyi</span><input type="range" id="volSfx" class="vol" min="0" max="100" step="5" aria-label="Ses efektleri düzeyi"><b id="volSfxVal" class="vol-val"></b></label>
       <label class="set-row"><span><i class="ui ui-music"></i>Müzik</span><input type="checkbox" id="setMusic" class="switch"></label>
+      <label class="set-row vol-row" id="rowMusicVol"><span>Müzik düzeyi</span><input type="range" id="volMusic" class="vol" min="0" max="100" step="5" aria-label="Müzik düzeyi"><b id="volMusicVal" class="vol-val"></b></label>
       <label class="set-row"><span><i class="ui ui-sound"></i>Ortam sesi <small class="muted">(rüzgâr çanı)</small></span><input type="checkbox" id="setAmbient" class="switch"></label>
       <label class="set-row"><span><i class="ui ui-photo"></i>Yeni görseller <small class="muted">(test)</small></span><input type="checkbox" id="setArt" class="switch"></label>
       <label class="set-row"><span><i class="ui ui-vibrate"></i>Titreşim</span><input type="checkbox" id="setHaptics" class="switch"></label>
