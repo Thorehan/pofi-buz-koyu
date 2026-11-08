@@ -27,7 +27,7 @@ import {
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, FRIEND, VILLAGER_LIFE, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
-  SIDE_LEVELS, SIDE_REWARD, GOALS, ORDERS, PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
+  SIDE_LEVELS, SIDE_REWARD, GOALS, ORDERS, FESTIVAL, PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
 import { sfx, unlock, configure as configureSound, setAmbient, setMusic, playJingle, preloadJingle } from './sound.js';
 
@@ -1087,6 +1087,120 @@ function deliverOrder(i) {
   toast(`${v.name}: "Çok teşekkürler!" · +${coins} coin${bonus}`, 2600);
   if (screen === 'village') renderVillage();
 }
+// ---------- Köy festivali (aylık) ----------
+const monthKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+const festTheme = () => { const d = new Date(); return FESTIVAL.themes[(d.getFullYear() * 12 + d.getMonth()) % FESTIVAL.themes.length]; };
+const festMax = () => FESTIVAL.stages[FESTIVAL.stages.length - 1].pts;
+const festDaysLeft = () => { const d = new Date(), end = new Date(d.getFullYear(), d.getMonth() + 1, 1); return Math.max(1, Math.ceil((end - d) / 864e5)); };
+const festOn = () => villageLevel(P) >= FESTIVAL.vl;
+const festRare = () => MERCHANT_DECOR.find(d => !P.decorOwned.includes(d.id)) || null;
+const festStage = pts => FESTIVAL.stages.filter(s => pts >= s.pts).length;
+function festGrant(i) {
+  const F = P.festival, s = FESTIVAL.stages[i];
+  F.claimed[i] = true;
+  giveReward(s.reward);
+  let extra = '';
+  if (s.reward.rare) {
+    const d = festRare();
+    if (d) { P.decorOwned.push(d.id); extra = d.name; } else { P.coins += FESTIVAL.rareCoins; extra = `${FESTIVAL.rareCoins} coin`; }
+  }
+  if (i === FESTIVAL.stages.length - 1) P.ach.festivals = (P.ach.festivals || 0) + 1;
+  return extra;
+}
+function ensureFestival() {
+  if (!festOn()) return null;
+  const month = monthKey();
+  if (P.festival?.month === month) return P.festival;
+  // geçen ayın ulaşılmış ama alınmamış ödülleri kaybolmaz
+  if (P.festival) {
+    let n = 0;
+    FESTIVAL.stages.forEach((s, i) => { if (P.festival.pts >= s.pts && !P.festival.claimed[i]) { festGrant(i); n++; } });
+    if (n) setTimeout(() => toast(`Geçen ayın festivalinden ${n} ödül hesabına eklendi`, 3000), 3200);
+  }
+  P.festival = { month, pts: 0, claimed: FESTIVAL.stages.map(() => false), given: { cups: 0, fish: 0, coins: 0 } };
+  save(P);
+  return P.festival;
+}
+const festClaimable = () => { const F = ensureFestival(); return !!F && FESTIVAL.stages.some((s, i) => F.pts >= s.pts && !F.claimed[i]); };
+// Bağışlanabilir stok: açık siparişlere yetecek kadarı ayrılır.
+const festFree = kind => Math.max(0, orderStock(kind) - (ordersOn() ? orderList().filter(o => !o.done && o.kind === kind).reduce((a, o) => a + o.n, 0) : 0));
+function festGive(kind) {
+  const F = ensureFestival();
+  if (!F || F.pts >= festMax()) return;
+  let pts = 0;
+  if (kind === 'coins') {
+    const n = FESTIVAL.coinStep;
+    if (P.coins < n) return;
+    P.coins -= n;
+    F.given.coins += n;
+    pts = Math.round(n / FESTIVAL.coinPerPt);
+  } else {
+    const n = festFree(kind);
+    if (n < 1 || !bLevel(P, kind === 'cups' ? 'cocoa' : 'pier')) return;
+    if (kind === 'cups') { P.cocoaCups = cocoaNow() - n; P.cocoaTs = Date.now(); } else { bankPier(); P.pierFish = Math.max(0, P.pierFish - n); }
+    F.given[kind] += n;
+    pts = n * FESTIVAL.points[kind];
+  }
+  const before = festStage(F.pts);
+  F.pts = Math.min(festMax(), F.pts + pts);
+  save(P);
+  track('festival_give', { kind, pts, total: F.pts });
+  updateWallet();
+  sfx.coin();
+  if (festStage(F.pts) > before) {
+    sfx.reward();
+    toast(`${festTheme().name}: ${festStage(F.pts)}. aşamaya ulaşıldı! Ödülünü al`, 2600);
+    village.sparkleAt(0.48, 0.5);
+  } else toast(`+${pts} festival puanı`);
+  if (screen === 'village') renderVillage();
+  showFestival();
+}
+function festClaim(i) {
+  const F = ensureFestival(), s = FESTIVAL.stages[i];
+  if (!F || F.claimed[i] || F.pts < s.pts) return;
+  const extra = festGrant(i);
+  save(P);
+  track('festival_claim', { stage: i + 1 });
+  updateWallet();
+  sfx.reward();
+  toast(`Festival ödülü: ${[rewardText(s.reward), extra].filter(Boolean).join(' · ')}`, 2800);
+  if (screen === 'village') renderVillage();
+  showFestival();
+}
+const rewardText = r => [r.coins && `${r.coins} coin`, r.hints && `${r.hints} ipucu`, r.flakes && `${r.flakes} kar tanesi`].filter(Boolean).join(', ');
+function showFestival() {
+  const F = ensureFestival();
+  if (!F) return;
+  const th = festTheme(), max = festMax(), rare = festRare();
+  const stages = FESTIVAL.stages.map((s, i) => {
+    const got = F.claimed[i], ok = F.pts >= s.pts;
+    const rw = `${rewardHtml(s.reward)}${s.reward.rare ? ` <b>+ ${rare ? `nadir süs: ${rare.name}` : `${FESTIVAL.rareCoins} coin`}</b>` : ''}`;
+    const act = got ? '<span class="check">✓</span>' : ok ? `<button class="btn green" data-fc="${i}">Al</button>` : `<small class="muted">${s.pts} puan</small>`;
+    return `<div class="ev-step${got ? ' done' : ''}"><span class="pts">${i + 1}</span><span class="rw">${rw}</span>${act}</div>`;
+  }).join('');
+  const done = F.pts >= max;
+  const cups = bLevel(P, 'cocoa') ? festFree('cups') : -1, fish = bLevel(P, 'pier') ? festFree('fish') : -1;
+  const give = done ? '<small class="breakdown">Bu ayın festivali tamam. Gelecek ay yeni tema gelir.</small>' : `<div class="fest-give">
+      ${cups >= 0 ? `<button class="btn secondary" data-fg="cups" ${cups < 1 ? 'disabled' : ''}>☕ Kakao ver · ${cups} fincan <small>+${cups * FESTIVAL.points.cups}</small></button>` : ''}
+      ${fish >= 0 ? `<button class="btn secondary" data-fg="fish" ${fish < 1 ? 'disabled' : ''}>${ui('fish')} Balık ver · ${fish} balık <small>+${fish * FESTIVAL.points.fish}</small></button>` : ''}
+      <button class="btn secondary" data-fg="coins" ${P.coins < FESTIVAL.coinStep ? 'disabled' : ''}>${coinIco}${FESTIVAL.coinStep} coin ver <small>+${Math.round(FESTIVAL.coinStep / FESTIVAL.coinPerPt)}</small></button>
+    </div>
+    <small class="breakdown">Siparişler için gereken kakao ve balık ayrılır, yalnızca fazlası bağışlanır.</small>`;
+  openOverlay(`
+    <span class="new-tag">KÖY FESTİVALİ</span>
+    <h2>${th.name}</h2>
+    <p>${th.text}</p>
+    <div class="fest-bar"><div class="progress"><div style="width:${(F.pts / max) * 100}%;height:100%;background:var(--green)"></div></div>
+      ${FESTIVAL.stages.map(s => `<i style="left:${(s.pts / max) * 100}%" class="${F.pts >= s.pts ? 'on' : ''}"></i>`).join('')}</div>
+    <small class="breakdown"><b>${F.pts}</b> / ${max} puan · ay sonuna ${festDaysLeft()} gün</small>
+    <div class="fest-stages">${stages}</div>
+    ${give}
+    <button id="fsClose" class="btn link">Kapat</button>`);
+  $('fsClose').onclick = closeOverlay;
+  $('overlayCard').querySelectorAll('[data-fg]').forEach(b => { b.onclick = () => festGive(b.dataset.fg); });
+  $('overlayCard').querySelectorAll('[data-fc]').forEach(b => { b.onclick = () => festClaim(+b.dataset.fc); });
+}
+
 function showOrders() {
   const list = orderList();
   if (!list.length) return;
@@ -1262,7 +1376,7 @@ function renderVillage() {
   $('vTabs').classList.toggle('hidden', lifeCount === 0);
   // Kakao satış düğmesi Köy hayatı'nda: stant yarıdan fazla dolunca sekmede işaret çıkar.
   const cocoaFull = cocoaRate() > 0 && cocoaNow() >= cocoaCap() / 2;
-  const dotsOn = { build: canAffordAny(P) || districtReady(), life: villagersHere().some(v => friendReady(v.id)) || cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || ordersReady() > 0 || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
+  const dotsOn = { build: canAffordAny(P) || districtReady(), life: villagersHere().some(v => friendReady(v.id)) || cocoaFull || (P.level > 5 && gazetteUnread()) || (!!merchantToday() && (P.land || 1) >= 2) || homesReady().length > 0 || recipeReady() || taskDone() || guestDone() || ordersReady() > 0 || festClaimable() || !!(P.pet && !petFedToday(P) && petFood() >= PET.feedFish), proj: false };
   $('vTabs').querySelectorAll('.vtab').forEach(b => {
     const k = b.dataset.vt;
     b.classList.toggle('hidden', !tabs[k]);
@@ -2123,6 +2237,13 @@ function townCards() {
     const first = list.find(o => !o.done), fv = first && VILLAGERS.find(x => x.id === first.giver);
     cards.unshift(`<button class="b-card district town${rd ? ' ready' : ''}" data-town="orders"><b>${ui('villagers')} Sipariş panosu · ${list.length - left}/${list.length}</b><small>${left ? `${fv.name} ${first.n} ${ORDERS.kinds[first.kind].name} istiyor${left > 1 ? ` · ${left - 1} sipariş daha` : ''}` : 'Bugünün siparişleri tamam · yarın yenileri gelir'}</small><span class="act">${rd ? `${rd} hazır` : left ? 'Bak' : '✓'}</span>${rd ? '<i class="dot"></i>' : ''}</button>`);
   }
+  if (festOn()) {
+    const F = ensureFestival(), th = festTheme(), cl = festClaimable(), st = festStage(F.pts), next = FESTIVAL.stages[st];
+    cards.splice(ordersOn() ? 1 : 0, 0, `<button class="b-card district town${cl ? ' ready' : ''}" data-town="festival"><b>${ui('event')} ${th.name}</b>
+      <div class="progress slim"><div style="width:${Math.min(100, (F.pts / festMax()) * 100)}%"></div></div>
+      <small>Köy festivali · ${F.pts}/${festMax()} puan · ay sonuna ${festDaysLeft()} gün${next ? ` · sıradaki ödül ${next.pts} puanda` : ' · tamamlandı'}</small>
+      <span class="act">${cl ? 'Ödül hazır' : next ? 'Katıl' : '✓'}</span>${cl ? '<i class="dot"></i>' : ''}</button>`);
+  }
   const vl = villageLevel(P);
   if (P.pet) {
     const fed = petFedToday(P), canFeed = !fed && petFood() >= PET.feedFish;
@@ -2150,6 +2271,7 @@ function openTown(k) {
   else if (k === 'market') showMarket();
   else if (k === 'pet') showPet();
   else if (k === 'orders') showOrders();
+  else if (k === 'festival') showFestival();
   else if (k.startsWith('proj:')) { village.goPanel(2); showProject(k.slice(5)); }
 }
 
@@ -2163,6 +2285,7 @@ const UNLOCKS = [
   { id: 'forest', when: () => (P.land || 1) === 2 && villageLevel(P) >= DISTRICTS[2].vl, ico: 'project', title: 'Çam Ormanı', text: 'Yeni arazi açılabilir. Köy projelerine coin yatırırsın, biten proje kalıcı bonus verir.', go: () => { villageTab = 'build'; showScreen('village'); village.goPanel(2); } },
   { id: 'sides', when: () => P.level > SIDE_LEVELS.every, ico: 'tab_village', title: 'Yan yollar', text: 'Haritada yolun kenarında tabelalar belirdi. Her biri farklı hedefli, isteğe bağlı bir bulmaca: eve dön, kasayı yerleştir, buzları kır.', go: () => showScreen('map') },
   { id: 'orders', when: ordersOn, ico: 'villagers', title: 'Sipariş panosu', text: 'Köylüler her gün sipariş veriyor: stanttan kakao, iskeleden balık. Teslim et, coin ve dostluk kazan. Köyde siparişi olan köylünün üstünde işaret çıkar.', go: () => { showScreen('village'); showOrders(); } },
+  { id: 'festival', when: festOn, ico: 'event', title: 'Köy festivali', text: 'Her ay yeni bir festival! Stanttaki kakaoyu, iskelenin balığını ya da coin bağışla, köy puan toplasın. Son aşamada nadir bir süs kazanırsın.', go: () => { showScreen('village'); showFestival(); } },
   { id: 'master', when: () => P.level > MASTER_LEVELS[0].after, ico: 'castle', title: 'Usta kalesi', text: 'Haritada bölge sonunda bir buz kalesi belirdi. Çok zor ama ödülü ve rozeti özel.', go: () => showScreen('map') },
 ];
 // Eski kayıtlar: zaten açık olanlar için kart çıkmaz.
@@ -2241,6 +2364,7 @@ function renderTownStrip() {
   if (merchantToday() && (P.land || 1) >= 2) { html = `${ui('merchant')} <b>Gezgin tüccar bugün limanda</b>`; go = 'merchant'; }
   else if (gazetteUnread() && P.level > 5) { html = `${ui('gazette')} <b>Köy Gazetesi · Sayı ${gazetteIssue()} çıktı</b>`; go = 'gazette'; }
   else if (P.pet && !petFedToday(P) && petFood() >= PET.feedFish) { html = `${ui('pet')} <b>${esc(petInfo().name)} acıktı</b>`; go = 'pet'; }
+  else if (festOn() && festClaimable()) { html = `${ui('event')} <b>${festTheme().name}: ödül hazır</b>`; go = 'festival'; }
   else if (ordersOn() && ordersReady()) { html = `${ui('villagers')} <b>${ordersReady()} sipariş teslime hazır</b>`; go = 'orders'; }
   el.classList.toggle('hidden', !go);
   if (!go) return;
@@ -2406,6 +2530,7 @@ function gazetteNews() {
     vs.length > 1 && `${who(1)} ile ${who(2)} kardan adam yarışması için havuç biriktiriyor.`,
     P.village.lights && 'Fener dizisi geceleri köyü aydınlatıyor; gece yürüyüşleri çok sevildi.',
     `Hava durumu: ${weatherNow().name}. Atkınızı unutmayın!`,
+    festOn() && `${festTheme().name} sürüyor: köy festivale %${Math.floor((ensureFestival().pts / festMax()) * 100)} hazır, ay sonuna ${festDaysLeft()} gün var.`,
   ].filter(Boolean);
   // her sayıda farklı üç haber
   const out = [], n = Math.min(3, lines.length);
@@ -4094,6 +4219,7 @@ function frame(now) {
 
 noteAway();
 if (bLevel(P, 'pier') && !P.pierTs) bankPier(); // eski kayıtlarda iskele bugünden itibaren tutar
+ensureFestival(); // ay değiştiyse geçen ayın kalan ödülleri verilir
 updateWallet();
 requestAnimationFrame(frame);
 boot();

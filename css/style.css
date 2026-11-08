@@ -1160,6 +1160,18 @@ body { background: #8fbfe2; }
 .sheet-x, .hb-x { font-size: 0 !important; background: var(--paper-d) url(../assets/art/ui_close.webp) center/18px no-repeat !important; }
 /* reklam düğmesi: film ikonu ve küçük yazı */
 .btn.ad::before { padding-left: 20px; background: rgba(0, 0, 0, .22) url(../assets/art/ui_ad.webp) 2px center/16px no-repeat; }
+/* köy festivali */
+.fest-bar { position: relative; margin: 10px 4px 4px; }
+.fest-bar .progress { margin: 0; height: 12px; }
+.fest-bar i { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--paper-d); border: 2px solid var(--wood); }
+.fest-bar i.on { background: #ffc23a; }
+.fest-bar i:last-child { margin-left: -14px; }
+.fest-stages { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; text-align: left; }
+.fest-stages .ev-step .rw { font-size: 13px; }
+.fest-give { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.fest-give .btn { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.fest-give .btn small { opacity: .75; font-weight: 600; }
+.fest-give .ui { width: 20px; height: 20px; }
 /* sipariş panosu */
 .ord-stock { font-size: 13px; color: var(--wood-d); background: var(--paper-d); border-radius: 10px; padding: 6px 10px; margin: 6px 0; }
 .ord-stock .ui { width: 18px; height: 18px; vertical-align: -4px; }

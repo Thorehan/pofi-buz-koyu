@@ -535,6 +535,7 @@ export const ACHIEVEMENTS = [
   { id: 'projects', ui: 'project', name: 'Köy mimarı', icon: '🏗️', stat: 'projects', text: n => `${n} köy projesi tamamla`, tiers: [1, 2, 3] },
   { id: 'sides', ui: 'tab_village', name: 'Yan yol kâşifi', icon: '🪧', stat: 'sides', text: n => `${n} yan yol bulmacası bitir`, tiers: [5, 15, 40] },
   { id: 'friends', ui: 'emote', name: 'Köyün sevgilisi', icon: '💛', stat: 'friends', text: n => `${n} köylünün hikâyesini bitir`, tiers: [1, 3, 6] },
+  { id: 'festivals', ui: 'event', name: 'Festival ruhu', icon: '🎉', stat: 'festivals', text: n => `${n} köy festivalini son aşamaya taşı`, tiers: [1, 3, 6] },
   { id: 'merchant', ui: 'merchant', name: 'Tüccar dostu', icon: '⛵', stat: 'merchant', text: n => `Kaptan Mors'tan ${n} kez alışveriş yap`, tiers: [5, 20, 50] },
 ];
 // Günlük görevler: her gün tarihe göre 3 görev seçilir (herkeste aynı gün aynı görevler). needs: o özellik açık değilse seçilmez.
@@ -695,6 +696,25 @@ export const ORDERS = {
     cups: { needs: 'cocoa', min: 4, max: 14, capShare: 0.5, coinPer: 9, name: 'fincan kakao' },
     fish: { needs: 'pier', min: 2, max: 6, capShare: 0.4, coinPer: 25, name: 'balık' },
   },
+};
+
+// Köy festivali: her ay bir tema. Köy hep birlikte puan toplar: stanttan kakao, iskeleden balık ya da coin bağışı.
+// Üç aşama; sonuncusu oyuncunun henüz sahip olmadığı nadir bir süs (tüccar süslerinden). Hepsi sahipliyse rareCoins.
+// Ay bitince ulaşılmış ama alınmamış ödüller kendiliğinden verilir. Puan ve aşamaların dengesi Mustafa'da.
+export const FESTIVAL = {
+  vl: 4,
+  points: { cups: 1, fish: 4 }, coinPerPt: 10, coinStep: 200, rareCoins: 1500,
+  stages: [
+    { pts: 150, reward: { flakes: 3 } },
+    { pts: 400, reward: { hints: 2, flakes: 4 } },
+    { pts: 800, reward: { flakes: 5, rare: true } },
+  ],
+  themes: [
+    { id: 'lantern', name: 'Fener Şenliği', text: 'Köy en uzun geceye fenerlerle hazırlanıyor. Kakao ve balıkla şenliği büyüt.' },
+    { id: 'fish', name: 'Balık Bayramı', text: 'İskele bayram yeri gibi. Köylüler en büyük balık sofrasını kurmak istiyor.' },
+    { id: 'ice', name: 'Buz Heykeli Şöleni', text: 'Meydanda buz heykelleri yontuluyor. Yontucuları sıcak kakao ve balıkla doyur.' },
+    { id: 'sled', name: 'Kızak Günleri', text: 'Tepeden kızak yarışları başladı. Seyircilere kakao, kızakçılara balık lazım.' },
+  ],
 };
 
 // Müzik (Mustafa, docs/pofi-muzik-suno.html). Hepsi -16 LUFS'a eşitlendi, AAC 112 kbps (assets/music).

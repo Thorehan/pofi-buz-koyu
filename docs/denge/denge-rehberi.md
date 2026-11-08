@@ -138,3 +138,12 @@ Köylüler her gün 3 sipariş verir. Siparişler, sen yokken üreten iki yapıd
 - `min`/`max`/`capShare`: sipariş adedi. Adet, yapının birikim sınırının `capShare` katını geçmez, böylece her sipariş bir dolumda karşılanabilir.
 - `friendPts`: teslim başına dostluk puanı. `bonusFlakes`: günün üç siparişi de bitince verilen kar tanesi.
 - Ölçü: bir sipariş yaklaşık bir-iki level ödülü kadar olmalı. Boşta kazanç level oynamaktan daha kârlı olmamalı, yoksa bulmaca değer kaybeder.
+
+## Köy festivali (aylık)
+
+Her ay bir tema gelir. Köy, stanttaki kakaoyu, iskelenin balığını ya da coin'i bağışlayarak puan toplar. Ayarlar `js/config.js` içindeki `FESTIVAL` nesnesinde.
+
+- `points`: fincan 1, balık 4 puan. `coinPerPt`: 10 coin 1 puan; coin düğmesi bir seferde `coinStep` (200) verir.
+- `stages`: 150, 400 ve 800 puan. Son aşama oyuncunun sahip olmadığı bir tüccar süsünü verir; hepsine sahipse `rareCoins` verilir.
+- Siparişler için gereken kakao ve balık bağışa gitmez.
+- Ölçü: festival, yapılar ve projeler bittikten sonra coin'in gideceği bir yer. Son aşama ayda birkaç gün düzenli köy ziyaretiyle bitebilmeli, tek oturumda bitmemeli.
