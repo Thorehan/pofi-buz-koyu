@@ -125,9 +125,15 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Sağlamlık**
 
-1. [ ] **Kayıt yedeği testi.**
+1. [x] **Kayıt yedeği testi.**
    - Sipariş, festival, hikâye ve mağaza alanları kayda yeni eklendi. Yedekle ve geri yükle bunları kayıpsız taşımalı.
    - Duman testine yedek → geri yükleme denetimi eklenir; eksik alan çıkarsa düzeltilir.
+   - **Yapıldı (2026-11-08):**
+     - **Alanlar:** Yedek kaydın tamamını taşıyor, eksik alan yok. Yeni alanlar için ayrıca bir şey yapmak gerekmiyor.
+     - **Bulunan hata:** Oyuncu adında `<` ya da `>` varsa (örneğin "<3 Ali") yedek kodu "geçersiz" sayılıyor, oyuncu kendi yedeğini yükleyemiyordu. Artık bu işaretler silinip kayıt yükleniyor. Oyuncu adı da köy ve evcil dost adları gibi girilirken temizleniyor.
+     - **Kod:** Yedek kodlaması `js/backup.js` modülüne taşındı.
+     - **Test:** Duman testi dolu bir kaydı (sipariş, festival, hikâye, evcil dost, Türkçe karakterli ve emojili ad) sıkıştırmalı ve sıkıştırmasız koda çevirip geri açıyor. Oyunun açılışından geçtikten sonra da her alanın aynı kaldığına bakıyor. Boşluklu yapıştırma, `<` içeren ad ve 6 bozuk kod da deneniyor.
+     - **Tarayıcı:** Ayarlar > Kayıt yedeği penceresindeki kod geri açılınca kayıtla aynı; bozuk kod "Bu kod geçersiz" diyor.
 2. [ ] **Kare döngüsünü hataya dayanıklı yapmak.**
    - Bir karede çizim hatası olursa hata günlüğe yazılır, döngü sonraki karede devam eder; oyun donmaz.
    - Aynı hata her karede tekrar ederse günlük dolmaz (sayaç artar).
@@ -190,3 +196,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `f5a75cd` Pofi'nin yolu: altı bölümlük bölge sonu hikâye kartları, Görevler'den yeniden okunur.
 - 2026-11-08 · `a30c62d` Gazete: oyuncu verisinden 7 yeni haber türü, 34 bilmece.
 - 2026-11-08 · `dd29944` Ayarlar'da "Nasıl oynanır": kurallar ve karşılaşılan mekanikler.
+- 2026-11-08 · `5ba529f` Kayıt yedeği: duman testinde yedek denetimi, `<` içeren adlı yedek artık yükleniyor.
