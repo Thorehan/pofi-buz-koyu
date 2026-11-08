@@ -1182,6 +1182,9 @@ const festMax = () => FESTIVAL.stages[FESTIVAL.stages.length - 1].pts;
 const festDaysLeft = () => { const d = new Date(), end = new Date(d.getFullYear(), d.getMonth() + 1, 1); return Math.max(1, Math.ceil((end - d) / 864e5)); };
 const festOn = () => villageLevel(P) >= FESTIVAL.vl;
 const festRare = () => MERCHANT_DECOR.find(d => !P.decorOwned.includes(d.id)) || null;
+// Köy sahnesindeki festival pankartı: adı, tema rengi ve dolan şerit (son aşamaya göre)
+const FEST_COLORS = { lantern: '#d9822b', fish: '#2f86d6', ice: '#3aa6c9', sled: '#c8473f' };
+const festBannerInfo = () => (festOn() ? { name: festTheme().name, color: FEST_COLORS[festTheme().id] || '#2f86d6', pct: (P.festival?.month === monthKey() ? P.festival.pts : 0) / festMax() } : null);
 const festStage = pts => FESTIVAL.stages.filter(s => pts >= s.pts).length;
 function festGrant(i) {
   const F = P.festival, s = FESTIVAL.stages[i];
@@ -1400,7 +1403,8 @@ const unlockNames = lv => BUILDINGS.filter(b => b.unlock === lv && (P.land || 1)
 let shownPanel = -1;
 function renderZoneTag() {
   shownPanel = village.panel;
-  $('zoneName').textContent = `${zone(P).name.split(' · ')[0]} · ${DISTRICTS[shownPanel]?.name || ''}`;
+  // Etiket bulunulan arazinin adını ve sırasını gösterir (eskiden yapı sınırı katmanının 'Bölge 2'si yazıyordu, arazi sanılıyordu).
+  $('zoneName').textContent = `${DISTRICTS[shownPanel]?.name || ''}${(P.land || 1) > 1 ? ` · ${shownPanel + 1}/${P.land}` : ''}`;
 }
 
 // Arazi (yeni bölge): köy seviyesi şartı + coin. Açılabilir durumdaysa köy sekmesinde işaret çıkar.
@@ -4457,7 +4461,7 @@ function drawFrame(now) {
       plots: open.map(b => b.id), ready: open.filter(b => P.flakes >= b.costs[0]).map(b => b.id),
       upgradable: upgradeHint(),
       cocoa: { cups: Math.floor(cocoaNow()), cap: cocoaCap() }, pier: pierInfo(), orders: orderMarks(), homeReady: homesReady(), task: taskMarker(),
-      merchant: !!merchantToday(),
+      merchant: !!merchantToday(), festival: festBannerInfo(),
     });
     if ((slowTick += dt) > 1) { slowTick = 0; renderCocoa(); }
     if (village.panel !== shownPanel) renderZoneTag();

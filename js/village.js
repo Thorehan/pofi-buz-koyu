@@ -39,7 +39,7 @@ const flatTop = (st, u) => (PIER_TOP[st.style] || PIER_TOP[0])[Math.min(st.lv, 3
 // Temeli olmayan (suyun üstündeki ya da asılı) yapılar ve ana yola patikası olmayanlar.
 const NO_PAD = new Set(['lights', 'lighthouse', 'pier', 'ferry']);
 const NO_SPUR = new Set(['lights', 'lighthouse', 'ferry']);
-const SCALE = [0, 0.85, 1, 1.15, 1.2, 1.26]; // seviyeye göre boyut
+const SCALE = [0, 0.8, 0.93, 1.05, 1.1, 1.15]; // seviyeye göre boyut (2026-11-08: aralık açılsın diye ~%9 küçültüldü)
 
 // Ana yol (penguenlerin yürüdüğü meydan yolu); her yapı yerine buradan bir patika ayrılır.
 // Ana yol bölgeler boyunca uzar; Buz Limanı'nda kıyı boyunca devam eder.
@@ -89,8 +89,19 @@ const PIER_FISH = [[0.12, 0.93], [0.2, 0.935]]; // iskele varsa güvertenin ön 
 const HARBOR_FISH = [[1.4, 0.845], [1.56, 0.843], [1.84, 0.84]];
 const QUEUE = [[0.29, 0.727], [0.29, 0.752]]; // kakao standına çıkan patikada sıra
 // Haftalık etkinlik: meydanda (iglo ile ana yol arasındaki boş kar) çadır ve yanında konuk Foki.
+// Buz Limanı açıksa çadır limanda kafe ile balık pazarı arasındaki boş kara taşınır (Buzul Koyu dolu; çadır
+// buz pistinin arkasında kalıyordu).
 const EV_TENT = [0.598, 0.705];
 const EV_GUEST = [0.68, 0.728];
+const EV_TENT_HARBOR = [1.335, 0.705];
+// Liman kapalı ama buz pisti kuruluysa: pistin sağındaki köşe (pist büyüyünce eski yeri kapatıyordu).
+const EV_TENT_CORNER = [0.938, 0.872];
+const EV_GUEST_CORNER = [0.84, 0.95];
+// Festival pankartı (Buzul Koyu): gözlemevi ile iglo arasında, fener dizisinin altında gökyüzüne asılı
+// (yerde boş alan yok). Fener dizisi kurulu değilse iki direk arasına gerilir. [x, üst kenar, direk tabanı]
+const evSpot = (land, village) => (land >= 2 ? [EV_TENT_HARBOR, EV_GUEST_HARBOR] : village.rink ? [EV_TENT_CORNER, EV_GUEST_CORNER] : [EV_TENT, EV_GUEST]);
+const FEST_BANNER = [0.365, 0.33, 0.47];
+const EV_GUEST_HARBOR = [1.425, 0.728];
 // Evcil dost: yatağı iglonun kapısının önündeki patikada (kulübe çatısı ile etkinlik çadırı arasında).
 // Uyurken yatağında, uyanıkken Pofi'nin peşinde.
 const PET_BED = [0.485, 0.64];
@@ -1411,7 +1422,7 @@ export class VillageView {
   // land: açılmış bölge sayısı; sıradaki bölge sisli bir panel olarak sağda görünür.
   // villagers: köydeki köylüler; hour: günün saati (varsayılan cihaz saati); task: { giver, done } günlük iş
   // photo: fotoğraf karesi (ok, kar yağışı ve panel düğmesi çizilmez)
-  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, pier = null, orders = [], land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy', friendReady = [], scene = false }) {
+  draw(time, dt, { village, vl, plots, ready, upgradable = [], outfit, colors, cocoa = null, pier = null, orders = [], land = 1, teaser = true, homeReady = [], villagers = [], hour = null, task = null, decor = {}, event = null, pet = null, merchant = false, projects = null, photo = false, weather = 'heavy', friendReady = [], scene = false, festival = null }) {
     if (hour === null) { const d = new Date(); hour = d.getHours() + d.getMinutes() / 60; }
     if (!this.W) this.resize();
     this.clock = time;
@@ -1698,7 +1709,8 @@ export class VillageView {
     // Haftalık etkinlik: çadır (dokununca etkinlik ekranı) ve konuk Foki (günlük iş)
     this.evpos = [];
     if (event) {
-      const [tx, ty] = [EV_TENT[0] * W, EV_TENT[1] * H], [gx, gy] = [EV_GUEST[0] * W, EV_GUEST[1] * H];
+      const [et, eg] = evSpot(land, village);
+      const [tx, ty] = [et[0] * W, et[1] * H], [gx, gy] = [eg[0] * W, eg[1] * H];
       this.evpos.push(['tent', tx, ty - u * 0.08, u * 0.09], ['guest', gx, gy - u * 0.045, u * 0.06]);
       items.push([ty, () => evTent(ctx, tx, ty, u, time, event)]);
       items.push([gy, () => {
@@ -1733,8 +1745,11 @@ export class VillageView {
     }
     items.sort((a, b) => a[0] - b[0]);
     for (const [, draw] of items) draw();
-    if (event) this.bunting(ctx, W, H, u, time, [event.color, '#ffffff']);
-    else if (vl >= 8) this.bunting(ctx, W, H, u, time);
+    if (event) {
+      const [et] = evSpot(land, village);
+      this.bunting(ctx, W, H, u, time, [event.color, '#ffffff'], et[0] - 0.075, et[0] + 0.12, et[1] - 0.12);
+    } else if (vl >= 8) this.bunting(ctx, W, H, u, time);
+    if (festival && land >= 1) this.festBanner(ctx, W, H, u, time, { ...festival, hung: !!village.lights });
     this.lockRects = [];
     for (let i = land; i < n; i++) this.lockedPanel(ctx, i, W, H, u, time, vl);
     this.bubbles = [];
@@ -2179,17 +2194,17 @@ export class VillageView {
     });
   }
 
-  bunting(ctx, W, H, u, t, theme = null) {
-    const y = H * 0.48;
+  bunting(ctx, W, H, u, t, theme = null, xa = 0.3, xb = 0.7, ya = 0.48) {
+    const y = H * ya, n = Math.max(5, Math.round((xb - xa) * 25));
     ctx.strokeStyle = '#5b4636';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(W * 0.3, y);
-    ctx.quadraticCurveTo(W * 0.5, y + u * 0.05, W * 0.7, y);
+    ctx.moveTo(W * xa, y);
+    ctx.quadraticCurveTo(W * (xa + xb) / 2, y + u * 0.05, W * xb, y);
     ctx.stroke();
     const cols = theme || ['#ff5a6a', '#ffd166', '#3cc977', '#3d9bff', '#a46bff'];
-    for (let k = 0; k < 10; k++) {
-      const f = (k + 0.5) / 10, x = W * 0.3 + f * W * 0.4, yy = y + 4 * f * (1 - f) * u * 0.025;
+    for (let k = 0; k < n; k++) {
+      const f = (k + 0.5) / n, x = W * xa + f * W * (xb - xa), yy = y + 4 * f * (1 - f) * u * 0.025;
       ctx.fillStyle = cols[k % cols.length];
       ctx.beginPath();
       ctx.moveTo(x - u * 0.012, yy);
@@ -2197,6 +2212,32 @@ export class VillageView {
       ctx.lineTo(x, yy + u * 0.025 + Math.sin(t * 3 + k) * u * 0.003);
       ctx.fill();
     }
+  }
+
+  // Aylık köy festivali köyde görünsün: meydan girişinde iki direk arasında festivalin adı ve dolan şerit.
+  festBanner(ctx, W, H, u, t, f) {
+    const cx = W * FEST_BANNER[0], top = H * FEST_BANNER[1], by = H * FEST_BANNER[2], w = u * 0.2, h = u * 0.05;
+    ctx.save();
+    ctx.fillStyle = '#6d4322';
+    if (!f.hung) for (const sx of [-1, 1]) ctx.fillRect(cx + sx * w / 2 - u * 0.005, top - u * 0.01, u * 0.01, by - top + u * 0.01);
+    else for (const sx of [-1, 1]) ctx.fillRect(cx + sx * w * 0.4 - u * 0.002, top - u * 0.02, u * 0.004, u * 0.022); // ipler
+    const sway = Math.sin(t * 1.6) * u * 0.002;
+    ctx.fillStyle = f.color;
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, top);
+    ctx.lineTo(cx + w / 2, top);
+    ctx.lineTo(cx + w / 2, top + h + sway);
+    ctx.quadraticCurveTo(cx, top + h * 1.25 + sway, cx - w / 2, top + h + sway);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.fillRect(cx - w / 2 + u * 0.01, top + h * 0.78, (w - u * 0.02) * Math.min(1, f.pct), u * 0.006);
+    ctx.fillStyle = '#fff';
+    ctx.font = `700 ${Math.round(u * 0.028)}px Fredoka, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(f.name, cx, top + h * 0.42, w - u * 0.02);
+    ctx.restore();
   }
 
   // Köy Lv11: gökyüzünde her 2,5 saniyede bir havai fişek.

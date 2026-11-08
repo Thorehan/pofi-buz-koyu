@@ -205,7 +205,7 @@ export const DECOR_ITEMS = [
 // Süs yerleri (yapının taban ortası gibi, genişlik/yükseklik oranı). x > 1 olanlar Buz Limanı'nda.
 // Lv3 yapı görsellerinin, yolların ve köylülerin toplanma yerlerinin dışında seçildi.
 export const DECOR_SLOTS = [
-  { id: 'b1', at: [0.53, 0.88] }, { id: 'b2', at: [0.555, 0.97] }, { id: 'b3', at: [0.88, 0.87] }, { id: 'b4', at: [0.965, 0.93] },
+  { id: 'b1', at: [0.53, 0.88] }, { id: 'b2', at: [0.555, 0.97] }, { id: 'b3', at: [0.857, 0.87] }, { id: 'b4', at: [0.965, 0.93] },
   { id: 'b5', at: [0.373, 0.48] }, { id: 'b6', at: [0.31, 0.43] }, { id: 'b7', at: [0.18, 0.64] }, { id: 'b8', at: [0.6, 0.42] },
   { id: 'h1', at: [1.1, 0.62] }, { id: 'h2', at: [1.34, 0.6] }, { id: 'h3', at: [1.61, 0.58] }, { id: 'h4', at: [1.92, 0.62] },
   { id: 'h5', at: [1.12, 0.92] }, { id: 'h6', at: [1.94, 0.7] },
