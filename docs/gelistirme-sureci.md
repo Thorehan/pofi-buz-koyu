@@ -40,10 +40,16 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
    - Yan yollar ve usta levelleri çözülebilir olmalı.
    - Ayar dosyasında tutarlılık bakılır: her başarımın sayacı var mı, her ikon dosyası var mı, her müzik dosyası var mı.
    - Kayıt göçü test edilir: boş kayıt ve eski kayıt hatasız açılmalı.
-2. [ ] **İlk 15 dakika denetimi.**
+2. [x] **İlk 15 dakika denetimi.**
    - Sıfır kayıtla level 1-20 arasını oyna ve hangi pencerenin ne zaman açıldığını sırasıyla not et.
    - Aynı anda üst üste binen pencere olmamalı; bir ekranda bir tanıtım kartı yeter.
    - Bulgular bu belgeye yazılır, kolay düzeltmeler hemen yapılır.
+   - **Bulgular (2026-11-08):** Level 1-20 otomatik oynandı, konsolda hata çıkmadı.
+     - **Pencere sırası:** Giriş → tanıtım → günlük ödül (Gün 1) → "Kaydır!" mekanik kartı → level 1. Mekanik kartları level 1, 4, 9 ve 17'de geliyor (Kaydır, Kar, Kasa, Su ve köprü). Her level sonunda sonuç ekranı ve harita açılıyor. Haritada level 2'nin penceresi ilk ziyarette bir kez çıkıyor.
+     - **20 levelden sonra:** Ana sayfa, köy ve haritaya dönüldüğünde sırayla "Nadir balıklar", "Köyüne bir isim ver" ve "Yan yollar" çıkıyor. Her ekranda tek pencere oluyor, üst üste binen yok. Tanıtım kartlarındaki "Sonra" düğmesi akışı kesmiyor.
+     - **Sorun 1, nokta yığılması:** 20 levelden sonra ana sayfada aynı anda 7 kırmızı nokta yanıyor (günlük bulmaca, gazete, harita, görevler, etkinlik, mağaza, köy). İlk açılışta da mağaza noktası yanıyor (ücretsiz coin videosu). Madde 3'te ele alınacak.
+     - **Sorun 2, erken açılan özellikler:** Etkinlik kartı ve harita ilk açılıştan itibaren görünüyor; yeni oyuncu ilk dakikada 5 yan düğme görüyor. Bu bir tasarım kararı, "Karar bekleyenler"e yazıldı.
+     - **Gözlem:** 20 level ve yaklaşık 985 coin biriktiği hâlde köyde hiç yapı kurulmamış olabiliyor; oyunu yalnızca köy noktası yönlendiriyor. İlk yapıya yönlendiren bir ipucu madde 3 ile birlikte düşünülebilir.
 3. [ ] **Kırmızı nokta düzeni.**
    - Her noktanın kaynağı tek tek listelenir.
    - Nokta yalnızca "şimdi yapılacak bir iş" varken yanar. Sürekli yanan noktalar kaldırılır ya da kart içindeki yazıya dönüşür.
@@ -75,6 +81,7 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 - **Kalan müzikler:** Level 136+, zor leveller, günlük bulmaca, 4 etkinlik, köy büyüdü, bir daha dene ve açılış parçaları Mustafa'dan bekleniyor. Gelince `MUSIC` ayarına eklenir.
 - **Bildirimler:** "Stant doldu" ve "festivalin son günü" hatırlatmaları. Oyunun yayınlanacağı platforma bağlı.
 - **Giriş düğmeleri:** Google ve Apple ile giriş şu an çalışmıyor; yayın öncesi karar.
+- **Erken açılan özellikler:** Haftalık etkinlik kartı ve harita level 1'den görünüyor. Günlük bulmaca level 5'e kadar soluk duruyor. Etkinlik kartının örneğin level 10'dan sonra açılması ilk dakikaları sadeleştirir; açılış levelleri senin kararın.
 - **Denge geçişi:** Mustafa'ya proje gönderilecek; denge rehberi hazır (`docs/denge/denge-rehberi.md`).
 
 ## Yapılanlar
@@ -83,3 +90,4 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 - 2026-11-08 · `1a33a9f` Köyde sahnede toplama ve sipariş panosu.
 - 2026-11-08 · `024cdfa` Aylık köy festivali.
 - 2026-11-08 · `4f542cb` Duman testi (`node tools/smoke.mjs`): bütün leveller, ayar ve dosya tutarlılığı, kayıt göçü.
+- 2026-11-08 · İlk 15 dakika denetimi: level 1-20 otomatik oynandı, pencere sırası temiz; bulgular madde 2'de.
