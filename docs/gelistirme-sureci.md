@@ -155,9 +155,16 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Oyuncu deneyimi**
 
-4. [ ] **İlk yapıya yönlendirme.**
+4. [x] **İlk yapıya yönlendirme.**
    - Hiç yapı kurulmamışken kar tanesi ilk yapıya yetince bir kez "İlk yapını kur" kartı çıkar ve köyde önerilen yapıyı gösterir.
    - Kart yalnızca bir kez gelir; diğer tanıtım kartlarıyla üst üste binmez.
+   - **Yapıldı (2026-11-08):**
+     - **Kart:** "Yeni" tanıtım kartlarına `firstBuild` eklendi, sırada ilk o. Bu yüzden diğer kartlarla aynı kuralla ekran başına tek kart çıkıyor ve bir kez gösteriliyor.
+     - **Ne zaman:** Köyde hiç yapı yokken ve önerilen yapıya (en ucuz, kar tanesi yeten) yetecek kar tanesi olunca çıkıyor. İglo 1 kar tanesi olduğu için pratikte ilk kar tanesinden sonraki ana sayfa ya da köy ziyaretinde.
+     - **Metin:** "Kar tanelerin yetiyor: İglo kurabilirsin! Yapılar köyünü büyütür ve kalıcı bonus verir…"
+     - **Göster:** Köyün Yapılar sekmesini açıyor ve önerilen yapının panelini hazır getiriyor. Köye ilk girişte zaten çıkan "Köyüne bir isim ver" penceresi önce geliyor; kapanınca panel orada bekliyor.
+     - **Deneme:** 3 kar tanesi, sıfır yapılı kayıtla ana sayfada kart çıktı. Göster → isim penceresi → Kaydet → İglo paneli → Kur: İglo kuruldu, kart bir daha çıkmıyor. Konsolda hata yok.
+     - **Eski kayıtlar:** Zaten yapısı olan oyuncuda kart hiç çıkmaz.
 5. [ ] **Ses düzeyi ayarları.**
    - Ayarlar'da müzik ve efekt için ayrı ses kaydırıcıları; açma/kapama anahtarları kalır.
    - Seviye kayıtta tutulur, jingle efekt seviyesine uyar.
@@ -211,3 +218,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `5ba529f` Kayıt yedeği: duman testinde yedek denetimi, `<` içeren adlı yedek artık yükleniyor.
 - 2026-11-08 · `f39322b` Kare döngüsü hataya dayanıklı: çizim hatası günlüğe yazılır, oyun donmaz.
 - 2026-11-08 · `e6cf565` Yeni sürüm şeridi: yayına alınan sürüm fark edilince ana sayfada "Yenile".
+- 2026-11-08 · `17a6562` İlk yapı kartı: kar tanesi yetince bir kez "İlk yapını kur", önerilen yapının paneline götürür.
