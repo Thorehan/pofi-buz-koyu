@@ -82,3 +82,4 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 - 2026-11-08 · `de3619d` Mustafa'nın müzikleri oyunda.
 - 2026-11-08 · `1a33a9f` Köyde sahnede toplama ve sipariş panosu.
 - 2026-11-08 · `024cdfa` Aylık köy festivali.
+- 2026-11-08 · `4f542cb` Duman testi (`node tools/smoke.mjs`): bütün leveller, ayar ve dosya tutarlılığı, kayıt göçü.
