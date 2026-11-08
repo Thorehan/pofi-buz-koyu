@@ -371,14 +371,14 @@ function startLevel(n, daily = false, evk = null, master = null, side = null) {
   }
 }
 
-function drawIntroIcon(cv, kind) {
-  const ctx = fitCanvas(cv, 84, 84);
+function drawIntroIcon(cv, kind, s = 84) {
+  const ctx = fitCanvas(cv, s, s);
   const tile = {
     snow: T.SNOW, water: T.WATER, crack: T.CRACK, lever: T.LEVER, arrow: T.RIGHT, ramp: T.RAMP_RIGHT, hole: T.HOLE, melt: T.MELT,
     plate: T.PLATE, turn: T.TURN, fragile: T.FRAGILE, icicle: T.ICICLE, wind: T.FLAG,
   }[kind] ?? T.ICE;
-  paintTile(ctx, tile, 0, 0, 84, 0, { pressed: kind === 'plate' });
-  if (['fish', 'crate', 'seal', 'order', 'ball', 'raft', 'key', 'pipi'].includes(kind)) paintTile(ctx, kind, 0, 0, 84, 0, {});
+  paintTile(ctx, tile, 0, 0, s, 0, { pressed: kind === 'plate' });
+  if (['fish', 'crate', 'seal', 'order', 'ball', 'raft', 'key', 'pipi'].includes(kind)) paintTile(ctx, kind, 0, 0, s, 0, {});
 }
 
 function renderHud() {
@@ -4236,6 +4236,32 @@ function showErrors() {
   if ($('errClear')) $('errClear').onclick = () => { clearErrors(); renderErrCount(); showErrors(); };
 }
 if ($('btnErrors')) $('btnErrors').onclick = showErrors;
+
+// Nasıl oynanır: temel kurallar ve oyuncunun karşılaştığı mekanikler (INTRO kartlarıyla aynı metin ve simge).
+// Henüz gelmemiş mekanikler gösterilmez (sürpriz bozulmasın); yalnızca sıradakinin leveli yazar.
+function showHowTo() {
+  const seen = Object.keys(INTRO).map(Number).sort((a, b) => a - b), reached = n => P.level > n || !!P.stars[n];
+  const open = seen.filter(reached), next = seen.find(n => !reached(n));
+  const rules = [
+    ['Kaydır', 'Pofi bir yöne kaydırılınca bir şeye çarpana kadar kayar. Bütün balıkları toplayınca level biter.'],
+    ['Yıldızlar', 'En kısa çözüm kadar hamleyle bitirirsen 3 yıldız alırsın. Biraz fazlası 2, daha fazlası 1 yıldız.'],
+    ['Hamle sınırı', 'Bazı zor levellerde hamle sayın sınırlıdır. Hamlen biterse +5 hamle kullanabilir ya da leveli baştan alabilirsin.'],
+    ['Yardım', 'Geri al son hamleni siler. İpucu sıradaki doğru hamleyi gösterir; rota göster bütün çözümü gösterir, hamleleri yine sen yaparsın.'],
+  ];
+  if (P.level > SIDE_LEVELS.every) rules.push(['Yan yollar', 'Haritadaki tabelalar farklı hedefli bulmacalar açar: eve dön, kasayı yerleştir ya da bütün çatlak buzu kır.']);
+  openOverlay(`
+    <span class="new-tag">NASIL OYNANIR</span>
+    <h2>Kurallar ve mekanikler</h2>
+    <div class="howto-rules">${rules.map(([t, x]) => `<div><b>${t}</b><p>${x}</p></div>`).join('')}</div>
+    <h4 class="howto-h">Karşılaştığın mekanikler · ${open.length}/${seen.length}</h4>
+    <div class="howto-list">${open.map(n => `<div class="howto-row"><canvas data-ht="${INTRO[n].icon}"></canvas><div><b>${INTRO[n].title}</b><small>Level ${n}</small><p>${INTRO[n].text}</p></div></div>`).join('')}</div>
+    ${next ? `<small class="breakdown">Sıradaki yeni mekanik level ${next}'de seni bekliyor.</small>` : '<small class="breakdown">Bütün mekanikleri gördün!</small>'}
+    <button id="htClose" class="btn primary big">Tamam</button>`, 'howto');
+  $('overlayCard').querySelectorAll('[data-ht]').forEach(cv => drawIntroIcon(cv, cv.dataset.ht, 48));
+  $('htClose').onclick = closeOverlay;
+  track('howto_open', { seen: open.length });
+}
+if ($('btnHowTo')) $('btnHowTo').onclick = showHowTo;
 
 // Harita: 3 yıldızı eksik leveller arasında sırayla atlar (tekrar oynayıp yıldız sandıklarını doldurmak için).
 let missingAt = 0;

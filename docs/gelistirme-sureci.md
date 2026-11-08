@@ -110,9 +110,18 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Sayaç:** Teslim edilen siparişler için yeni sayaç `P.ach.orders`.
      - **Bilmeceler:** 16'dan 34'e çıktı, tekrar yok; artık 34 haftada bir başa dönüyor.
      - **Deneme:** Beş farklı haftada gazete açıldı, hata çıkmadı. Her sayı yine üç haber seçiyor.
-10. [ ] **Ayarlar'a "Nasıl oynanır" sayfası.**
+10. [x] **Ayarlar'a "Nasıl oynanır" sayfası.**
     - Mekanikler mevcut karo görselleriyle anlatılır.
     - Her mekanik ilk göründüğü levelden sonra açılır.
+    - **Yapıldı (2026-11-08):** Ayarlar > "Nasıl oynanır".
+      - **Temel kurallar:** Kayma, yıldızlar, hamle sınırı ve yardım (geri al, ipucu, rota); level 15'ten sonra yan yollar da eklenir.
+      - **Mekanikler:** Oyuncunun karşılaştığı mekanikler level sırasıyla, mekanik kartlarındaki (`INTRO`) metin ve karo simgesiyle listelenir.
+      - **Sürpriz korunur:** Henüz gelmemiş mekanikler gösterilmez, yalnızca sıradakinin leveli yazar.
+      - **Deneme:** Level 12'deki oyuncu 3/21, level 252'deki oyuncu 16/21 mekanik görüyor.
+
+## Durum
+
+Sıradaki işler listesindeki 10 maddenin hepsi bitti (2026-11-08). Döngü durdu. Yeni iş, "Karar bekleyenler"den senin kararınla ya da listeye eklenen yeni maddelerle başlar.
 
 ## Karar bekleyenler
 
