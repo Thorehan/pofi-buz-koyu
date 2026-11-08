@@ -306,6 +306,47 @@ function levelDef(n) {
 }
 
 const introsShown = new Set(); // bu oturumda mekanik kartı gösterilen leveller
+
+// Yarım kalan level: her hamlede o levelde yapılan hamleler (yön listesi) ayrı bir anahtarda tutulur.
+// Oyuncu aynı leveli yeniden açınca hamleler motorda yeniden oynatılır, tahta kaldığı yerden sürer.
+// Kazanınca, kaybedince, baştan alınca ya da levelden çıkınca silinir. Level verisi değiştiyse
+// (hamle artık geçersizse) sessizce baştan başlar.
+const RUN_KEY = 'pofi.run.v1';
+const runKeyOf = (def, evk, master, side) => [def.n, def.daily || '', evk ?? '', evk !== null && evk !== undefined ? P.event?.key ?? '' : '', master ?? '', side ?? ''].join('|');
+function readRunSnap() {
+  try { return JSON.parse(localStorage.getItem(RUN_KEY)); } catch { return null; }
+}
+function saveRunSnap() {
+  if (!run || run.finished || !run.dirs.length) { clearRunSnap(); return; }
+  try {
+    localStorage.setItem(RUN_KEY, JSON.stringify({ key: run.key, dirs: run.dirs, limit: run.limit, rare: run.rare || null, hintsUsed: run.hintsUsed, boosts: run.boosts || 0, at: Date.now() }));
+  } catch { /* yer yoksa yarım level tutulmaz */ }
+}
+function clearRunSnap() {
+  try { localStorage.removeItem(RUN_KEY); } catch { /* yoksay */ }
+}
+// Kayıtlı hamleleri yeni run'a uygular; geçersizse false (run baştaki hâliyle kalır).
+function replayRun(snap) {
+  let st = run.st;
+  const hist = [];
+  for (const d of snap.dirs) {
+    const r = simulate(run.L, st, d);
+    if (!r || won(run.L, r.state)) return false;
+    hist.push(st);
+    st = r.state;
+  }
+  run.history = hist;
+  run.st = st;
+  run.moves = snap.dirs.length;
+  run.dirs = [...snap.dirs];
+  if (snap.limit) run.limit = Math.max(run.limit || 0, snap.limit);
+  if (run.limit && run.moves >= run.limit) return false;
+  run.hintsUsed = snap.hintsUsed || 0;
+  run.boosts = snap.boosts || 0;
+  if (snap.rare) { run.rare = snap.rare; board.rare = run.rare; }
+  return true;
+}
+
 function startLevel(n, daily = false, evk = null, master = null, side = null) {
   preloadJingle(MUSIC.jingles.win);
   let def;
@@ -328,6 +369,7 @@ function startLevel(n, daily = false, evk = null, master = null, side = null) {
   run = {
     def, L, st: S, history: [], moves: 0, limit, finished: false, daily: !!daily, stuck: false, fishSound: 0, hintsUsed: 0, hintLock: false,
     event: ev ? evk : null, reverse: !!ev?.rule?.reverse, fromMap: playFromMap || master !== null || side !== null, master, side,
+    dirs: [], key: runKeyOf(def, ev ? evk : null, master, side),
   };
   playFromMap = false;
   run.rare = rollRare();
@@ -335,11 +377,19 @@ function startLevel(n, daily = false, evk = null, master = null, side = null) {
   // oynanış verisi yalnızca sabit leveller için (günlük bulmaca ve etkinlik levelleri her hafta üretilir)
   run.statKey = side !== null ? `Y${side + 1}` : master !== null ? `U${master + 1}` : !ev && !daily ? def.n : null;
   run.statT = performance.now();
-  statAdd(run.statKey, { tries: 1 }, { tier: def.tier, min: def.min });
+  const snap = readRunSnap();
+  const resumed = snap?.key === run.key && Array.isArray(snap.dirs) && replayRun(snap);
+  if (snap && !resumed) clearRunSnap();
+  if (!resumed) statAdd(run.statKey, { tries: 1 }, { tier: def.tier, min: def.min });
   showScreen('game');
   board.dark = !!ev?.rule?.dark;
   board.outfit = P.outfit;
   board.setLevel(L, S);
+  if (resumed) {
+    board.setState(run.st);
+    track('level_resume', { level: def.n, moves: run.moves });
+    setTimeout(() => toast(`Kaldığın yerden devam · ${run.moves} hamle`, 2200), 300);
+  }
   board.tutorialDir = !daily && !ev && master === null && def.n <= 2 ? solve(L, S)?.[0] ?? -1 : -1;
   renderHud();
   renderGoal();
@@ -443,6 +493,8 @@ board.onMove = dir => {
   run.history.push(run.st);
   run.st = r.state;
   run.moves++;
+  run.dirs.push(dir);
+  saveRunSnap();
   run.stuck = false;
   run.hintLock = false;
   run.fishSound = popcount(run.history[run.history.length - 1].fish);
@@ -510,6 +562,8 @@ function undo() {
   run.route = null;
   run.st = run.history.pop();
   run.moves = Math.max(0, run.moves - 1);
+  run.dirs.pop();
+  saveRunSnap();
   run.stuck = false;
   run.hintLock = false;
   board.hintDir = -1; // eski durumun ipucu artık geçersiz
@@ -548,6 +602,7 @@ function statTime() {
 
 function win() {
   run.finished = true;
+  clearRunSnap();
   board.tutorialDir = -1;
   const stars = starsFor(run.def.min, run.moves);
   statAdd(run.statKey, { wins: 1, moves: run.moves, secs: statTime() });
@@ -779,6 +834,7 @@ function countUp(el, from, to) {
 
 function fail() {
   if (won(run.L, run.st)) return;
+  clearRunSnap();
   statAdd(run.statKey, { fails: 1 });
   track('level_fail', { level: run.def.n, fish: popcount(run.st.fish) });
   sfx.fail();
@@ -3866,7 +3922,7 @@ $('btnReset').onclick = () => {
   openOverlay(`<h2>Emin misin?</h2><p>Leveller, coinler, köy ve gardırop silinir. Bu geri alınamaz.</p>
     <button id="rsYes" class="btn primary big" style="background:#e5484d;box-shadow:0 5px 0 #b3363a">Evet, sıfırla</button>
     <button id="rsNo" class="btn link">Vazgeç</button>`);
-  $('rsYes').onclick = () => { resetSave(); location.reload(); };
+  $('rsYes').onclick = () => { resetSave(); clearRunSnap(); location.reload(); };
   $('rsNo').onclick = closeOverlay;
 };
 
@@ -4106,11 +4162,13 @@ $('btnBack').onclick = () => {
   if (screen === 'interior') { exitRoom(); return; }
   const back = screen === 'game' && run?.event !== null && run?.event !== undefined ? 'event' : screen === 'game' && run?.fromMap ? 'map' : 'home';
   if (screen === 'game' && run && !run.finished) statAdd(run.statKey, { quits: 1, secs: statTime() });
+  if (screen === 'game') clearRunSnap();
   run = null;
   showScreen(back);
 };
 $('btnUndo').onclick = undo;
 const restartRun = () => {
+  clearRunSnap();
   if (!run.finished) statAdd(run.statKey, { restarts: 1, secs: statTime() });
   playFromMap = !!run.fromMap;
   startLevel(run.def.n, run.daily, run.event, run.master, run.side);

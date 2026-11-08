@@ -56,6 +56,7 @@ async function boot(save) {
   await wait(300);
   localStorage.setItem('pofi.v1', JSON.stringify(save));
   localStorage.setItem('pofi.err.v1', '[]');
+  localStorage.removeItem('pofi.run.v1'); // yarım level kaydı olmasın: level baştan açılsın
   f.src = `../index.html?test=${Date.now()}`;
   await new Promise((res, rej) => {
     const t0 = Date.now();
@@ -173,7 +174,7 @@ function render(rows) {
 
 async function run(list) {
   $('go').disabled = true;
-  const keep = { save: localStorage.getItem('pofi.v1'), err: localStorage.getItem('pofi.err.v1') };
+  const keep = { save: localStorage.getItem('pofi.v1'), err: localStorage.getItem('pofi.err.v1'), run: localStorage.getItem('pofi.run.v1') };
   const rows = [];
   window.__result = null;
   try {
@@ -190,6 +191,7 @@ async function run(list) {
     await wait(300); // oyun kapanırken kaydını yazar; sonra asıl kayıt geri konur
     if (keep.save === null) localStorage.removeItem('pofi.v1'); else localStorage.setItem('pofi.v1', keep.save);
     if (keep.err === null) localStorage.removeItem('pofi.err.v1'); else localStorage.setItem('pofi.err.v1', keep.err);
+    if (keep.run === null) localStorage.removeItem('pofi.run.v1'); else localStorage.setItem('pofi.run.v1', keep.run);
     $('go').disabled = false;
   }
   const bad = rows.filter(r => [r.undo, r.restart].some(v => v !== 'ok' && v !== 'denenmedi') || !String(r.win).startsWith('ok') || r.errs.length);
