@@ -11,6 +11,7 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 3. **Dene.**
    - Bütün dosyalar için `node --check js/*.js` çalıştır ve `node tools/smoke.mjs` testini geçir (madde 1 ile gelir).
    - Tarayıcıda 375 px telefon boyutunda değişen ekranlara bak; konsolda hata olmamalı.
+   - Oyun ekranı, tahta ya da mekanik değiştiyse `tools/oyun-testi.html` ile 21 mekanik leveli de oynat.
    - Test kaydı kullanıldıysa oyuncunun kaydını geri yükle.
 4. **Yayına al.**
    - Commit'i yalnızca değişen dosyalarla `main`'e at ve gönder.
@@ -226,9 +227,18 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Bilerek yok:** Coin, kar tanesi, ipucu ya da eşya ekleme. Panel her oyuncunun kodunda durduğu için hile kapısı olmasın.
      - **Deneme:** 7 dokunuşta panel açıldı. "Oyna 250" level 250'yi açtı, ilerleme 60'ta kaldı. "Taşı 120" ilerlemeyi 120 yaptı. "+1 gün" oyunu yeniledi, saat 24 saat ileri gitti, oyun ertesi günün günlük ödülünü verdi. "Gerçek saate dön" kaymayı sıfırladı. Duman testi kaymanın uygulandığını, verilen tarihleri bozmadığını ve kayma yokken saate dokunulmadığını deniyor.
      - **Mustafa için:** Saati ileri almak, günlük ödül, sipariş ve festival dengesini günlerce beklemeden görmeyi sağlar. Bitince "Gerçek saate dön" demeyi unutmamalı; kayma ilerideyken alınan günlük ödüller gerçek tarihe dönünce yeniden alınamayabilir.
-9. [ ] **Mekanik başına oyun içi test.**
+9. [x] **Mekanik başına oyun içi test.**
    - Her mekaniğin ilk levelini gerçek oyun arayüzünde çözüm hamleleriyle otomatik oynatan bir araç (`tools/`).
    - Kazanma, geri alma ve baştan alma hatasız olmalı; konsolda hata olmamalı.
+   - **Yapıldı (2026-11-08):** `tools/oyun-testi.html`.
+     - **Açma:** Yerel sunucuda `http://localhost:5174/tools/oyun-testi.html` → "Başlat".
+     - **Ne yapıyor:** Her mekaniğin ilk levelini (21 level) gerçek oyunda test kaydıyla açıyor ve çözüm hamlelerini klavyeyle oynuyor.
+     - **Denetimler:** Geri al (Z), baştan (R), çözümle kazanma, 3 yıldız, konsol ve hata günlüğü.
+     - **Seçenekler:** İstenen leveller yazılabilir. Test bitince bu cihazdaki kayıt geri konuyor. Yaklaşık 7 dk sürüyor.
+     - **Sonuç:** 21/21 level geçti. Pipi'li level 500'de Pipi hamleleri de oynandı.
+     - **Bulunan hata:** Mekanik kartı ("YENİ · Kaydır!") level kazanılana kadar her başlatışta açılıyordu: baştan alınca, "tekrar dene"de, hamle bitince. Artık kart oturum başına bir kez çıkıyor; oyun kapanıp açılırsa ve level hâlâ kazanılmadıysa bir kez daha hatırlatıyor.
+     - **Eksik kapandı:** Pipi'li levellerde penguen yalnızca dokunarak seçiliyordu. Artık Q ya da boşluk tuşuyla da seçiliyor (klavye maddesinin devamı).
+     - **Not:** Araç her turda değil, mekanik ya da oyun ekranı değiştiğinde çalıştırılmalı. Duman testi her turda çalışmaya devam ediyor.
 10. [ ] **Metin denetimi.**
     - Bütün oyun yazıları taranır: yazım hataları, tutarsız kelimeler ("level" / "bölüm" gibi), büyük İ ve küçük ı hataları.
     - Düzeltmeler tek commit; anlamı değişen metin olursa not düşülür.
@@ -269,3 +279,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `483e38b` Erişilebilirlik ve klavye: okunur fiyatlar, etiketler, R/H/Esc kısayolları.
 - 2026-11-08 · `eb6fc2f` Geniş ekran: tablet ve masaüstünde taşma yok; sütun gölgesi, ince kaydırma çubukları.
 - 2026-11-08 · `13367e5` Gizli test paneli: levele git, ilerlemeyi taşı, oyunun saatini ileri al, kaydı sıfırla.
+- 2026-11-08 · `6042119` Oyun içi mekanik testi (21/21 geçti); baştan alınca mekanik kartı yeniden açılmıyor; Q ile Pipi seçimi.
