@@ -60,6 +60,7 @@ export function configure({ sfx, ambient, music = true, sfxLevel = 1, musicLevel
 
 // ---------- müzik: dosyadan çalar (ses efektleri gibi kodla üretilmez); ekran değişince yumuşak geçiş ----------
 const MUSIC_VOL = 0.55;
+const musicEls = new Map(); // parça adresi → ses elemanı
 const musicTarget = () => MUSIC_VOL * musicVol * musicLevel;
 // iPhone Safari müzik elemanının volume değerini yok sayar (hep tam ses): düzey kaydırıcısı, yumuşak geçiş ve
 // jingle sırasında kısma orada çalışmıyordu. Bu yüzden müzik ve jingle elemanları Web Audio'ya bağlanır;
@@ -114,9 +115,13 @@ function nextInList() {
 }
 function syncMusic(instant = false) {
   if (!musicAudio && musicList.length) {
-    musicAudio = new Audio(musicList[musicIdx]);
+    // Her parça için tek eleman: Web Audio'ya bağlanan eleman ses grafiğinde kaldığı için bellekten silinmez;
+    // her ekran değişiminde yenisi açılınca uzun oturumda birikiyordu. Aynı parçaya dönünce kaldığı yerden sürer.
+    const src = musicList[musicIdx];
+    musicAudio = musicEls.get(src) || new Audio(src);
+    musicEls.set(src, musicAudio);
     musicAudio.loop = musicList.length === 1;
-    musicAudio.volume = 0;
+    if (musicAudio.paused) setVol(musicAudio, 0);
     musicAudio.onended = nextInList;
   }
   if (!musicAudio) return;

@@ -2316,7 +2316,8 @@ function renderInterior() {
 const fmt = n => n.toLocaleString('tr-TR');
 const collarHex = () => (P.pet?.collar ? COLORS.find(c => c.id === P.pet.collar)?.hex || null : null);
 const petKind = id => PET.kinds.find(k => k.id === (id || P.pet?.kind));
-const petInfo = () => P.pet.names[P.pet.kind];
+// Adı yazılmamış (eksik ya da bozuk kayıt) dost köy ekranını kırmasın: türün adı kullanılır.
+const petInfo = () => P.pet.names?.[P.pet.kind] || { name: PET.kinds.find(k => k.id === P.pet.kind)?.petName || 'Dost', named: false };
 const gazetteUnread = () => P.gazette.read !== gazetteIssue();
 
 // Köy listesinin üstündeki kartlar
