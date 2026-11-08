@@ -107,3 +107,4 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 - 2026-11-08 · İlk 15 dakika denetimi: level 1-20 otomatik oynandı, pencere sırası temiz; bulgular madde 2'de.
 - 2026-11-08 · `c2149be` Kırmızı nokta düzeni: mağaza günde bir kez, yapılarda tek önerilen nokta ve ok, kakao noktası stant dolunca.
 - 2026-11-08 · `b3016b6` Hata günlüğü (`js/errlog.js`) ve Ayarlar'da "Hata kaydı": kopyala ve temizle.
+- 2026-11-08 · `8c65860` Dokunma alanı ve yazı boyu denetimi: düğmeler en az 40 px, yazılar en az 12 px, 360 px'te taşma yok.
