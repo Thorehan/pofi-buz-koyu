@@ -349,9 +349,21 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
        - Bu üçü servis çalışanının önceden indirme listesinden de çıktı.
      - **Sonuç:** Açılış 2,4 → 1,5 MB ham. Kod ve veri (903 KB) GitHub Pages'te sıkıştırılmış gelir (~258 KB), bu yüzden telefona gerçekten inen yaklaşık 0,85 MB: 548 KB görsel, 258 KB kod ve veri, gerisi yazı tipi.
      - **Sonraya not:** En büyük kalan kalemler köy zemini (189 KB, ilk ekranda görünüyor) ve level verisi (sıkıştırılmış ~40 KB). Bunlar için şimdilik gerek yok.
-5. [ ] **iPhone'da müzik düzeyi.**
+5. [x] **iPhone'da müzik düzeyi.**
    - iPhone Safari müzik elemanının ses düzeyini değiştirmeye izin vermiyor. Müzik Web Audio üzerinden çalınır, düzey kaydırıcısı orada da çalışır.
    - Yumuşak geçiş, reklamda susma ve jingle kısma aynı kalır.
+   - **Yapıldı (2026-11-08, `b13d052`):**
+     - **Nasıl:** Müzik ve kazanma müziği elemanları ilk dokunuştan sonra Web Audio'ya bağlanıyor; düzey elemanın kendi kazanç düğümünden ayarlanıyor.
+       - Bağlantı yalnızca ses bağlamı açıkken kuruluyor; askıdaki bağlama bağlanan müzik susardı.
+       - Bağlanamayan eski tarayıcılarda eski yol (`volume`) kullanılıyor.
+     - **Bulunan hata:** Ekran geçişinde iki parça üst üste çalabiliyordu. Bu eski kodda da vardı.
+       - Sebep: tek ortak geçiş zamanlayıcısı vardı ve `play()` sözü geç dönüyordu. Eski parça kısılırken yeni dokunuş ya da geç gelen "sesi aç" komutu kısmayı iptal ediyor, eski parça yenisinin altında çalmaya devam ediyordu.
+       - Düzeltme: her parçanın kendi zamanlayıcısı var, geç gelen ses açma artık geçersiz parçaya uygulanmıyor.
+     - **Deneme (tarayıcıda gerçek tıklamayla):**
+       - Ana sayfa → köy → ana sayfa → köy → ayarlar geçişlerinde her an tek parça çaldı, hepsi Web Audio'ya bağlıydı.
+       - Kaydırıcı %30'da düzey 0,17 oldu (0,55 × 0,3).
+       - Level kazanılınca kazanma müziği 0,80'de çaldı, oyun müziği 0,11'e kısıldı ve bitince 0,55'e döndü.
+     - **Denenmedi:** Gerçek iPhone. Web Audio bağlantısı iOS 14.5 ve sonrasında çalışır; daha eski sürümde eski yola düşer.
 6. [ ] **Uzun oturum denetimi.**
    - Oyun hızlandırılmış olarak 30 dakikalık ekran geçişleri ve levellerle oynatılır.
    - Bellek, DOM düğüm sayısı, zamanlayıcı ve dinleyici birikmesi ve hatalar ölçülür; sızıntı varsa düzeltilir.
@@ -429,3 +441,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `e4f4625` Kazanma müziği seyrek: tam hâli en çok 4 dakikada bir.
 - 2026-11-08 · `dea8582` Köy düzeni küçük düzeltmeler: etkinlik çadırı görünür, festival pankartı, bölge etiketi, yapılar biraz küçük.
 - 2026-11-08 · `fa9fa8e` Yükleme boyutu: açılış 2,4 → 1,5 MB ham (~0,85 MB sıkıştırılmış).
+- 2026-11-08 · `b13d052` Müzik Web Audio üzerinden (iPhone düzey kaydırıcısı); iki parçanın üst üste çalması düzeltildi.
