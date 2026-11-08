@@ -146,3 +146,4 @@ Sıradaki işler listesindeki 10 maddenin hepsi bitti (2026-11-08). Döngü durd
 - 2026-11-08 · `a617238` Çevrimdışı ses: müzik önbelleğe alınıyor, parça istekleri önbellekten; duman testine servis çalışanı denetimi eklendi.
 - 2026-11-08 · `f5a75cd` Pofi'nin yolu: altı bölümlük bölge sonu hikâye kartları, Görevler'den yeniden okunur.
 - 2026-11-08 · `a30c62d` Gazete: oyuncu verisinden 7 yeni haber türü, 34 bilmece.
+- 2026-11-08 · `dd29944` Ayarlar'da "Nasıl oynanır": kurallar ve karşılaşılan mekanikler.
