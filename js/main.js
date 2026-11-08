@@ -23,6 +23,7 @@ import { drawPofi, drawFish, roundRect } from './draw.js';
 import { loadArt, setArtEnabled, accentHue, onArtLoad, art } from './art.js';
 import { load, save, resetSave } from './save.js';
 import { backupEncode, backupDecode } from './backup.js';
+import { ek } from './tr.js';
 import { watchUpdates } from './update.js';
 import { showRewarded, track } from './ads.js';
 import {
@@ -252,7 +253,7 @@ async function boot() {
 }
 
 $('btnGuest').onclick = () => {
-  const name = cleanName($('playerName').value).slice(0, 16) || 'Kaşif';
+  const name = cleanName($('playerName').value).slice(0, 16) || 'Kâşif';
   P.profile = { name, method: 'guest', createdAt: Date.now() };
   save(P);
   track('login', { method: 'guest' });
@@ -1381,7 +1382,7 @@ function renderVillage() {
   const buildCards = () => firstTip + dCard + BUILDINGS.filter(b => !b.district || (P.land || 1) > b.district).map(b => {
     const lv = bLevel(P, b.id), max = maxLevel(P, b), cost = nextCost(P, b);
     if (!isUnlocked(P, b)) {
-      return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${b.unlock}'te açılır</span></button>`;
+      return `<button class="b-card locked" data-b="${b.id}"><b>${b.name}</b><small>${BUFF_TEXT[b.buff](b.values[0])}</small><span class="act">Köy Lv${ek(b.unlock, 'de')} açılır</span></button>`;
     }
     const ready = cost !== null && P.flakes >= cost;
     const act = cost === null ? capText(b) : lv === 0 ? `Kur ${flakeIco}${cost}` : `Lv${lv + 1} ${flakeIco}${cost}`;
@@ -1473,7 +1474,7 @@ let sheet = null; // { id, draft: { style, color } }
 function openSheet(id) {
   if (village.decorMode) return;
   const b = building(id);
-  if (!isUnlocked(P, b)) { toast(`${b.name} Köy Lv${b.unlock}'te açılır`); return; }
+  if (!isUnlocked(P, b)) { toast(`${b.name} Köy Lv${ek(b.unlock, 'de')} açılır`); return; }
   const st = P.village[id];
   sheet = { id, draft: st ? { style: st.style, color: st.color } : null };
   village.focus = id;
@@ -1502,8 +1503,8 @@ function renderSheet() {
 
   const buffLine = lv
     ? `<b>${BUFF_TEXT[b.buff](b.values[lv - 1])}</b><small>${lv < max ? `Lv${lv + 1}: ${BUFF_TEXT[b.buff](b.values[lv])}` : capText(b)}</small>`
-    : `<b>Kurulunca: ${BUFF_TEXT[b.buff](b.values[0])}</b><small>Her seviye görünümü güzelleştirir ve buff'ı büyütür</small>`;
-  const upLabel = cost === null ? capText(b) : lv === 0 ? `Kur · ${flakeIco}${cost}` : `Lv${lv + 1}'e yükselt · ${flakeIco}${cost}`;
+    : `<b>Kurulunca: ${BUFF_TEXT[b.buff](b.values[0])}</b><small>Her seviye görünümü güzelleştirir ve bonusu büyütür</small>`;
+  const upLabel = cost === null ? capText(b) : lv === 0 ? `Kur · ${flakeIco}${cost}` : `Lv${ek(lv + 1, 'e')} yükselt · ${flakeIco}${cost}`;
 
   let looks = '<p class="sheet-note">Kurduktan sonra stil ve renk seçebilirsin.</p>';
   let action = '';
@@ -1647,7 +1648,7 @@ function renderNextCard() {
     card.innerHTML = `${flakeIco}<span class="nc-text"><b>Köy tamamen kuruldu!</b><small>Yeni bölgeler yakında</small></span>`;
     return;
   }
-  const what = s.lv === 0 ? `${s.b.name} kur` : `${s.b.name} Lv${s.lv + 1}'e yükselt`;
+  const what = s.lv === 0 ? `${s.b.name} kur` : `${s.b.name} Lv${ek(s.lv + 1, 'e')} yükselt`;
   const missing = s.cost - P.flakes;
   card.innerHTML = `${flakeIco}<span class="nc-text"><small>Köy · Lv ${villageLevel(P)}</small><b>${what}</b></span>`
     + `<span class="nc-go">${missing > 0 ? `${missing} kar tanesi daha` : 'Hazır ›'}</span>`;
@@ -2450,7 +2451,7 @@ function showMarket() {
   openOverlay(`
     <span class="new-tag">BALIK PAZARI</span>
     <h2>Kar tanesi takası</h2>
-    <p>Coin ver, kar tanesi al. Fiyat bugün her alımda artar; yarın yine ${coinIco}${FLAKE_TRADE.base}'den başlar.</p>
+    <p>Coin ver, kar tanesi al. Fiyat bugün her alımda artar; yarın yine ${coinIco}${ek(FLAKE_TRADE.base, 'den')} başlar.</p>
     <div class="reward-row"><span class="pill big">${flakeIco}<b>+1</b></span></div>
     <small class="breakdown">Bugün aldığın: ${n} · sonraki: ${coinIco}${fmt(flakePrice(n + 1))} · elindeki: ${P.flakes} ${flakeIco}</small>
     <button id="mkBuy" class="btn green big" ${P.coins < price ? 'disabled' : ''}>${P.coins < price ? 'Yetersiz coin · ' : 'Al · '}${coinIco}${fmt(price)}</button>
@@ -2695,7 +2696,7 @@ function showPetAdopt(id) {
     ${petKindRow(id)}
     <p>${P.pet ? 'Köye yeni bir dost gelir. Dostlarından biri Pofi\'nin yanında gezer, istediğin zaman değiştirirsin.' : `Köyde Pofi'nin peşinden yürür, iglonun önünde uyur. Günde bir kez levellerde topladığın balıklardan ${PET.feedFish} tane verirsen o gün sana küçük bir hediye getirir.`}</p>
     ${P.pet ? '' : '<small class="breakdown">Beslemezsen yalnızca uykulu olur; hiçbir şey kaybetmezsin.</small>'}
-    <button id="petAdopt" class="btn green big" ${cant ? 'disabled' : ''}>${!ok ? `Köy Lv${PET.vl} ya da level ${PET.level}'dan sonra` : `${P.coins < k.price ? 'Yetersiz coin' : 'Sahiplen'} · ${coinIco}${fmt(k.price)}`}</button>
+    <button id="petAdopt" class="btn green big" ${cant ? 'disabled' : ''}>${!ok ? `Köy Lv${PET.vl} ya da level ${ek(PET.level, 'den')} sonra` : `${P.coins < k.price ? 'Yetersiz coin' : 'Sahiplen'} · ${coinIco}${fmt(k.price)}`}</button>
     <button id="petClose" class="btn link">${P.pet ? 'Vazgeç' : 'Kapat'}</button>`);
   petLoop(() => ({ kind: id, pose: 'happy', collar: null }));
   bindPetKinds();
@@ -3035,7 +3036,7 @@ function renderDailyButtons() {
   const dp = dailyPuzzleState();
   $('btnDailyPuzzle').classList.toggle('muted-q', !dp.unlocked || dp.done);
   $('dotDailyPuzzle').classList.toggle('hidden', !dp.unlocked || dp.done);
-  $('dpSub').textContent = !dp.unlocked ? `Level ${DAILY_PUZZLE.unlockLevel}'ten sonra`
+  $('dpSub').textContent = !dp.unlocked ? `Level ${ek(DAILY_PUZZLE.unlockLevel, 'den')} sonra`
     : dp.done ? `Tamam · seri ${dp.streak}`
     : `Seri ${dp.streak} · +${dailyPuzzleCoins(dp.streak + 1)}`;
 }
@@ -3393,7 +3394,7 @@ function mapTap(e) {
   if (!hit) return;
   if (typeof hit[0] === 'object') { sfx.ui(); if (hit[0].side !== undefined) showSidePopup(hit[0].side); else showMasterPopup(hit[0].master); return; }
   const n = hit[0];
-  if (n > P.level) { toast(`Önce Level ${P.level}'i bitir`); return; }
+  if (n > P.level) { toast(`Önce Level ${ek(P.level, 'i')} bitir`); return; }
   sfx.ui();
   showLevelPopup(n);
 }
@@ -3410,7 +3411,7 @@ function showSidePopup(i) {
     <span class="new-tag">YAN YOL</span>
     <h2>${g.title}</h2>
     <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= best ? ' on' : ''}">★</span>`).join('')}</div>
-    <p>${open ? g.text : `Level ${after}'i bitirince açılır.`}</p>
+    <p>${open ? g.text : `Level ${ek(after, 'i')} bitirince açılır.`}</p>
     <small class="breakdown">${best ? `En iyi çözüm ${d.min} hamle · yeni yıldız için tekrar oynayabilirsin` : `İlk bitirişte: ${rewardHtml(SIDE_REWARD)}`}</small>
     ${open ? `<button id="sdPlay" class="btn primary big">${best ? 'Tekrar oyna' : 'Oyna'}</button>` : ''}
     <button id="sdClose" class="btn link">Kapat</button>`);
@@ -3500,7 +3501,7 @@ function showMasterPopup(i) {
     <span class="new-tag">USTA LEVELİ</span>
     <h2>${reg.name} Ustası</h2>
     <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= best ? ' on' : ''}">★</span>`).join('')}</div>
-    <p>${open ? 'Bölgenin mekaniklerinden karışık, hamle sınırlı, çok zor bir bulmaca.' : `Level ${m.after}'i bitirince açılır.`}</p>
+    <p>${open ? 'Bölgenin mekaniklerinden karışık, hamle sınırlı, çok zor bir bulmaca.' : `Level ${ek(m.after, 'i')} bitirince açılır.`}</p>
     <small class="breakdown">${best ? 'Rozetin alındı · daha çok yıldız için tekrar oynayabilirsin' : `İlk bitirişte: rozet + ${rewardHtml(MASTER_REWARD)}`}</small>
     ${open ? `<button id="msPlay" class="btn primary big">${best ? 'Tekrar oyna' : 'Meydan oku'}</button>` : ''}
     <button id="msClose" class="btn link">Kapat</button>`);
@@ -3593,7 +3594,7 @@ function showLevelPopup(n) {
   const st = P.stars[n] || 0, def = levelDef(n), two = def.min + Math.max(2, Math.ceil(def.min * 0.5));
   const tl = TIER_LABEL[def.tier];
   openOverlay(`
-    <span class="new-tag">${regionOf(n).name.toUpperCase()}</span>
+    <span class="new-tag">${regionOf(n).name.toLocaleUpperCase('tr-TR')}</span>
     <h2>Level ${n}${tl ? ` <span class="tier ${def.tier}">${tl}</span>` : ''}</h2>
     <div class="stars">${[1, 2, 3].map(k => `<span class="star${k <= st ? ' on' : ''}">★</span>`).join('')}</div>
     <p>${st === 3 ? 'Kusursuz! Bu level tamam.' : st ? `3 yıldız için en fazla <b>${def.min}</b> hamlede bitir.` : 'Henüz bitirmedin.'}</p>
@@ -3854,7 +3855,7 @@ function showDevPanel() {
     <button id="dvClose" class="btn link">Kapat</button>`, 'dev');
   const lv = () => Math.max(1, Math.min(1000, Math.floor(+$('dvLevel').value || 0)));
   $('dvPlay').onclick = () => { const n = lv(); closeOverlay(); track('dev_play', { n }); startLevel(n); };
-  $('dvMove').onclick = () => { const n = lv(); P.level = n; persist(); track('dev_move', { n }); closeOverlay(); toast(`İlerleme level ${n}'e taşındı`); showScreen('home'); };
+  $('dvMove').onclick = () => { const n = lv(); P.level = n; persist(); track('dev_move', { n }); closeOverlay(); toast(`İlerleme level ${ek(n, 'e')} taşındı`); showScreen('home'); };
   $('overlayCard').querySelectorAll('[data-shift]').forEach(b => { b.onclick = () => { setDev({ shift: clockShift + +b.dataset.shift }); persist(); location.reload(); }; });
   $('dvClock0').onclick = () => { setDev({ shift: 0 }); persist(); location.reload(); };
   $('dvReset').onclick = () => $('btnReset').click();
@@ -4094,7 +4095,7 @@ $('btnGazette').onclick = () => { sfx.ui(); showGazette(); };
 $('btnDaily').onclick = showDailyReward;
 $('btnDailyPuzzle').onclick = () => {
   const st = dailyPuzzleState();
-  if (!st.unlocked) toast(`Günlük bulmaca Level ${DAILY_PUZZLE.unlockLevel}'ten sonra açılır`);
+  if (!st.unlocked) toast(`Günlük bulmaca Level ${ek(DAILY_PUZZLE.unlockLevel, 'den')} sonra açılır`);
   else if (st.done) toast('Bugünkü bulmacayı çözdün, yarın yenisi gelecek');
   else startLevel(0, true);
 };
@@ -4323,7 +4324,7 @@ function showHowTo() {
     <div class="howto-rules">${rules.map(([t, x]) => `<div><b>${t}</b><p>${x}</p></div>`).join('')}</div>
     <h4 class="howto-h">Karşılaştığın mekanikler · ${open.length}/${seen.length}</h4>
     <div class="howto-list">${open.map(n => `<div class="howto-row"><canvas data-ht="${INTRO[n].icon}"></canvas><div><b>${INTRO[n].title}</b><small>Level ${n}</small><p>${INTRO[n].text}</p></div></div>`).join('')}</div>
-    ${next ? `<small class="breakdown">Sıradaki yeni mekanik level ${next}'de seni bekliyor.</small>` : '<small class="breakdown">Bütün mekanikleri gördün!</small>'}
+    ${next ? `<small class="breakdown">Sıradaki yeni mekanik level ${ek(next, 'de')} seni bekliyor.</small>` : '<small class="breakdown">Bütün mekanikleri gördün!</small>'}
     <button id="htClose" class="btn primary big">Tamam</button>`, 'howto');
   $('overlayCard').querySelectorAll('[data-ht]').forEach(cv => drawIntroIcon(cv, cv.dataset.ht, 48));
   $('htClose').onclick = closeOverlay;

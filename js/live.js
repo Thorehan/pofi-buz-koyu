@@ -109,7 +109,7 @@ export function eventLevelDef(ev, k, base) {
 // Bağlantıya yalnızca görünüm bilgisi girer: ad, yapı seviyesi/stil/renk, kıyafet. Coin vb. paylaşılmaz.
 export function encodeVillage(P) {
   const data = {
-    n: P.profile?.name || 'Kaşif',
+    n: P.profile?.name || 'Kâşif',
     ...(P.villageName ? { k: P.villageName } : {}),
     v: BUILDINGS.map(b => {
       const s = P.village[b.id];
@@ -141,7 +141,7 @@ export function decodeVillage(code) {
     });
     const valid = (slot, id) => (WARDROBE[slot].some(x => x.id === id) ? id : 'none');
     const outfit = { hat: valid('hat', d.o?.[0]), scarf: valid('scarf', d.o?.[1]) };
-    const name = String(d.n ?? 'Kaşif').replace(/[\u0000-\u001f]/g, '').slice(0, 16) || 'Kaşif';
+    const name = String(d.n ?? 'Kâşif').replace(/[\u0000-\u001f]/g, '').slice(0, 16) || 'Kâşif';
     const vname = typeof d.k === 'string' ? d.k.replace(/[\u0000-\u001f]/g, '').slice(0, 18) : '';
     return { name, vname, village, outfit };
   } catch {

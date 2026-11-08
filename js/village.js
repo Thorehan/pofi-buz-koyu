@@ -1,4 +1,5 @@
 // Meta: Pofi'nin köyü. 12 yapı × 3 seviye × 3 stil + renk paleti, köy seviyesine göre sahne efektleri.
+import { ek } from './tr.js';
 import { roundRect, circle, ellipse, drawPofi, drawSeal } from './draw.js';
 import { art, tinted, BLD, BLD_Z2 } from './art.js';
 import { DISTRICTS, DECOR_SLOTS, VILLAGER_CHAT } from './config.js';
@@ -2037,7 +2038,7 @@ export class VillageView {
     ctx.font = `700 ${Math.round(u * 0.06)}px Fredoka, sans-serif`;
     ctx.fillText(d.name, bx, by - bh * 0.68);
     ctx.font = `600 ${Math.round(u * 0.042)}px Fredoka, sans-serif`;
-    const line = d.soon ? 'Yakında' : vl < d.vl ? `Köy Lv${d.vl}'te açılır` : `Aç · ${d.price} coin`;
+    const line = d.soon ? 'Yakında' : vl < d.vl ? `Köy Lv${ek(d.vl, 'de')} açılır` : `Aç · ${d.price} coin`;
     ctx.fillStyle = !d.soon && vl >= d.vl ? '#ffd166' : '#f3e2c8';
     ctx.fillText(line, bx, by - bh * 0.3);
     this.lockRects.push([i, bx - bw / 2, by - bh, bx + bw / 2, by + u * 0.16]);

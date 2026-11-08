@@ -131,6 +131,22 @@ try {
 } catch (e) { fail(`Yedek testi patladı: ${e.message}`); }
 notes.push('Yedek: dolu kayıt koda çevrilip geri açıldı, her alan aynı');
 
+// Türkçe sayı ekleri ve metinlerde sabit ek kalmaması
+const TR = await import(pathToFileURL(rel('js/tr.js')).href);
+const ekCases = { de: { 1: "1'de", 2: "2'de", 3: "3'te", 4: "4'te", 5: "5'te", 6: "6'da", 9: "9'da", 10: "10'da", 40: "40'ta", 70: "70'te", 100: "100'de", 1000: "1000'de" },
+  den: { 5: "5'ten", 6: "6'dan", 15: "15'ten", 30: "30'dan", 60: "60'tan" },
+  e: { 1: "1'e", 2: "2'ye", 3: "3'e", 6: "6'ya", 7: "7'ye", 9: "9'a", 10: "10'a", 50: "50'ye" },
+  i: { 1: "1'i", 2: "2'yi", 3: "3'ü", 6: "6'yı", 9: "9'u", 10: "10'u", 40: "40'ı", 100: "100'ü" } };
+for (const [kind, cases] of Object.entries(ekCases)) for (const [n, want] of Object.entries(cases)) if (TR.ek(+n, kind) !== want) fail(`ek(${n}, '${kind}') = ${TR.ek(+n, kind)}, beklenen ${want}`);
+for (const f of ['js/main.js', 'js/village.js', 'js/config.js']) {
+  const src = read(f);
+  for (const m of src.matchAll(/\}'(te|ta|de|da|ten|tan|den|dan|e|a|ye|ya|i|ı|u|ü|yi|yı)\b/g)) fail(`Sayıdan sonra sabit ek: ${f}:${src.slice(0, m.index).split('\n').length} ("}'${m[1]}"); ek() kullan`);
+  for (const m of src.matchAll(/\.toUpperCase\(\)|\.toLowerCase\(\)/g)) {
+    const line = src.slice(src.lastIndexOf('\n', m.index) + 1, src.indexOf('\n', m.index));
+    if (!/screen'|s\[0\]/.test(line)) fail(`Türkçe olmayan büyük/küçük harf: ${f}:${src.slice(0, m.index).split('\n').length}; toLocaleUpperCase('tr-TR') kullan`);
+  }
+}
+
 // test saati: kayma yokken Date'e dokunulmaz, kayma varken new Date() ve Date.now() kayar, tarih verilince kaymaz
 try {
   const RealDate = Date;
