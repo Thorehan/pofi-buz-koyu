@@ -210,9 +210,22 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Mustafa ve test**
 
-8. [ ] **Gizli test paneli.**
+8. [x] **Gizli test paneli.**
    - Sürüm yazısına 7 kez dokununca açılır; normal oyuncu görmez.
    - Yalnızca levele atlama, saat ve gün değiştirme ve kaydı sıfırlama; coin ya da eşya ekleme yok.
+   - **Yapıldı (2026-11-08):**
+     - **Açma:** Ayarlar'ın en altındaki "Pofi: Buz Köyü v0.1.0" yazısına 3 sn içinde 7 dokunuş. Son 3 dokunuşta "Test paneli: 3/2/1 dokunuş daha" çıkıyor.
+     - **Level:** Numara yazılır.
+       - "Oyna" o leveli açar, ilerlemeyi değiştirmez (`?oyna=` adresiyle aynı).
+       - "İlerlemeyi buraya taşı" açık leveli değiştirir; yıldızlar kalır.
+     - **Oyunun saati:** +1 saat, +6 saat, +1 gün, +7 gün ve "Gerçek saate dön".
+       - Kayma `js/clock.js` ile oyunun her yerinde geçerli: günlük ödül, sipariş, festival, tüccar, gece/gündüz, kakao ve iskele birikimi.
+       - Kayma yalnızca bu cihazda tutulur (`pofi.dev.v1`) ve değişince oyun yenilenir.
+       - Kayma açıkken Ayarlar'da kırmızı "Test saati: +1 gün" yazısı çıkıyor, hata kaydına da ekleniyor.
+     - **Kayıt:** "Kaydı sıfırla…" mevcut onaylı sıfırlama penceresini açıyor.
+     - **Bilerek yok:** Coin, kar tanesi, ipucu ya da eşya ekleme. Panel her oyuncunun kodunda durduğu için hile kapısı olmasın.
+     - **Deneme:** 7 dokunuşta panel açıldı. "Oyna 250" level 250'yi açtı, ilerleme 60'ta kaldı. "Taşı 120" ilerlemeyi 120 yaptı. "+1 gün" oyunu yeniledi, saat 24 saat ileri gitti, oyun ertesi günün günlük ödülünü verdi. "Gerçek saate dön" kaymayı sıfırladı. Duman testi kaymanın uygulandığını, verilen tarihleri bozmadığını ve kayma yokken saate dokunulmadığını deniyor.
+     - **Mustafa için:** Saati ileri almak, günlük ödül, sipariş ve festival dengesini günlerce beklemeden görmeyi sağlar. Bitince "Gerçek saate dön" demeyi unutmamalı; kayma ilerideyken alınan günlük ödüller gerçek tarihe dönünce yeniden alınamayabilir.
 9. [ ] **Mekanik başına oyun içi test.**
    - Her mekaniğin ilk levelini gerçek oyun arayüzünde çözüm hamleleriyle otomatik oynatan bir araç (`tools/`).
    - Kazanma, geri alma ve baştan alma hatasız olmalı; konsolda hata olmamalı.
@@ -255,3 +268,4 @@ Tur 1'in 10 maddesi bitti (2026-11-08). Tur 2 başladı; döngü işaretlenmemi�
 - 2026-11-08 · `e6438e9` Ses düzeyi ayarları: müzik ve efekt için ayrı kaydırıcı.
 - 2026-11-08 · `483e38b` Erişilebilirlik ve klavye: okunur fiyatlar, etiketler, R/H/Esc kısayolları.
 - 2026-11-08 · `eb6fc2f` Geniş ekran: tablet ve masaüstünde taşma yok; sütun gölgesi, ince kaydırma çubukları.
+- 2026-11-08 · `13367e5` Gizli test paneli: levele git, ilerlemeyi taşı, oyunun saatini ileri al, kaydı sıfırla.
