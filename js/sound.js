@@ -4,7 +4,7 @@
 const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.51, 1567.98, 1760];
 
 let ctx = null, master, sfxBus, ambBus, noiseBuf;
-let musicOn = true, musicTrack = null, musicAudio = null, musicFade = 0;
+let musicOn = true, musicTrack = null, musicAudio = null, musicFade = 0, musicList = [], musicIdx = 0, musicHeld = 0, musicLevel = 1;
 let sfxOn = true, ambientOn = true, ambientWanted = false, ambientNodes = null, dropTimer = 0;
 
 function ac() {
@@ -59,26 +59,65 @@ function fadeTo(audio, to, then) {
     if (Math.abs(audio.volume - to) < 0.051) { audio.volume = to; clearInterval(musicFade); then?.(); }
   }, 40);
 }
-// src: bu ekranın parçası ya da null. Aynı parça sürüyorsa dokunulmaz.
+// src: bu ekranın parçası, sırayla çalınacak parça listesi ya da null. Aynı parça sürüyorsa dokunulmaz.
 export function setMusic(src) {
-  if (src === musicTrack) { syncMusic(); return; }
-  musicTrack = src;
+  const key = Array.isArray(src) ? src.join('|') : src;
+  if (key === musicTrack) { syncMusic(); return; }
+  musicTrack = key;
+  musicList = Array.isArray(src) ? src : src ? [src] : [];
+  musicIdx = 0;
   const old = musicAudio;
   musicAudio = null;
   if (old) fadeTo(old, 0, () => { old.pause(); syncMusic(); });
   else syncMusic();
 }
-function syncMusic() {
-  if (!musicAudio && musicTrack) {
-    musicAudio = new Audio(musicTrack);
-    musicAudio.loop = true;
+// Listede bir parça bitince sıradaki başlar (tek parça kendi içinde döner).
+function nextInList() {
+  if (!musicAudio || musicList.length < 2) return;
+  musicIdx = (musicIdx + 1) % musicList.length;
+  musicAudio = null;
+  syncMusic(true);
+}
+function syncMusic(instant = false) {
+  if (!musicAudio && musicList.length) {
+    musicAudio = new Audio(musicList[musicIdx]);
+    musicAudio.loop = musicList.length === 1;
     musicAudio.volume = 0;
+    musicAudio.onended = nextInList;
   }
   if (!musicAudio) return;
-  if (!musicOn || document.hidden) { musicAudio.pause(); return; }
+  if (!musicOn || document.hidden || musicHeld) { musicAudio.pause(); return; }
   // tarayıcı ilk dokunuştan önce izin vermez; unlock() yeniden dener
-  const p = musicAudio.play();
-  if (p) p.then(() => fadeTo(musicAudio, MUSIC_VOL)).catch(() => {});
+  const a = musicAudio, p = a.play();
+  if (p) p.then(() => { if (instant) a.volume = MUSIC_VOL * musicLevel; else fadeTo(a, MUSIC_VOL * musicLevel); }).catch(() => {});
+}
+// Reklam sırasında müzik susar; bitince kaldığı yerden yumuşakça döner.
+export function holdMusic(on) {
+  musicHeld = Math.max(0, musicHeld + (on ? 1 : -1));
+  if (musicHeld && musicAudio) { const a = musicAudio; fadeTo(a, 0, () => a.pause()); }
+  else syncMusic();
+}
+// Kısa müzik (level sonu): müzik kısılır, jingle çalar, sonra müzik geri gelir. Çalamazsa false döner ve
+// çağıran kodla üretilen eski sese düşer. Ses efektleri kapalıysa jingle da çalmaz.
+const jingles = {};
+export function preloadJingle(src) {
+  if (src && !jingles[src]) { jingles[src] = Object.assign(new Audio(src), { preload: 'auto' }); jingles[src].load(); }
+}
+export function playJingle(src) {
+  if (!src || !ready()) return false;
+  preloadJingle(src);
+  const j = jingles[src];
+  if (j.readyState < 2) return false;
+  j.currentTime = 0;
+  j.volume = 0.8;
+  const p = j.play();
+  if (!p) return false;
+  musicLevel = 0.2;
+  if (musicAudio && !musicAudio.paused) fadeTo(musicAudio, MUSIC_VOL * musicLevel);
+  const back = () => { musicLevel = 1; if (musicAudio && !musicAudio.paused) fadeTo(musicAudio, MUSIC_VOL); };
+  j.onended = back;
+  p.catch(back);
+  return true;
 }
 
 const ready = () => sfxOn && ctx && ctx.state === 'running';

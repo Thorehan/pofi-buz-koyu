@@ -2,6 +2,7 @@
 // (AppLovin MAX / LevelPlay / AdMob), oyun kodu aynı Promise arayüzünü kullanır.
 // Oyunda ara reklam yok: yalnızca oyuncunun kendi seçtiği ödüllü reklamlar (kullanıcı kararı).
 import { ADS } from './config.js';
+import { holdMusic } from './sound.js';
 
 export function track(name, params = {}) {
   console.debug('[analytics]', name, params);
@@ -15,6 +16,7 @@ export function showRewarded(placement) {
     let left = ADS.rewardedSec;
     const finish = ok => {
       clearInterval(iv);
+      holdMusic(false);
       L.classList.add('hidden');
       L.innerHTML = '';
       track(ok ? 'rv_watched' : 'rv_skipped', { placement });
@@ -27,6 +29,7 @@ export function showRewarded(placement) {
       <button id="adClose" class="btn link">Kapat (ödül yok)</button>
     </div>`;
     L.classList.remove('hidden');
+    holdMusic(true);
     track('rv_start', { placement });
     document.getElementById('adClose').onclick = () => finish(false);
     const iv = setInterval(() => {

@@ -29,7 +29,7 @@ import {
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
   SIDE_LEVELS, SIDE_REWARD, GOALS, PIER_CATCH, AWAY_MIN, MUSIC, FLAKE_TRADE, MERCHANT, PET, PET_TOYS, PROJECTS, PROJECT_STAGES, PROJECT_STEPS, GAZETTE, RIDDLES, DYE_PRICE, EMOTES, PRICE_RAMP,
 } from './config.js';
-import { sfx, unlock, configure as configureSound, setAmbient, setMusic } from './sound.js';
+import { sfx, unlock, configure as configureSound, setAmbient, setMusic, playJingle, preloadJingle } from './sound.js';
 
 const $ = id => document.getElementById(id);
 const P = load(); // oyuncu kaydı
@@ -122,13 +122,26 @@ function updateWallet() {
 const SCREENS = ['splash', 'login', 'intro', 'home', 'game', 'village', 'visit', 'interior', 'event', 'map', 'ach', 'wardrobe', 'shop', 'settings'];
 const TAB_SCREENS = ['home', 'village', 'wardrobe', 'shop', 'settings'];
 
+// Ekranın müziği. Oyunda level aralığına göre; günlük, etkinlik, usta ve yan yol levellerinde oyuncunun kendi leveli.
+function musicFor(name) {
+  if (name === 'game' && run) {
+    const n = run.daily || run.event !== null || run.master !== null || run.side !== null ? P.level : run.def.n || P.level;
+    return [...MUSIC.game].reverse().find(t => n >= t.from)?.src ?? null;
+  }
+  if (name === 'village' || name === 'interior' || name === 'visit') {
+    const h = hourNow();
+    return villageLevel(P) >= 6 && (h >= 20 || h < 6) ? MUSIC.village.night : MUSIC.village.day;
+  }
+  return ['home', 'intro', 'map', 'event', 'ach', 'wardrobe', 'shop', 'settings'].includes(name) ? MUSIC.home : null;
+}
+
 function showScreen(name) {
   screen = name;
   for (const s of SCREENS) $('screen' + s[0].toUpperCase() + s.slice(1)).classList.toggle('hidden', s !== name);
   $('app').dataset.screen = name;
   board.active = name === 'game';
   setAmbient(name === 'game' || name === 'village');
-  setMusic(MUSIC[name === 'interior' ? 'village' : name] ?? (['wardrobe', 'shop', 'settings', 'ach'].includes(name) ? MUSIC.home : null));
+  setMusic(musicFor(name));
   $('btnBack').classList.toggle('hidden', !['game', 'visit', 'interior', 'event', 'map', 'ach'].includes(name));
   board.dark = false;
   $('tabbar').classList.toggle('hidden', !TAB_SCREENS.includes(name));
@@ -267,6 +280,7 @@ function levelDef(n) {
 }
 
 function startLevel(n, daily = false, evk = null, master = null, side = null) {
+  preloadJingle(MUSIC.jingles.win);
   let def;
   const ev = evk !== null ? ensureEvent(P) : null;
   if (side !== null) {
@@ -579,7 +593,7 @@ function win() {
     board.burst(run.st.p, '#ffd166', 24, board.s * 5, 1, board.s * 4);
     board.burst(run.st.p, '#8fd0ff', 24, board.s * 5, 1, board.s * 4);
     board.celebrate();
-    sfx.win();
+    if (!playJingle(MUSIC.jingles.win)) sfx.win();
   }, 150);
   // Haftalık etkinlik jetonu (etkinlik levelinde ilk bitiriş çok daha fazla verir)
   const ev = ensureEvent(P);
@@ -3413,7 +3427,7 @@ function renderSettings() {
   $('setSfx').checked = P.settings.sfx !== false;
   $('setAmbient').checked = P.settings.ambient !== false;
   $('setMusic').checked = P.settings.music !== false;
-  $('setMusic').closest('.set-row').classList.toggle('hidden', !Object.values(MUSIC).some(Boolean));
+  $('setMusic').closest('.set-row').classList.toggle('hidden', !MUSIC.home);
   $('setArt').checked = P.settings.art !== false;
   $('setAccount').textContent = { guest: 'Misafir', google: 'Google', apple: 'Apple' }[P.profile?.method] || 'Misafir';
 }

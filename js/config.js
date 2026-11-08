@@ -685,9 +685,19 @@ export const RIDDLES = [
   { q: 'Hep önündedir ama göremezsin. Nedir?', a: 'Gelecek' },
 ];
 
-// Müzik: parçalar gelince buraya yazılır (ör. home: 'assets/music/home.mp3'). Boş bırakılan ekranda müzik çalmaz,
-// hiç parça yoksa Ayarlar'da Müzik satırı da görünmez. Aynı dosya birkaç ekrana verilirse parça kesilmeden sürer.
-export const MUSIC = { home: null, village: null, game: null, map: null, event: null };
+// Müzik (Mustafa, docs/pofi-muzik-suno.html). Hepsi -16 LUFS'a eşitlendi, AAC 112 kbps (assets/music).
+// home: menüler, harita, etkinlik. game: level aralığına göre (from: o levelden itibaren). village: gündüz iki parça
+// sırayla çalar; gece (köy Lv6+ ve 20:00-06:00, sahne de geceyken) kuzey ışıkları parçası döner. Boş bırakılan yerde
+// müzik çalmaz. Yeni parça gelince buraya eklenir: ör. game'e { from: 136, src: '.../game_aurora.m4a' }.
+export const MUSIC = {
+  home: 'assets/music/menu_main.m4a',
+  game: [
+    { from: 1, src: 'assets/music/game_glacier.m4a' },
+    { from: 61, src: 'assets/music/game_ramp.m4a' },
+  ],
+  village: { day: ['assets/music/village_day.m4a', 'assets/music/village_aurora.m4a'], night: 'assets/music/village_aurora.m4a' },
+  jingles: { win: 'assets/music/jingle_win.m4a' },
+};
 
 // Kıyafet boyama: sahip olunan bir şapka ya da atkı için renk başına bir kez ödenir (COLORS paleti).
 export const DYE_PRICE = 100;
