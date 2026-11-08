@@ -82,9 +82,16 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Asıl yük boyamadaydı:** Ana sayfa sahnesi her karede 1,8 MP, köy 0,9 MP boyuyordu. Sahne tuvallerinde piksel yoğunluğu 2x ile sınırlandı: ana sayfa 0,8 MP, köy 0,4 MP. Köy fotoğrafı kendi çözünürlüğünü kullandığı için etkilenmedi.
      - **Ek düzeltme:** `fitCanvas` artık yalnızca yükseklik değiştiğinde de tuvali güncelliyor.
      - **Denenmedi:** Gerçek telefonda boyama süresi ölçülmedi.
-7. [ ] **Çevrimdışı ses.**
+7. [x] **Çevrimdışı ses.**
    - Müzik ve jingle'lar servis çalışanında güvenli biçimde önbelleğe alınır; tarayıcının parça parça yükleme isteklerine dikkat edilir.
    - Uçak modunda oyun açılınca müzik de çalmalı.
+   - **Yapıldı (2026-11-08):**
+     - **Ses önbelleği:** Servis çalışanında müzik için ayrı bir önbellek var (`pofi-audio-v1`). Bir parça ilk çalındığında istek ağdan karşılanıyor, aynı anda tam dosya arka planda önbelleğe giriyor.
+     - **Sonraki istekler:** Tarayıcı sesi parça parça istediğinde istenen bayt aralığı önbellekteki dosyadan kesilip veriliyor. "Son N bayt" ve dosya dışı istekler de doğru cevaplanıyor.
+     - **Eski davranış:** Sesler kod gibi işlenip her seferinde ağdan isteniyordu ve parça cevapları önbelleğe girmiyordu; uçak modunda müzik çalmıyordu.
+     - **Test:** Tarayıcı paneli servis çalışanı kaydına izin vermediği için denetim `tools/smoke.mjs`'e eklendi. `sw.js` sahte önbellek ve sahte ağla çalıştırılıyor: ilk istek, önbelleğe alma ve çevrimdışı parça, son N bayt, dosya dışı ve tam istekler. Eski servis çalışanıyla test başarısız oluyor, yenisiyle geçiyor.
+     - **Sınır:** Bir parça uçak modunda çalabilmek için önce bir kez internetliyken çalınmış olmalı.
+     - **Denenmedi:** Gerçek telefonda, özellikle iPhone Safari'de uçak modu.
 8. [ ] **Bölge sonu hikâye kartları.**
    - Her bölgenin sonunda yalnızca yazı ve mevcut görsellerle kısa bir sahne olur: köyün neden kurulduğu, Pofi'nin yolu.
    - Metinler köylü hikâyeleriyle bağlanır.

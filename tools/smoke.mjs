@@ -85,6 +85,58 @@ try {
 } catch (e) { fail(`Kayıt testi patladı: ${e.message}`); }
 notes.push('Kayıt: boş, eski ve bozuk kayıt denendi');
 
+// ---------- 4. servis çalışanı: çevrimdışı ses ----------
+// sw.js sahte önbellek ve sahte ağla çalıştırılır (tarayıcı paneli servis çalışanı kaydına izin vermiyor).
+try {
+  const files = { '/assets/music/jingle_win.m4a': readFileSync(rel('assets/music/jingle_win.m4a')) };
+  let online = true;
+  const netFetch = async input => {
+    const path = new URL(typeof input === 'string' ? input : input.url, 'http://localhost/').pathname;
+    if (!online) throw new TypeError('çevrimdışı');
+    const body = files[path];
+    return body ? new Response(body, { status: 200, headers: { 'Content-Type': 'audio/mp4' } }) : new Response('yok', { status: 404 });
+  };
+  const stores = new Map();
+  const keyOf = k => (typeof k === 'string' ? k : new URL(k.url).pathname);
+  const cachesMock = {
+    open: async name => {
+      if (!stores.has(name)) stores.set(name, new Map());
+      const m = stores.get(name);
+      return { match: async k => m.get(keyOf(k))?.clone(), put: async (k, r) => { m.set(keyOf(k), r.clone()); } };
+    },
+    keys: async () => [...stores.keys()],
+    delete: async n => stores.delete(n),
+  };
+  const handlers = {};
+  const selfMock = { addEventListener: (t, fn) => { handlers[t] = fn; }, skipWaiting() {}, clients: { claim: async () => {} } };
+  new Function('self', 'caches', 'fetch', 'location', read('sw.js'))(selfMock, cachesMock, netFetch, { origin: 'http://localhost' });
+  const fire = async (path, range) => {
+    const waits = [];
+    let res;
+    const headers = new Headers(range ? { Range: range } : {});
+    handlers.fetch({ request: { url: `http://localhost${path}`, method: 'GET', headers }, respondWith: p => { res = p; }, waitUntil: p => waits.push(p) });
+    const r = await res;
+    await Promise.all(waits);
+    return r;
+  };
+  const P = '/assets/music/jingle_win.m4a', size = files[P].length;
+  const r1 = await fire(P, 'bytes=0-99');
+  if (r1.status !== 200) fail(`Ses: ilk istek ağdan gelmeli, durum ${r1.status}`);
+  const audio = stores.get('pofi-audio-v1');
+  if (!audio?.has(P)) fail('Ses: ilk çalıştan sonra tam dosya önbelleğe girmedi');
+  online = false;
+  const r2 = await fire(P, 'bytes=100-199'), b2 = new Uint8Array(await r2.arrayBuffer());
+  if (r2.status !== 206 || b2.length !== 100 || r2.headers.get('content-range') !== `bytes 100-199/${size}`) fail(`Ses: çevrimdışı parça isteği hatalı (${r2.status}, ${b2.length} bayt)`);
+  if (!b2.every((v, i) => v === files[P][100 + i])) fail('Ses: kesilen parça dosyayla aynı değil');
+  const r3 = await fire(P, 'bytes=-50');
+  if (r3.headers.get('content-range') !== `bytes ${size - 50}-${size - 1}/${size}`) fail('Ses: "son N bayt" isteği hatalı');
+  const r4 = await fire(P, `bytes=${size + 10}-`);
+  if (r4.status !== 416) fail('Ses: dosya dışı parça isteği 416 dönmeli');
+  const r5 = await fire(P);
+  if (r5.status !== 200 || (await r5.arrayBuffer()).byteLength !== size) fail('Ses: çevrimdışı tam dosya isteği hatalı');
+  notes.push('Servis çalışanı: ses önbelleğe giriyor, çevrimdışı parça ve tam istekler önbellekten karşılanıyor');
+} catch (e) { fail(`Servis çalışanı testi patladı: ${e.message}`); }
+
 // ---------- sonuç ----------
 for (const n of notes) console.log('·', n);
 if (fails.length) {
