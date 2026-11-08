@@ -2,7 +2,7 @@
 // Hızlı duman testi: her geliştirme turunda çalışır. Hiçbir dosyayı değiştirmez, yalnızca okur.
 // 1. Leveller: ilk N level, yan yollar ve usta levelleri çözülebilir mi, en kısa çözüm kayıtlı "min" ile aynı mı?
 // 2. Ayarlar: her başarımın sayacı var mı; kod ve CSS'teki her ikon, görsel ve müzik dosyası diskte var mı?
-// 3. Kayıt: boş kayıt ve eski biçimli kayıt hatasız açılıyor mu?
+// 3. Kayıt: boş kayıt ve eski biçimli kayıt hatasız açılıyor mu? Yedek kodu her alanı kayıpsız taşıyor mu?
 // Hata varsa çıkış kodu 1 olur ve sorunlar listelenir.
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -84,6 +84,44 @@ try {
   if (SV.load().level !== 1) fail('Bozuk kayıt boş kayda dönmedi');
 } catch (e) { fail(`Kayıt testi patladı: ${e.message}`); }
 notes.push('Kayıt: boş, eski ve bozuk kayıt denendi');
+
+// yedek kodu: dolu bir kayıt koda çevrilip geri açılınca aynı mı? (sıkıştırmalı ve sıkıştırmasız)
+const BK = await import(pathToFileURL(rel('js/backup.js')).href);
+try {
+  const same = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  const rich = { ...SV.load(),
+    profile: { name: 'Ayşe Öztürk 🐧', method: 'guest', createdAt: 1762600000000 },
+    level: 312, coins: 98765, flakes: 42, stars: { 1: 3, 2: 2, 311: 1 },
+    village: { igloo: { lv: 3, style: 1, color: 'mint' }, cocoa: { lv: 2, style: 0, color: null }, pier: { lv: 1, style: 0, color: null } },
+    villageName: 'Kuzey Işığı Köyü', cocoaCups: 3.75, pierFish: 1.5,
+    orders: { day: '2026-11-08', list: [{ giver: 'nana', kind: 'cups', n: 6, done: false }, { giver: 'kiko', kind: 'fish', n: 3, done: true }], bonus: false },
+    festival: { month: '2026-11', pts: 412, claimed: [true, true, false], given: { cups: 40, fish: 30, coins: 2000 } },
+    storySeen: [0, 1], shopSeen: '2026-11-08', unlocksSeen: ['orders', 'festival'],
+    pet: { kind: 'fox', kinds: ['fox'], names: { fox: { name: 'Şimşek', named: true } }, collar: 'red', bed: null, toys: ['ball'], toy: 'ball', collars: ['red'], fedDay: '2026-11-08' },
+    friends: { nana: { pts: 14, ch: 2, talk: '2026-11-08', gift: '' } },
+    ach: { fish: 900, cups: 120, nohint: 80, events: 3, streak: 9, orders: 25 },
+    settings: { haptics: false, sfx: true, ambient: true, music: false },
+  };
+  for (const gzip of [true, false]) {
+    const code = await BK.backupEncode(rich, { gzip });
+    const back = await BK.backupDecode(code);
+    if (!back) { fail(`Yedek kodu geri açılmadı (${gzip ? 'sıkıştırmalı' : 'sıkıştırmasız'})`); continue; }
+    for (const k of Object.keys(rich)) if (!same(rich[k], back[k])) fail(`Yedekte "${k}" alanı değişti`);
+    // yüklenen kayıt oyunun açılışından (göç dahil) aynen geçmeli
+    store['pofi.v1'] = JSON.stringify(back);
+    const loaded = SV.load();
+    for (const k of Object.keys(rich)) if (!same(rich[k], loaded[k])) fail(`Yedek yüklenince "${k}" alanı değişti`);
+    // kodun başına/sonuna boşluk ve satır sonu girse de açılmalı (kopyala-yapıştır)
+    if (!(await BK.backupDecode(`  ${code.slice(0, 20)}\n${code.slice(20)} `))) fail('Boşluklu yedek kodu açılmadı');
+  }
+  // "<" ve ">" içeren ad: kod reddedilmez, işaretler silinir
+  const tag = await BK.backupDecode(await BK.backupEncode({ ...rich, profile: { ...rich.profile, name: '<3 Ali>' } }));
+  if (!tag || tag.profile.name !== '3 Ali') fail('"<" içeren adlı yedek yüklenemedi ya da temizlenmedi');
+  for (const bad of ['', 'PF1.', 'PF1.abc', 'XX1.AAAA', 'PF0.' + Buffer.from('[1,2]').toString('base64url'), 'PF0.' + Buffer.from('{"level":"5"}').toString('base64url')]) {
+    if (await BK.backupDecode(bad)) fail(`Geçersiz yedek kodu kabul edildi: "${bad.slice(0, 20)}"`);
+  }
+} catch (e) { fail(`Yedek testi patladı: ${e.message}`); }
+notes.push('Yedek: dolu kayıt koda çevrilip geri açıldı, her alan aynı');
 
 // ---------- 4. servis çalışanı: çevrimdışı ses ----------
 // sw.js sahte önbellek ve sahte ağla çalıştırılır (tarayıcı paneli servis çalışanı kaydına izin vermiyor).

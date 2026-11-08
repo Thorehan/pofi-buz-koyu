@@ -21,6 +21,7 @@ import { drawRoom, drawItemIcon } from './interior.js';
 import { drawPofi, drawFish, roundRect } from './draw.js';
 import { loadArt, setArtEnabled, accentHue, onArtLoad, art } from './art.js';
 import { load, save, resetSave } from './save.js';
+import { backupEncode, backupDecode } from './backup.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
@@ -246,7 +247,7 @@ async function boot() {
 }
 
 $('btnGuest').onclick = () => {
-  const name = $('playerName').value.trim().slice(0, 16) || 'Kaşif';
+  const name = cleanName($('playerName').value).slice(0, 16) || 'Kaşif';
   P.profile = { name, method: 'guest', createdAt: Date.now() };
   save(P);
   track('login', { method: 'guest' });
@@ -3770,7 +3771,7 @@ if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.
 }
 
 $('setName').onchange = () => {
-  const name = $('setName').value.trim().slice(0, 16);
+  const name = cleanName($('setName').value).slice(0, 16);
   if (!name || !P.profile) { renderSettings(); return; }
   P.profile.name = name;
   persist();
@@ -4130,36 +4131,9 @@ function downloadFile(blob, name) {
 }
 $('btnPhoto').onclick = showPhoto;
 
-// Kayıt yedeği: kayıt sıkıştırılıp metin koduna çevrilir, başka cihaza yapıştırılır. Sunucu yok.
-function b64(bytes) {
-  let bin = '';
-  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-async function streamBytes(bytes, stream) {
-  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
-}
-async function backupEncode() {
-  const raw = new TextEncoder().encode(JSON.stringify(P));
-  if (typeof CompressionStream === 'undefined') return `PF0.${b64(raw)}`;
-  return `PF1.${b64(await streamBytes(raw, new CompressionStream('gzip')))}`;
-}
-// Geçersizse null. Kodun içinde HTML olamaz: isimler ekranda gösterildiği için başkasının kodu da güvenli kalsın.
-async function backupDecode(code) {
-  const m = /^PF([01])\.([\w-]+)$/.exec(code.replace(/\s+/g, ''));
-  if (!m) return null;
-  try {
-    const bytes = m[1] === '1' ? await streamBytes(unb64(m[2]), new DecompressionStream('gzip')) : unb64(m[2]);
-    const text = new TextDecoder().decode(bytes);
-    if (/[<>]/.test(text)) return null;
-    const s = JSON.parse(text);
-    return Number.isInteger(s.level) && Number.isFinite(s.coins) && s.stars && s.village ? s : null;
-  } catch { return null; }
-}
-
+// Kayıt yedeği: kodlama js/backup.js içinde.
 async function showBackup() {
-  const code = await backupEncode();
+  const code = await backupEncode(P);
   openOverlay(`
     <span class="new-tag">KAYIT YEDEĞİ</span>
     <h2>İlerlemeni taşı</h2>
