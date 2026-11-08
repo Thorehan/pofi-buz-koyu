@@ -281,9 +281,22 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
        - Geri çıkınca ve baştan alınca kayıt silindi.
        - Pipi'li level 500'ün devam etmesi oyun içi testte de geçti.
      - **Araç:** `tools/oyun-testi.html` her levelden önce yarım level kaydını temizliyor; ilk denemede kalmış bir kayıt yüzünden test yanlış alarm vermişti.
-2. [ ] **Kayıt güvenliği.**
+2. [x] **Kayıt güvenliği.**
    - Kayıt yazılamazsa (depolama dolu, gizli sekme) oyuncuya bir kez küçük bir uyarı çıkar.
    - Son sağlam kaydın yedek kopyası tutulur; ana kayıt bozuksa oyun o kopyadan açılır. Duman testi bunu dener.
+   - **Yapıldı (2026-11-08):**
+     - **Eski davranış:** Kayıt yazılamazsa hata sessizce yutuluyordu. Ana kayıt bozuksa oyun sıfır kayıtla açılıyor ve ilk kayıtta eski ilerlemenin üstüne yazıyordu; bu, ilerlemenin tamamen kaybı demekti.
+     - **Yedek:** Her kayıtta (en çok 30 sn'de bir) son sağlam kaydın kopyası `pofi.v1.bak` anahtarına yazılıyor. Kopya alınmadan önce kaydın sağlam olduğuna bakılıyor: level, coin, yıldızlar ve köy.
+     - **Bozuk kayıt:**
+       - Ana kayıt okunamazsa ya da kullanılamazsa oyun yedekten açılıyor ve "Kayıt okunamadı; son yedekten açıldı." diyor.
+       - Bozuk kayıt silinmiyor, `pofi.v1.broken` anahtarına taşınıyor; hata kaydına da yazılıyor.
+       - Yedek de yoksa yeni kayıtla açılıyor ve oyuncu Hata kaydı'ndan bildirmeye yönlendiriliyor.
+     - **Yazılamayan kayıt:** Depolama dolu, gizli sekme ya da izin yoksa bir kez "Kayıt yapılamıyor…" uyarısı çıkıyor ve durum hata kaydına düşüyor. Depolama düzelince kayıt yine yazılıyor.
+     - **Sıfırlama:** "İlerlemeyi sıfırla" yedeği de siliyor.
+     - **Deneme:**
+       - Duman testi yedek alma, yarım yazılmış kayıt, okunan ama kullanılamayan kayıt, yedeksiz bozuk kayıt, iki kez yazılamama (tek uyarı), düzelme ve sıfırlamayı deniyor.
+       - Tarayıcıda yarım yazılmış kayıt ve sağlam bir yedekle açılış denendi: oyun level 77 ve 4321 coin ile açıldı, uyarı çıktı, bozuk kayıt kenara alındı.
+     - **Araç:** `tools/oyun-testi.html` test bitince yedek kopyayı da eski hâline getiriyor; test kaydı yedeğe geçmiyor.
 3. [ ] **İnternetsiz ilk açılış.**
    - Servis çalışanı kurulurken temel dosyaları (html, js, css, level verisi, ilk ekranların görselleri) önceden indirir.
    - Oyun bir kez açıldıktan sonra uçak modunda baştan açılabilir; duman testi sahte ağla dener.
@@ -356,3 +369,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `6042119` Oyun içi mekanik testi (21/21 geçti); baştan alınca mekanik kartı yeniden açılmıyor; Q ile Pipi seçimi.
 - 2026-11-08 · `e0dd51e` Metin denetimi: sayıya göre ekler (`js/tr.js`), Türkçe büyük harf, yazım düzeltmeleri.
 - 2026-11-08 · `676ca70` Yarım kalan level: kaldığı hamleden sürer.
+- 2026-11-08 · `8986d42` Kayıt güvenliği: yedek kopya, bozuk kayıt yedekten açılır, yazılamazsa uyarı.
