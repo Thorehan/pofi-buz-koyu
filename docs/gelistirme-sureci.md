@@ -92,9 +92,15 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
      - **Test:** Tarayıcı paneli servis çalışanı kaydına izin vermediği için denetim `tools/smoke.mjs`'e eklendi. `sw.js` sahte önbellek ve sahte ağla çalıştırılıyor: ilk istek, önbelleğe alma ve çevrimdışı parça, son N bayt, dosya dışı ve tam istekler. Eski servis çalışanıyla test başarısız oluyor, yenisiyle geçiyor.
      - **Sınır:** Bir parça uçak modunda çalabilmek için önce bir kez internetliyken çalınmış olmalı.
      - **Denenmedi:** Gerçek telefonda, özellikle iPhone Safari'de uçak modu.
-8. [ ] **Bölge sonu hikâye kartları.**
+8. [x] **Bölge sonu hikâye kartları.**
    - Her bölgenin sonunda yalnızca yazı ve mevcut görsellerle kısa bir sahne olur: köyün neden kurulduğu, Pofi'nin yolu.
    - Metinler köylü hikâyeleriyle bağlanır.
+   - **Yapıldı (2026-11-08):** "Pofi'nin yolu" altı bölüm, metinler `STORY` ayarında (`js/config.js`). Her bölgenin son leveli (100, 250, 450, 650, 850, 1000) ilk kez bitince tanıtım kartlarıyla aynı düzende tek bir kart çıkar.
+     - **Hikâye:** Pofi boş koya gelir, tepedeki fenerde eski bir harita bulur, ışıkları izleyip limana iner. Kaptan Mors haritayı büyükannesinin çizdiğini söyler, ormandan geçip zirveye köyüyle çıkar. Zirvedeki "şarkı" köyün sesidir. Bobo, Nana, Kiko, Tipi ve Kaptan Mors hikâyede geçer.
+     - **Görünüm:** Kart bölgenin harita renklerini ve Pofi'nin kıyafetiyle çizimini kullanıyor, yeni görsel yok.
+     - **Yeniden okuma:** Görevler ekranında okunmuş bölgenin rozetine dokununca bölüm yeniden açılıyor.
+     - **Eski kayıtlar:** Geçilmiş bölümler okunmuş sayılıyor, art arda kart çıkmıyor; Görevler'den okunabiliyor.
+     - **Not:** Metinler bir öneri. Sen ya da Mustafa değiştirmek isterseniz yalnızca `STORY` düzenlenir.
 9. [ ] **Gazete zenginleştirme.**
    - Haftanın sipariş sayısı, festival durumu, köylü dostlukları ve nadir balık gibi gerçek oyuncu verisinden haberler.
    - Bilmece havuzu genişletilir.

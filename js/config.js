@@ -455,6 +455,65 @@ export const MAP_REGIONS = [
   { from: 651, name: 'Çam Ormanı', top: '#b7e2cc', bottom: '#e6f6ec', deco: ['pine', 'pine', 'bench'] },
   { from: 851, name: 'Kristal Zirve', top: '#d6c8f2', bottom: '#f1ecfb', deco: ['statue', 'aurora', 'snowballs'] },
 ];
+// Pofi'nin yolu: her bölgenin son leveli ilk kez bitince bir hikâye kartı açılır (MAP_REGIONS ile aynı sıra).
+// Görevler ekranında bölge rozetine dokununca okunan bölüm yeniden açılır. Yalnızca yazı, yeni görsel gerekmez.
+export const STORY = [
+  {
+    after: 100, title: `Koyun ilk ışıkları`,
+    lines: [
+      `Pofi bu sessiz koya elinde bir oltayla, tek başına gelmişti. Buz uzayıp gidiyor, rüzgârdan başka ses duyulmuyordu.`,
+      `Her balıkla bir iglo, her igloyla bir ışık yandı. Önce Bobo geldi balık kokusunun peşinden, sonra diğerleri.`,
+      `Bir gece koyun arkasındaki tepelerde küçük bir fener belirdi. Orada kim yaşıyor olabilirdi?`,
+    ],
+    next: `Kar Tepeleri seni bekliyor.`,
+  },
+  {
+    after: 250, title: `Tepedeki fener`,
+    lines: [
+      `Fener, terk edilmiş bir kulübenin penceresinde yanıyordu. İçeride kimse yoktu; masada yalnızca eski, katlanmış bir harita duruyordu.`,
+      `Haritada kıvrılan bir yol, en tepede de parıldayan bir zirve çizilmişti. Kenarına şöyle yazılmıştı: "Işıkları izle."`,
+      `Nana haritayı görünce gülümsedi: "Kuzey ışıkları dans ettiğinde Kristal Zirve şarkı söyler derlerdi."`,
+    ],
+    next: `Yol, Kuzey Işıkları'nın altından geçiyor.`,
+  },
+  {
+    after: 450, title: `Işıkların altında`,
+    lines: [
+      `Geceler uzadı, gökyüzü yeşile ve mora boyandı. Pofi her akşam ışıkların hangi yöne aktığını izledi.`,
+      `Işıklar hep aynı yere iniyordu: uzaktaki denize. Haritanın ikinci satırı da bunu söylüyordu: "Işığın denize indiği yerde bir liman var."`,
+      `Köylüler o gece ateşin başında Pofi'ye sıcak kakao hazırladı. Kimse "gitme" demedi; herkes "dönünce anlat" dedi.`,
+    ],
+    next: `Liman Kıyısı'nda biri haritayı tanıyacak.`,
+  },
+  {
+    after: 650, title: `Kaptanın hatırası`,
+    lines: [
+      `Limanda Kaptan Mors haritaya uzun uzun baktı, sonra bıyığını sıvazladı: "Bu çizgileri tanırım. Büyükannem çizmişti bunu."`,
+      `Anlattığına göre büyükannesi zirveye bir kez çıkmış, ama nedenini kimseye söylememiş. Yalnızca "yalnız gidilmez" dermiş.`,
+      `Kaptan haritanın arkasındaki son ipucunu gösterdi: bir çam dalı resmi. Yol ormandan geçiyordu.`,
+    ],
+    next: `Çam Ormanı'nda yol daralıyor.`,
+  },
+  {
+    after: 850, title: `Ormanın sesi`,
+    lines: [
+      `Çamların arasında kar yumuşacıktı, her adım fısıltı gibi duyuluyordu. Kiko ile Tipi gizlice Pofi'nin peşine takılmıştı bile.`,
+      `Ağaçların arasından ilk kez zirve göründü; buzdan bir taç gibi parlıyordu.`,
+      `Haritanın en alt köşesinde, o güne dek kimsenin fark etmediği küçük bir yazı vardı: "Zirveye köyünle çık."`,
+    ],
+    next: `Kristal Zirve yakında.`,
+  },
+  {
+    after: 1000, title: `Zirvede`,
+    lines: [
+      `Pofi zirveye vardığında rüzgâr dindi. Kristaller kuzey ışıklarını yakalayıp yüzlerce renge böldü.`,
+      `Ve şarkı başladı. Ama bu kristallerin sesi değildi: aşağıdaki köyden yükselen kahkahalar, iglo kapılarının gıcırtısı, kakao fincanlarının tıngırtısıydı.`,
+      `Pofi o an anladı: zirvede bulunacak bir hazine yoktu. Hazine, arkasında büyüttüğü köydü.`,
+    ],
+    next: `Buz her sabah yeniden donar. Yol sürüyor.`,
+  },
+];
+
 // Usta levelleri: her bölgenin son levelinden sonra haritada bir buz kalesi. Bölgenin mekaniklerinden karışık,
 // çok zor ve hamle sınırlı özel bir level. after: kalenin açıldığı level, n: zorluk (üretici bu levelin ayarlarını kullanır).
 export const MASTER_LEVELS = [

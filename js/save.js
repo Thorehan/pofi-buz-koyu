@@ -44,6 +44,7 @@ function defaults() {
     sides: {}, // { yan yol sırası: en iyi yıldız }
     goalsSeen: [], // anlatılmış hedef türleri
     friends: {}, // { köylü: { pts, ch: okunan bölüm, talk: gün, gift: gün } }
+    storySeen: null, // okunan hikâye bölümleri (STORY indeksi); eski kayıtlarda geçilmiş bölümler sessizce işaretlenir
     unlocksSeen: null, // gösterilmiş "Yeni" kartları; eski kayıtlarda açık olanlar sessizce işaretlenir
     freeCoinDay: '',
     freeCoinCount: 0,

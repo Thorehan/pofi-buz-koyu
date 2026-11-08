@@ -24,7 +24,7 @@ import { load, save, resetSave } from './save.js';
 import { showRewarded, track } from './ads.js';
 import {
   ECON, ADS, TIER_LABEL, MULT_ZONES, INTRO, DAILY_REWARDS, DAILY_PUZZLE, WARDROBE, EVENT_TRACK, EVENT_SHOP, EVENT_LEVELS, EVENT_TOKENS, EVENT_BONUS, EVENT_PRIZE_FALLBACK, GUEST_TASKS, GUEST_REWARD, VISIT_GIFT,
-  STAR_CHEST, REPLAY, MAP_REGIONS, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, ACTIVE_BOOSTERS, WHISTLE_MOVES, FISH_SETS, ALBUM,
+  STAR_CHEST, REPLAY, MAP_REGIONS, STORY, ACHIEVEMENTS, ACH_REWARD, DAILY_QUESTS, QUEST_REWARD, QUEST_CHEST, MASTER_LEVELS, MASTER_REWARD, BOOSTERS, ACTIVE_BOOSTERS, WHISTLE_MOVES, FISH_SETS, ALBUM,
   BUILDINGS, BUFF_TEXT, VILLAGE_LEVELS, COLORS, COLOR_PRICE, COCOA, DISTRICTS, INTERIOR,
   VILLAGERS, VILLAGE_PHASES, VILLAGER_LINES, DAILY_TASKS, TASK_REWARD, FRIEND, VILLAGER_LIFE, DECOR_ITEMS, DECOR_SLOTS,
   VILLAGE_RENAME_PRICE, VILLAGE_NAME_MAX, VILLAGE_NAME_IDEAS,
@@ -2301,8 +2301,40 @@ const UNLOCKS = [
 // Eski kayıtlar: zaten açık olanlar için kart çıkmaz.
 if (P.unlocksSeen === null) { P.unlocksSeen = UNLOCKS.filter(u => u.when()).map(u => u.id); save(P); }
 // Bekleyen kart varsa gösterir ve true döner (aynı anda bir tane).
+// ---------- Pofi'nin yolu: bölge sonu hikâye kartları ----------
+const storyPassed = i => !!P.stars[STORY[i].after];
+// Eski kayıtlar: kart çıkmadan önce geçilmiş bölümler okunmuş sayılır (Görevler'den okunabilir).
+if (P.storySeen === null) { P.storySeen = STORY.map((s, i) => i).filter(storyPassed); save(P); }
+function showRoad(i, reread = false) {
+  const s = STORY[i], reg = MAP_REGIONS[i];
+  openOverlay(`
+    <span class="new-tag">POFİ'NİN YOLU · BÖLÜM ${i + 1}</span>
+    <h2>${s.title}</h2>
+    <small class="breakdown">${reg.name}</small>
+    <canvas id="stPofi" class="story-pofi"></canvas>
+    <div class="story-text">${s.lines.map(l => `<p>${l}</p>`).join('')}</div>
+    <p class="story-next">${s.next}</p>
+    <button id="stOk" class="btn primary big">${reread ? 'Kapat' : 'Devam'}</button>`, 'story');
+  $('overlayCard').style.setProperty('--st-top', reg.top);
+  $('overlayCard').style.setProperty('--st-bot', reg.bottom);
+  drawPofi(fitCanvas($('stPofi'), 96, 96), 48, 92, 76, { outfit: P.outfit, happy: i === STORY.length - 1, wave: 0.4 });
+  $('stOk').onclick = closeOverlay;
+  if (!reread) track('story_chapter', { chapter: i + 1 });
+}
+// Bekleyen bölüm varsa gösterir ve true döner (tanıtım kartlarıyla aynı sırada, ekran başına bir kart).
+function showPendingRoad() {
+  const i = STORY.findIndex((s, k) => storyPassed(k) && !P.storySeen.includes(k));
+  if (i < 0) return false;
+  P.storySeen.push(i);
+  save(P);
+  sfx.reward();
+  showRoad(i);
+  return true;
+}
+
 function showUnlock() {
   if (overlayOpen()) return false;
+  if (showPendingRoad()) return true;
   const u = UNLOCKS.find(x => !P.unlocksSeen.includes(x.id) && x.when());
   if (!u) return false;
   P.unlocksSeen.push(u.id);
@@ -3493,7 +3525,9 @@ function renderAlbum() {
 onArtLoad(id => { if (id.startsWith('fish_') && !$('screenAch').classList.contains('hidden')) renderAlbum(); });
 
 function renderBadges() {
-  $('badgeBox').innerHTML = MAP_REGIONS.map((r, i) => `<div class="bdg${P.masters[i] ? '' : ' off'}"><canvas data-bdg="${i}"></canvas><span>${r.name}</span></div>`).join('');
+  $('badgeBox').innerHTML = MAP_REGIONS.map((r, i) => `<div class="bdg${P.masters[i] ? '' : ' off'}${P.storySeen?.includes(i) ? ' story' : ''}" data-story="${i}"><canvas data-bdg="${i}"></canvas><span>${r.name}</span></div>`).join('')
+    + (P.storySeen?.length ? '<small class="bdg-hint">Okuduğun bölümü yeniden açmak için bölgeye dokun</small>' : '');
+  $('badgeBox').querySelectorAll('.bdg.story').forEach(b => { b.onclick = () => { sfx.ui(); showRoad(+b.dataset.story, true); }; });
   $('badgeBox').querySelectorAll('[data-bdg]').forEach(cv => {
     const i = +cv.dataset.bdg, ctx = fitCanvas(cv, 44, 44), im = art(`badge_master_${i + 1}`);
     if (im) { ctx.drawImage(im, 0, 0, 44, 44); return; }
