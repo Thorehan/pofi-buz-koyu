@@ -1463,7 +1463,7 @@ export class VillageView {
     ctx.scale(this.cam.z, this.cam.z);
     ctx.translate(-this.cam.x, -this.cam.y);
 
-    const skyPano = art('bg_sky_pano'), pano = art('bg_village_pano'), aurora = art('bg_aurora');
+    const skyPano = art('bg_sky_pano'), pano = art('bg_village_pano'), aurora = vl >= 5 ? art('bg_aurora') : null; // Lv5'ten önce indirilmez
     if (skyPano && pano) {
       // Tek parça görsel: gökyüzü, (Lv5'ten itibaren) kuzey ışıkları, sonra yol ve temelleri çizili zemin.
       // Zemin AT ve PROMENADE konumlarına göre çizildiği için üç panelin toplam genişliğine birebir oturtulur;
