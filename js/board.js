@@ -135,6 +135,27 @@ function tileArt(ctx, t, x, y, s, g) {
 }
 
 // Tek karo (tahtada ve "YENİ" kartlarındaki küçük resimlerde kullanılır).
+// Plaka kapısı rozeti: köşede küçük yuvarlak plaka. Kol kapısı mavi, plaka kapısı yeşildi; kırmızı-yeşil
+// renk körlüğünde ikisi aynı tona düşüyordu. Rozet şekille ayırır (kapı açıkken soluk).
+function plateBadge(ctx, x, y, s, alpha) {
+  const bx = x + s * 0.8, by = y + s * 0.2, r = s * 0.14;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#1d3557';
+  ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath();
+  ctx.arc(bx, by, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#3fbf7f';
+  ctx.beginPath();
+  ctx.ellipse(bx, by + r * 0.12, r * 0.62, r * 0.38, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function paintTile(ctx, t, x, y, s, time, opt = {}) {
   const g = Math.max(1, s * 0.03);
   const cx = x + s / 2, cy = y + s / 2;
@@ -211,6 +232,7 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
   if ((t === T.PGATE || (opt.pgateOpen && t === T.ICE)) && art('obj_gate_closed')) {
     const pid = t === T.PGATE ? 'obj_gate_closed' : 'obj_gate_open';
     objArt(ctx, pid, cx, cy, s, { im: tinted(pid, '#3fbf7f', { all: true }) });
+    plateBadge(ctx, x, y, s, t === T.PGATE ? 1 : 0.45);
     return;
   }
   if (t >= T.UP && t <= T.LEFT && objArt(ctx, 'obj_arrow', cx, cy, s * (0.92 + 0.05 * Math.sin(time * 5)), { rot: ((t - T.UP - 1) * Math.PI) / 2 })) return;
@@ -411,6 +433,7 @@ export function paintTile(ctx, t, x, y, s, time, opt = {}) {
       ctx.fill();
     }
     ctx.restore();
+    plateBadge(ctx, x, y, s, t === T.PGATE ? 1 : 0.45);
   } else if (t === T.TURN) {
     // Döner tabla: üstünden geçeni saat yönünde 90° çevirir.
     ctx.fillStyle = '#9fd0f2';
@@ -594,9 +617,12 @@ export class BoardView {
       ctx.save();
       ctx.strokeStyle = on ? '#2fb45a' : '#e5484d';
       ctx.fillStyle = on ? 'rgba(63,174,90,.3)' : 'rgba(229,72,77,.14)';
-      ctx.lineWidth = Math.max(2, s * 0.06);
-      ctx.setLineDash([s * 0.12, s * 0.08]);
-      ctx.lineDashOffset = -time * s * 0.25;
+      ctx.lineWidth = Math.max(2, s * (on ? 0.08 : 0.06));
+      // renk körlüğü: kasa oturunca çizgi düz ve durgun, boşken kesik ve kayan (renk tek başına yetmesin)
+      if (!on) {
+        ctx.setLineDash([s * 0.12, s * 0.08]);
+        ctx.lineDashOffset = -time * s * 0.25;
+      }
       roundRect(ctx, x + s * 0.14, y + s * 0.14, s * 0.72, s * 0.72, s * 0.14);
       ctx.fill();
       ctx.stroke();
