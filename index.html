@@ -22,8 +22,8 @@
   <header class="topbar">
     <button id="btnBack" class="icon-btn hidden" aria-label="Geri"><i class="ui ui-back"></i></button>
     <div class="wallet">
-      <span class="pill"><i class="ico coin"></i><b id="coins">0</b></span>
-      <span class="pill"><i class="ico flake"></i><b id="flakes">0</b></span>
+      <span class="pill"><i class="ico coin" role="img" aria-label="coin"></i><b id="coins">0</b></span>
+      <span class="pill"><i class="ico flake" role="img" aria-label="kar tanesi"></i><b id="flakes">0</b></span>
     </div>
   </header>
 
@@ -192,7 +192,7 @@
   <!-- Harita: geçmiş levellere dönüş -->
   <section id="screenMap" class="screen hidden">
     <div class="map-head">
-      <div class="mh-top"><div><b>Harita</b><small id="mapStars"></small></div><div class="mh-btns"><button id="mapMissing" class="map-chest"></button><button id="mapChest" class="map-chest"></button></div></div>
+      <div class="mh-top"><div><b>Harita</b><small id="mapStars"></small></div><div class="mh-btns"><button id="mapMissing" class="map-chest" aria-label="Eksik yıldızlar"></button><button id="mapChest" class="map-chest" aria-label="Yıldız sandığı"></button></div></div>
       <div class="progress"><div id="mapBar"></div></div>
     </div>
     <div id="mapScroll" class="map-scroll"><canvas id="mapCanvas"></canvas><div id="mapSpacer"></div></div>

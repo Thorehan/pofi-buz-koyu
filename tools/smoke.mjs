@@ -54,6 +54,14 @@ const uiUsed = new Set([
   ...[...read('js/config.js').matchAll(/\bui: '([a-z_0-9]+)'/g)].map(m => m[1]),
 ]);
 for (const id of uiUsed) if (!uiRules.has(id)) fail(`İkon kuralı yok: .ui-${id}`);
+// Ekran okuyucu: yazısız düğmenin aria-label'ı olmalı (index.html ve main.js şablonları; ${...} yazı sayılır)
+for (const [f, src] of [['index.html', html], ['js/main.js', main]]) {
+  for (const m of src.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)) {
+    if (/aria-label|title=/.test(m[1]) || !m[2].trim()) continue; // boş düğmeler oyun sırasında doldurulur
+    const text = m[2].replace(/\$\{ui\([^)]*\)\}/g, '').replace(/<[^>]+>/g, '').replace(/\$\{[^}]*\}/g, 'X');
+    if (!/[A-Za-zÇĞİÖŞÜçğıöşü0-9]/.test(text) && !/\$\{/.test(m[2].replace(/\$\{ui\([^)]*\)\}/g, ''))) fail(`Yazısız düğmede aria-label yok: ${f}:${src.slice(0, m.index).split('\n').length}`);
+  }
+}
 // UNLOCKS ikonları (ico: 'x' biçimi, ui() ile çizilir)
 const unl = main.slice(main.indexOf('const UNLOCKS = ['), main.indexOf('];', main.indexOf('const UNLOCKS = [')));
 for (const [, id] of unl.matchAll(/ico: '([a-z_0-9]+)'/g)) if (!uiRules.has(id)) fail(`Tanıtım kartı ikonu yok: .ui-${id}`);

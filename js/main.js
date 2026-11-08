@@ -114,10 +114,11 @@ let screen = 'splash';
 let run = null; // { def, L, st, history, moves, limit, finished, daily, stuck }
 
 // ---------- genel ----------
-const ui = id => `<i class="ui ui-${id}"></i>`; // çizilmiş ikon seti (css: .ui-<id>)
-const coinIco = '<i class="ico coin"></i>';
-const flakeIco = '<i class="ico flake"></i>';
-const hintIco = '<i class="ico hint"></i>';
+const ui = id => `<i class="ui ui-${id}" aria-hidden="true"></i>`; // çizilmiş ikon seti (css: .ui-<id>); yanındaki yazının süsü
+// Fiyat simgeleri ekran okuyucuda okunur: "coin 120" (yalnızca "120" değil).
+const coinIco = '<i class="ico coin" role="img" aria-label="coin"></i>';
+const flakeIco = '<i class="ico flake" role="img" aria-label="kar tanesi"></i>';
+const hintIco = '<i class="ico hint" role="img" aria-label="ipucu"></i>';
 const popcount = m => { let c = 0; while (m) { c += m & 1; m >>= 1; } return c; };
 
 function persist() { P.lastSeen = Date.now(); save(P); updateWallet(); }
@@ -2029,7 +2030,7 @@ function showVillagers() {
   const vl = villageLevel(P), here = villagersHere().map(v => v.id);
   const rows = VILLAGERS.map(v => {
     const price = discounted(P, v.price);
-    const act = here.includes(v.id) ? `<button class="btn secondary fr-open" data-fr="${v.id}">${friendHearts(friendOf(v.id))}${friendReady(v.id) ? '<i class="dot"></i>' : ''}</button>`
+    const act = here.includes(v.id) ? `<button class="btn secondary fr-open" data-fr="${v.id}" aria-label="${v.name} ile dostluk: ${friendLv(friendOf(v.id))}/3 kalp">${friendHearts(friendOf(v.id))}${friendReady(v.id) ? '<i class="dot"></i>' : ''}</button>`
       : !v.price ? `<small class="muted">Köy Lv${v.vl}</small>`
       : vl < v.vl ? `<small class="muted">Köy Lv${v.vl}</small>`
       : `<button class="btn green" data-inv="${v.id}" ${P.coins < price ? 'disabled' : ''}>${coinIco}${price}</button>`;
@@ -4086,9 +4087,29 @@ $('btnShare').onclick = shareVillage;
 $('btnVisit').onclick = askVisit;
 $('btnVisitBack').onclick = leaveVisit;
 $('btnCocoa2').onclick = async () => { if (await showRewarded('cocoa_x2')) sellCocoa(2); };
-window.addEventListener('keydown', e => {
-  if (screen === 'game' && (e.code === 'KeyZ' || e.code === 'Backspace')) { e.preventDefault(); undo(); }
-});
+// Klavye (masaüstü): oklar ve WASD Pofi'yi kaydırır (board.js), Z ya da Backspace geri alır, R baştan başlatır, H ipucu verir,
+// Esc açık pencereyi ya da yapı panelini kapatır. Yazı yazılırken ve pencere açıkken oyun tuşları çalışmaz
+// (bu dinleyici yakalama aşamasında, board.js'tekinden önce çalışır).
+const typingIn = e => !!e.target.closest?.('input:not([type=checkbox]):not([type=range]), textarea, [contenteditable]');
+const CLOSE_WORDS = /^(Kapat|Sonra|Vazgeç|Geri|Tamam)$/;
+function escClose() {
+  if (overlayOpen()) {
+    const btns = [...$('overlayCard').querySelectorAll('button')].filter(b => b.offsetParent && !b.disabled && !b.classList.contains('invisible'));
+    const b = btns.find(x => x.getAttribute('aria-label') === 'Kapat') || btns.reverse().find(x => CLOSE_WORDS.test(x.textContent.trim()));
+    if (b) b.click();
+    return;
+  }
+  if (sheet) closeSheet();
+}
+document.addEventListener('keydown', e => {
+  if (typingIn(e) || e.ctrlKey || e.metaKey || e.altKey) { e.stopPropagation(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); escClose(); return; }
+  if (overlayOpen()) { e.stopPropagation(); return; } // pencere açıkken Pofi kaymaz
+  if (screen !== 'game' || !run) return;
+  if (e.code === 'KeyZ' || e.code === 'Backspace') { e.preventDefault(); undo(); }
+  else if (e.code === 'KeyR' && !e.repeat) $('btnRestart').click();
+  else if (e.code === 'KeyH' && !e.repeat) useHint();
+}, true);
 
 // Köy sahnesinin oyun ekranı ve fotoğrafta ortak olan bilgileri
 const villageScene = () => ({
