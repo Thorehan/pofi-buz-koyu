@@ -2,7 +2,7 @@
 
 Bu belge oyunun geliştirme sırasını ve her turda izlenecek adımları tutar. Claude bu listeden sıradaki maddeyi alır, uygular, dener, yayına alır ve listeyi günceller. Senin kararını ya da ücretli bir işi gerektiren maddeler atlanır ve "Karar bekleyenler" bölümüne yazılır.
 
-Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor ve sonra oyun dengesini yapacak.
+Durum: geliştirme aşaması, yayın daha uzakta. Müzikler geldi. Oyun dengesini de artık biz yapıyoruz (2026-11-09: Mustafa yoğun, bakamayacak).
 
 ## Her turda
 
@@ -25,7 +25,7 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 - **Reklam:** Ara reklam yok, yalnızca oyuncunun seçtiği ödüllü reklam.
 - **Görsel:** Ücretli görsel üretimi yok. Görsel gerekiyorsa madde "Karar bekleyenler"e gider; üretim görsel oturumunda, maliyet gösterilip onay alınarak yapılır.
-- **Denge:** Level zorluğu, ödül ve fiyat sayıları değiştirilmez; dengeyi Mustafa yapar. Yeni sistemlerin başlangıç değerleri koyulabilir, ama denge rehberine yazılır.
+- **Denge:** Dengeyi biz yapıyoruz (2026-11-09). Level zorluğu, ödül ve fiyat sayılarındaki büyük değişiklikler önce bulgu ve öneri olarak kullanıcıya gösterilir; her değişiklik `docs/denge/denge-rehberi.md` içine yazılır.
 - **Reddedilenler:**
   - Gizli rozet avı, iglo müzik kutusu, sohbet ya da çok oyunculu mod, üyelik duvarı, kart oyunu, balık tutma mini oyunu, İngilizce.
   - "Beklenenden az hamle" başarımı.
