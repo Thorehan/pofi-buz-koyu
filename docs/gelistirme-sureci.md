@@ -394,8 +394,9 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 8. [x] **Hareketi azalt seçeneği.** (2026-11-08, `4652b43`: Ayarlar anahtarı, cihaz ayarına da uyar; parçacıklar 1/4, konfeti ve havai fişek yok, kar seyrek, CSS animasyonları anında biter. Tarayıcıda görsel olarak denenmedi, yalnızca duman testi.)
    - Ayarlar'a anahtar eklenir; telefonun "hareketi azalt" ayarına da uyar.
    - Açıkken sallanma, zıplama, ekran sarsıntısı ve parçacıklar sadeleşir; oyunun anlaşılması bozulmaz.
-9. [ ] **Köye ilk giriş akışı.**
+9. [x] **Köye ilk giriş akışı.**
    - "Köyüne bir isim ver" sorusu ilk yapı kurulduktan sonraya ertelenir; yeni oyuncu ilk girişte iki pencereyi art arda görmez.
+   - **Yapıldı (2026-11-09, `ab5a807`):** Köye ilk girişte isim sorusu artık çıkmıyor. İlk yapı kurulunca kurulum bildiriminden yaklaşık 2 sn sonra yapı paneli kapanıp "Köyüne bir isim ver" açılıyor. O anda köy seviyesi kutlaması gibi başka bir pencere açıksa soru bir sonraki köy ziyaretine kalıyor. Yapısı olup adı olmayan eski oyuncular köye girince eskisi gibi soruluyor. Tarayıcıda denendi: ilk girişte pencere yok, İglo kurulunca isim penceresi çıktı, hata yok.
 
 **Test**
 
@@ -463,3 +464,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `80a5c19` Uzun oturum: müzik elemanı birikmesi giderildi, adı eksik evcil dost hatası; 20 turda bellek sabit.
 - 2026-11-08 · `09c7e32` Renk körlüğü: plaka kapısı rozeti, kasa hedefi düz çizgi.
 - 2026-11-08 · `4652b43` Hareketi azalt seçeneği.
+- 2026-11-09 · `ab5a807` Köye ilk giriş: isim sorusu ilk yapıdan sonra.
