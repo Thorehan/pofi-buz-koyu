@@ -400,13 +400,21 @@ Durum: geliştirme aşaması, yayın daha uzakta. Mustafa müzikleri gönderiyor
 
 **Test**
 
-10. [ ] **Oyun içi testi genişletmek.**
+10. [x] **Oyun içi testi genişletmek.**
     - `tools/oyun-testi.html` yan yolları, usta levellerini, günlük bulmacayı ve etkinlik levellerini de oynar.
     - Her türde kazanma, ödül ekranı ve haritaya dönüş denetlenir.
+    - **Yapıldı (2026-11-09, `42d2226`):**
+      - **Yeni türler:** Araç artık yan yolları (y1-y40), usta levellerini (u1-u6), günlük bulmacayı (g) ve etkinlik levellerini (e1-e15) de oynuyor. Kutuya "37 y2 u1 g e3" gibi karışık yazılabiliyor. "Yalnız diğer türler" düğmesi 13 levellik seti oynatıyor: her hedef türünden bir yan yol, 6 usta, günlük, 3 etkinlik.
+      - **Nasıl:** Oyuna yalnızca test adresinde (`?test=`) açılan bir kanca eklendi: level başlatma, tahta durumu ve ekran okuma. Normal oyuncu adresinde yok.
+        - Çözüm oyunun kendi motoruyla, açılan tahtadan hesaplanıyor; günlük bulmaca her gün üretildiği için de böyle.
+        - Ters kontrollü etkinlikte tuşlar çevrilerek basılıyor.
+        - Hamle sınırlı levellerde ekrandaki sayaç kalan hamleyi gösterdiğinden hamle sayısı oyundan okunuyor.
+      - **Denetimler:** Geri al, baştan, çözümle kazanma, sonuç ekranı, kapatınca doğru ekrana dönüş (yan yol ve usta → harita, günlük → ana sayfa, etkinlik → etkinlik ekranı), usta çözümünün hamle sınırına sığması ve konsol hataları.
+      - **Sonuç:** 13/13 geçti. Mekanik levelleri de yeniden denendi (4 ve 37), geçti.
 
 ## Durum
 
-Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü işaretlenmemiş ilk maddeden devam ediyor.
+Tur 1, 2 ve 3 bitti (2026-11-09). Döngü durdu. Yeni iş, "Karar bekleyenler"den (özellikle geniş köy zemini görseli) senin kararınla ya da listeye eklenen yeni maddelerle başlar.
 
 ## Karar bekleyenler
 
@@ -465,3 +473,4 @@ Tur 1 ve Tur 2'nin 10'ar maddesi bitti (2026-11-08). Tur 3 başladı; döngü i�
 - 2026-11-08 · `09c7e32` Renk körlüğü: plaka kapısı rozeti, kasa hedefi düz çizgi.
 - 2026-11-08 · `4652b43` Hareketi azalt seçeneği.
 - 2026-11-09 · `ab5a807` Köye ilk giriş: isim sorusu ilk yapıdan sonra.
+- 2026-11-09 · `42d2226` Oyun içi test: yan yol, usta, günlük ve etkinlik levelleri (13/13).
