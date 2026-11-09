@@ -190,7 +190,8 @@ function showScreen(name) {
     village.resize();
     renderVillage();
     if (P.vlClaimed < villageLevel(P)) setTimeout(celebrateVillage, 500);
-    else if (!P.villageName && !nameAsked) { nameAsked = true; setTimeout(() => { if (screen === 'village' && !overlayOpen()) showVillageName(); }, 400); }
+    // İsim sorusu ilk yapıdan sonra: yeni oyuncu köye ilk girişte iki pencereyi (isim + ilk yapı) art arda görmesin
+    else if (!P.villageName && !nameAsked && Object.keys(P.village).length) { nameAsked = true; setTimeout(() => { if (screen === 'village' && !overlayOpen()) showVillageName(); }, 400); }
   }
   if (name === 'home') homeView.resize();
   if (name === 'wardrobe') renderWardrobe();
@@ -1670,6 +1671,10 @@ function upgrade(id) {
   renderVillage();
   renderSheet();
   if (villageLevel(P) > vlBefore) setTimeout(celebrateVillage, 900);
+  // ilk yapı kuruldu: köyün adını şimdi sor (başka pencere açıksa bir sonraki köy ziyaretinde sorulur)
+  else if (!P.villageName && !nameAsked && Object.keys(P.village).length === 1) {
+    setTimeout(() => { if (screen === 'village' && !overlayOpen() && !P.villageName) { nameAsked = true; closeSheet(); showVillageName(); } }, 1800);
+  }
 }
 
 // Köy seviyesi atlama kutlaması: görsel + buff + ödül sandığı. Birden fazla seviye birikirse sırayla.
