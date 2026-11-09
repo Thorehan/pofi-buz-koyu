@@ -322,9 +322,11 @@ const introsShown = new Set(); // bu oturumda mekanik kartı gösterilen levelle
 // Yarım kalan level: her hamlede o levelde yapılan hamleler (yön listesi) ayrı bir anahtarda tutulur.
 // Oyuncu aynı leveli yeniden açınca hamleler motorda yeniden oynatılır, tahta kaldığı yerden sürer.
 // Kazanınca, kaybedince, baştan alınca ya da levelden çıkınca silinir. Level verisi değiştiyse
-// (hamle artık geçersizse) sessizce baştan başlar.
+// (hamle artık geçersizse ya da tahta imzası tutmuyorsa) sessizce baştan başlar.
 const RUN_KEY = 'pofi.run.v1';
-const runKeyOf = (def, evk, master, side) => [def.n, def.daily || '', evk ?? '', evk !== null && evk !== undefined ? P.event?.key ?? '' : '', master ?? '', side ?? ''].join('|');
+// Tahta imzası: leveller yeniden üretilince (denge) eski hamleler yeni tahtada oynatılmasın.
+const boardSig = def => { let h = 0; for (const ch of (def.rows || []).join('/')) h = (h * 31 + ch.charCodeAt(0)) | 0; return (h >>> 0).toString(36); };
+const runKeyOf = (def, evk, master, side) => [def.n, def.daily || '', evk ?? '', evk !== null && evk !== undefined ? P.event?.key ?? '' : '', master ?? '', side ?? '', boardSig(def)].join('|');
 function readRunSnap() {
   try { return JSON.parse(localStorage.getItem(RUN_KEY)); } catch { return null; }
 }

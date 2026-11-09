@@ -1,6 +1,6 @@
 # Pofi: Buz Köyü — oynanış dengesi rehberi
 
-Bu rehber Mustafa için hazırlandı. Unity'ye geçiş, oyun dengesi bittikten sonra yapılacak; denge çalışması web sürümünde yapılır ve sonuç Unity'ye olduğu gibi taşınır.
+Dengeyi artık biz yapıyoruz (2026-11-09; rehber önce Mustafa için yazılmıştı). Unity'ye geçiş, oyun dengesi bittikten sonra yapılacak; denge çalışması web sürümünde yapılır ve sonuç Unity'ye olduğu gibi taşınır. Değişikliklerin günlüğü en alttaki "Denge günlüğü" bölümündedir.
 
 ## 1. Elindeki dosyalar
 
@@ -9,7 +9,8 @@ Bu rehber Mustafa için hazırlandı. Unity'ye geçiş, oyun dengesi bittikten s
 | `docs/denge/level-tablosu.csv` | 1000 levelin her biri için bir satır. Excel'de doğrudan açılır (Türkçe ayar, noktalı virgül). |
 | `docs/denge/zorluk-egrisi.svg` | En kısa çözümün level boyunca grafiği; tarayıcıda açılır. Noktaların rengi zorluk sınıfını gösterir. Koyu çizgi 25 levellik ortalamadır. Mavi kesikli çizgiler grid büyümesini, turuncu çizgiler yeni mekaniğin geldiği leveli işaretler. |
 | `tools/level-stats.mjs` | Tabloyu ve grafiği yeniden üretir (yaklaşık 15 saniye). |
-| `tools/gen-levels.mjs` | 1000 leveli yeniden üretir ve her birini çözücüyle doğrular (yaklaşık 3 dakika). |
+| `tools/gen-levels.mjs` | 1000 leveli yeniden üretir ve her birini çözücüyle doğrular. Zorluk hedefleriyle yaklaşık 30 dakika. |
+| `tools/zorluk-analizi.mjs` | Her level için derin zorluk ölçüsü: tuzak oranı, arama yükü, en kısa çözüm sayısı, dar geçitler. Çıktı `docs/denge/zorluk-analizi.json` (yaklaşık 1 dakika). |
 
 ### Tablonun sütunları
 
@@ -147,3 +148,58 @@ Her ay bir tema gelir. Köy, stanttaki kakaoyu, iskelenin balığını ya da coi
 - `stages`: 150, 400 ve 800 puan. Son aşama oyuncunun sahip olmadığı bir tüccar süsünü verir; hepsine sahipse `rareCoins` verilir.
 - Siparişler için gereken kakao ve balık bağışa gitmez.
 - Ölçü: festival, yapılar ve projeler bittikten sonra coin'in gideceği bir yer. Son aşama ayda birkaç gün düzenli köy ziyaretiyle bitebilmeli, tek oturumda bitmemeli.
+
+
+## 7. Zorluk sınıfları gerçek zorluğa bağlandı (2026-11-09)
+
+**Sorun (ölçüm):** 500'den sonra "kolay" ile "çok zor" leveller neredeyse aynıydı: en kısa çözüm 7,3 ile 8,7, arama yükü 75 ile 121 konum, tuzak oranı %14 ile %15. Zor levellerin arama yükü çok zordan bile yüksekti. Kolay etiketli 200 levelin 43'ü en zor %30'daydı. Zorluğu ayıran neredeyse yalnızca hamle sınırıydı. 450'den sonra en kısa çözüm 7-8'de düzleşiyordu.
+
+**Zorluk puanı** (`difficultyOf`, `js/engine.js`): log2(arama yükü + 1) + 6 × tuzak oranı + (tek doğru yolsa 0,5).
+- **Arama yükü:** En kısa çözümden daha kısa mesafedeki farklı konum sayısı; çözümü bulmadan önce düşünülebilecek konumlar.
+- **Tuzak oranı:** Ulaşılabilen konumların ne kadarından artık kazanılamıyor.
+
+**Sınıf hedefleri** (`tierTarget`): 136'dan sonra, mekanik tanıtım blokları hariç. t = (n − 136) / 864, yani 136'da 0, 1000'de 1.
+
+| Sınıf | Puan | Tuzak oranı | Diğer |
+|---|---|---|---|
+| Kolay | ≤ 5 + t | | |
+| Orta | 5,5 + 0,5t ile 7,5 + t | | |
+| Zor | 7,5 + t ile 11 + t | %12 ile %80 | |
+| Çok zor | 8,5 + 1,5t ile 12,5 + 1,5t | %15 ile %88 | en fazla 2 en kısa çözüm |
+
+Ölçek 2026-11-09'daki 1000 levelin dağılımından alındı: kolay yaklaşık alt %30, zor üst %30, çok zor üst %15.
+
+**Üretici:**
+- Hamle bandına uyan adaylardan sınıf hedefine gireni seçer.
+- 120 ölçümde giren aday yoksa hedefe en yakını alır.
+- Bu yalnızca `tools/gen-levels.mjs` ile açıktır (`balance: true`). Oyun içinde üretilen günlük bulmaca ve etkinlik levelleri hız için eskisi gibi kalır.
+
+**Hamle bantları:**
+- 700'den sonra zor ve çok zor levellerde en uzun çözüm +1.
+- Çok zordan hemen sonraki kolay levelde en kısa çözüm +1 (yumuşak iniş).
+
+**Değişmeyenler:**
+- İlk 135 level aynen kaldı.
+- Grid büyümesi, mekaniklerin geliş levelleri, zorluk ritmi, yıldız ve hamle sınırı formülleri değişmedi.
+- 1000'den sonraki leveller oyun içinde üretilir ve sınıf hedefi kullanmaz (hız için).
+
+**Sonuç (136-1000, 586 level değişti, üretim 85 dk):**
+
+| Sınıf | Puan eski → yeni | Arama yükü | Tuzak oranı | Tek doğru yol |
+|---|---|---|---|---|
+| Kolay (358) | 6,7 → 5,1 | 56 → 23 | %2 → %0 | 236 → 242 |
+| Orta (338) | 7,6 → 6,9 | 87 → 69 | %4 → %0 | 199 → 224 |
+| Zor (87) | 7,8 → 9,1 | 105 → 124 | %0 → %26 | 50 → 51 |
+| Çok zor (82) | 7,7 → 10,0 | 99 → 122 | %7 → %44 | 54 → 68 |
+
+Değerler ortanca.
+- Kolay etiketli olup en zor %30'a düşen level: 77/358 → 6/358.
+- Zor ya da çok zor olup en kolay %30'a düşen level: 36/169 → 4/169.
+- Zor ve çok zor levellerin ilk hamlelerinden ortalama %9'u tuzağa götürüyor (eskiden %3). 169 zor levelin 30'unda en az bir ilk hamle tuzak.
+- 100'lük dilimlerde zor + çok zor ortalaması 200'lerde 7,3, 900'lerde 10,3; kolaylar 5 civarında düz kalıyor. Ritim artık "nefes alma + tepe" testere dişi.
+- Genel ortalama geç oyunda eskisinden düşük (900'ler 8,5 → 7,1): kolay ve orta leveller hafifledi. Oyun verisinde geç oyun fazla kolay görünürse ilk ayar `tierTarget` içindeki kolay ve orta üst sınırları.
+- Yarım kalan level kaydına tahta imzası eklendi; yeniden üretilen levelde eski hamleler oynatılmaz, level baştan açılır.
+
+## Denge günlüğü
+
+- **2026-11-09:** Zorluk sınıfları zorluk puanına bağlandı; 136-1000 yeniden üretildi (bölüm 7). Sonuç 2026-11-10'da ölçüldü: sınıflar ayrıştı, kolay/orta hafifledi, zor/çok zor tuzaklı ve daha derin.

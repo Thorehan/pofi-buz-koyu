@@ -12,7 +12,7 @@ const levels = [];
 const t0 = Date.now();
 for (let n = 1; n <= count; n++) {
   const t = Date.now();
-  const lvl = E.generateLevel(n);
+  const lvl = E.generateLevel(n, { balance: true }); // zorluk sınıfı hedefleri (denge 2026-11-09)
   const { L, S } = E.parseLevel(lvl);
   const sol = E.solve(L, S, 200000);
   if (!sol || sol.length !== lvl.min) throw new Error(`Doğrulama hatası: level ${n}`);

@@ -411,6 +411,65 @@ export function solve(L, S0, maxStates = 120000) {
   return null;
 }
 
+// Zorluk ölçüsü (2026-11-09, denge): en kısa çözümden daha derin bir ölçü.
+//  effort: en kısa çözümden daha kısa mesafedeki farklı konum sayısı (çözümü bulmadan önce düşünülebilecekler)
+//  dead: ulaşılan konumların ne kadarından artık kazanılamıyor (geri al gerektiren tuzak oranı)
+//  optimal: en kısa uzunluktaki farklı çözüm sayısı
+//  score: log2(effort + 1) + 6 × dead + (tek doğru yolsa 0,5) — sınıf hedefleri bu puana göre konur
+// cap: incelenen konum sınırı; aşılırsa ölçü kabadır (capped).
+export function difficultyOf(L, S0, cap = 4000) {
+  const dirs = S0.q >= 0 ? 8 : 4;
+  const idx = new Map([[stateKey(S0), 0]]), states = [S0], dist = [0], edges = [], wins = [];
+  let capped = false;
+  for (let i = 0; i < states.length; i++) {
+    const s = states[i], out = [];
+    edges.push(out);
+    if (won(L, s)) { wins.push(i); continue; }
+    for (let d = 0; d < dirs; d++) {
+      const r = simulate(L, s, d);
+      if (!r) continue;
+      const k = stateKey(r.state);
+      let j = idx.get(k);
+      if (j === undefined) {
+        if (states.length >= cap) { capped = true; continue; }
+        j = states.length; idx.set(k, j); states.push(r.state); dist.push(dist[i] + 1);
+      }
+      out.push(j);
+    }
+  }
+  const n = states.length;
+  if (!wins.length) return null;
+  const rev = Array.from({ length: n }, () => []);
+  edges.forEach((out, i) => out.forEach(j => rev[j].push(i)));
+  const alive = new Uint8Array(n), q = [...wins];
+  for (const w of wins) alive[w] = 1;
+  for (let i = 0; i < q.length; i++) for (const p of rev[q[i]]) if (!alive[p]) { alive[p] = 1; q.push(p); }
+  let dead = 0;
+  for (let i = 0; i < n; i++) if (!alive[i]) dead++;
+  const min = Math.min(...wins.map(w => dist[w]));
+  const ways = new Float64Array(n); ways[0] = 1;
+  for (let i = 0; i < n; i++) for (const j of edges[i]) if (dist[j] === dist[i] + 1) ways[j] += ways[i];
+  let optimal = 0;
+  for (const w of wins) if (dist[w] === min) optimal += ways[w];
+  let effort = 0;
+  for (let i = 0; i < n; i++) if (dist[i] < min) effort++;
+  const deadR = dead / n;
+  return { min, effort, dead: deadR, optimal, capped, score: Math.log2(effort + 1) + 6 * deadR + (optimal === 1 ? 0.5 : 0) };
+}
+
+// Sınıf hedefleri (136'dan sonra, karışık mekanikli leveller): puan aralığı level ilerledikçe yükselir.
+// Ölçek 2026-11-09'daki 1000 levelin dağılımından: kolay ≈ alt %30, orta ≈ orta bant, zor ≈ üst %30, çok zor ≈ üst %15.
+export function tierTarget(tier, n) {
+  const t = Math.max(0, Math.min(1, (n - 136) / 864));
+  if (tier === 'easy') return { lo: 0, hi: 5 + 1 * t, dead: 0 };
+  if (tier === 'medium') return { lo: 5.5 + 0.5 * t, hi: 7.5 + 1 * t, dead: 0 };
+  // zor ve çok zorda üst sınır da var: tahta zalimleşmesin (neredeyse her hamle çıkmaza gitmesin)
+  if (tier === 'hard') return { lo: 7.5 + 1 * t, hi: 11 + 1 * t, dead: 0.12, deadMax: 0.8 };
+  return { lo: 8.5 + 1.5 * t, hi: 12.5 + 1.5 * t, dead: 0.15, deadMax: 0.88, optimal: 2 };
+}
+const targetGap = (d, tg) => (d.score < tg.lo ? tg.lo - d.score : d.score > tg.hi ? d.score - tg.hi : 0)
+  + Math.max(0, tg.dead - d.dead) * 10 + (tg.deadMax ? Math.max(0, d.dead - tg.deadMax) * 10 : 0) + (tg.optimal && d.optimal > tg.optimal ? 0.5 : 0);
+
 // Çözümü oynatıp hangi mekaniklerin kullanıldığını say.
 export function usage(L, S0, moves) {
   const u = {
@@ -499,6 +558,10 @@ export function levelSpec(n, r = rng(n * 31 + 7)) {
   if (tier === 'medium') hi += 1;
   if (tier === 'hard') { lo += 1; hi += 2; }
   if (tier === 'veryhard') { lo += 2; hi += 2; }
+  // Denge (2026-11-09): 700'den sonra zorluk düzleşiyordu; zor ve çok zor biraz uzar.
+  if (n > 700 && (tier === 'hard' || tier === 'veryhard')) hi += 1;
+  // Çok zor levelden hemen sonraki kolay level: zorluk birden çökmesin (yumuşak iniş).
+  if (n >= MIX_FROM && tier === 'easy' && !intro && (n - 1) % 10 === 0) { lo += 1; hi = Math.max(hi, lo + 1); }
 
   let mech, req;
   const st = [...STAGES].reverse().find(s => n >= s.from);
@@ -651,9 +714,15 @@ function applyRule(spec, rule, n) {
   return spec;
 }
 
-export function generateLevel(n, { seed = n, maxAttempts = 6000, rule = null } = {}) {
+// balance: zorluk hedefi (tools/gen-levels.mjs açar). Oyun içinde üretilen günlük bulmaca ve etkinlik levellerinde
+// kapalı: ölçüm telefonda saniyeler sürebilir.
+export function generateLevel(n, { seed = n, maxAttempts = 6000, rule = null, balance = false } = {}) {
   const spec = applyRule(levelSpec(n, rng(seed * 31 + 7)), rule, n);
-  let best = null, weak = null, loose = null;
+  let best = null, weak = null, loose = null, near = null;
+  // Sınıf hedefi: kural yoksa ve mekanik tanıtım bloğu değilse (tanıtım levelleri öğretmek için kolay kalır).
+  const stg = [...STAGES].reverse().find(x => n >= x.from);
+  const tg = balance && !rule && n >= MIX_FROM && !(stg.from >= MIX_FROM && n - stg.from < INTRO_BLOCK) ? tierTarget(spec.tier, n) : null;
+  let evals = 0; // ölçülen bant içi aday sayısı (iki penguenli tahtalar pahalı: sınırda en yakını alınır)
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const r = rng(seed * 100003 + attempt * 7717 + 1);
     const rows = buildCandidate(spec, r);
@@ -671,11 +740,24 @@ export function generateLevel(n, { seed = n, maxAttempts = 6000, rule = null } =
         continue;
       }
     }
-    if (dist === 0) return finalize(spec, rows, sol);
+    if (dist === 0) {
+      if (!tg) return finalize(spec, rows, sol);
+      // Denge: hamle bandı tuttu; zorluk puanı sınıfın hedefinde mi?
+      const d = difficultyOf(L, S);
+      evals++;
+      if (d) {
+        const gap = targetGap(d, tg);
+        if (gap === 0) return finalize(spec, rows, sol);
+        if (!near || gap < near.gap) near = { gap, rows, sol };
+      }
+      // hedefe girmezse denemeye devam; 120 ölçümden sonra ya da denemeler bitince hedefe en yakın bant içi aday
+      if (evals >= 120 && near) return finalize(spec, near.rows, near.sol);
+      if (attempt < maxAttempts - 1) continue;
+    }
     // Bant tutmazsa en yakın geçerli adayı yedekte tut.
     if (!best || dist < best.dist) best = { dist, rows, sol };
   }
-  const pick = best || weak || loose;
+  const pick = near || best || weak || loose;
   if (!pick) throw new Error('Level üretilemedi: ' + n);
   return finalize(spec, pick.rows, pick.sol);
 }
