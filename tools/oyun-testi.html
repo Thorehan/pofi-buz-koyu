@@ -23,20 +23,21 @@
 </head>
 <body>
 <h1>Oyun içi mekanik testi</h1>
-<p>Her mekaniğin ilk levelini gerçek oyun arayüzünde açar ve çözüm hamlelerini klavyeyle oynar (Pipi'ye Q ile geçer). Her levelde şunlar denetlenir: geri al (Z), baştan (R), çözümle kazanma, 3 yıldız ve konsol hataları. Yerel sunucuda açılır: <code>python -m http.server 5174</code>, sonra <code>http://localhost:5174/tools/oyun-testi.html</code>. Bu cihazdaki oyun kaydı test bitince geri yüklenir.</p>
+<p>Her mekaniğin ilk levelini, yan yolları (her hedef türünden biri), usta levellerini, günlük bulmacayı ve etkinlik levellerini gerçek oyun arayüzünde açar ve çözüm hamlelerini klavyeyle oynar (Pipi'ye Q ile geçer, ters kontrollü etkinlikte tuşları çevirir). Her levelde şunlar denetlenir: geri al (Z), baştan (R), çözümle kazanma, sonuç ekranı, kapatınca doğru ekrana dönüş (harita, etkinlik ya da ana sayfa) ve konsol hataları. Yerel sunucuda açılır: <code>python -m http.server 5174</code>, sonra <code>http://localhost:5174/tools/oyun-testi.html</code>. Bu cihazdaki oyun kaydı test bitince geri yüklenir.</p>
 <div class="bar">
-  <label>Leveller <input id="levels" placeholder="boş: her mekaniğin ilk leveli"></label>
+  <label>Leveller <input id="levels" placeholder="boş: hepsi · örnek: 37 y1 y2 u1 g e1"></label>
   <button id="go">Başlat</button>
+  <button id="goExtra">Yalnız diğer türler</button>
   <span id="status"></span>
 </div>
 <div id="sum"></div>
 <div class="wrap">
   <iframe id="game" title="Oyun"></iframe>
-  <table><thead><tr><th>Level</th><th>Mekanik</th><th>Çözüm</th><th>Geri al</th><th>Baştan</th><th>Kazanma</th><th>Hata</th></tr></thead><tbody id="rows"></tbody></table>
+  <table><thead><tr><th>Level</th><th>Tür</th><th>Çözüm</th><th>Geri al</th><th>Baştan</th><th>Kazanma</th><th>Dönüş</th><th>Hata</th></tr></thead><tbody id="rows"></tbody></table>
 </div>
 <script type="module">
 import { parseLevel, solve, simulate, won } from '../js/engine.js';
-import { INTRO } from '../js/config.js';
+import { INTRO, GOALS, MASTER_LEVELS, EVENT_LEVELS } from '../js/config.js';
 
 const $ = id => document.getElementById(id);
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -95,7 +96,8 @@ async function closeOverlays(d) {
     (btns.find(b => /^(Anladım|Tamam|Başla|Oyna|Devam|Sonra|Kapat)$/.test(b.textContent.trim())) || btns[0])?.click();
   }
 }
-const moves = d => +d.getElementById('hudMoves').textContent;
+// yapılan hamle: oyunun kendisinden (hamle sınırlı levellerde ekrandaki sayaç kalan hamleyi gösterir)
+const moves = d => d.defaultView.__pofiTest?.run()?.moves ?? +d.getElementById('hudMoves').textContent;
 // Bir hamle: tuşa basar, hamle sayısı artana ve kayma bitene kadar bekler.
 async function press(w, d, code, expectMoves) {
   for (let tries = 0; tries < 3; tries++) {
@@ -165,10 +167,92 @@ async function testLevel(n) {
   return row;
 }
 
+// Diğer türler: yan yol (y1-y40), usta (u1-u6), günlük bulmaca (g), etkinlik leveli (e1-e15).
+// Oyunun test kancasıyla başlatılır; çözüm oyunun kendi motoruyla, açılan tahtanın durumundan hesaplanır.
+const SIDE_GOALS = await (await fetch('../data/goals.json', { cache: 'no-cache' })).json();
+function specOf(tok) {
+  const m = /^([yuge])(\d*)$/.exec(tok);
+  if (!m) return null;
+  const k = +m[2] - 1;
+  if (m[1] === 'y' && k >= 0 && k < SIDE_GOALS.length) return { id: tok, label: `Yan yol ${k + 1}`, mech: GOALS[SIDE_GOALS[k].goal]?.title || '', args: [0, false, null, null, k], back: 'map' };
+  if (m[1] === 'u' && k >= 0 && k < MASTER_LEVELS.length) return { id: tok, label: `Usta ${k + 1}`, mech: 'hamle sınırlı', args: [0, false, null, k, null], back: 'map' };
+  if (m[1] === 'g') return { id: 'g', label: 'Günlük bulmaca', mech: 'üretilen level', args: [0, true], back: 'home' };
+  if (m[1] === 'e' && k >= 0 && k < EVENT_LEVELS) return { id: tok, label: `Etkinlik ${k + 1}`, mech: 'haftanın kuralı', args: [0, false, k], back: 'event' };
+  return null;
+}
+const EXTRA = ['y1', 'y2', 'y3', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6', 'g', 'e1', 'e2', 'e3'];
+const flip = d => (d & 4) | (((d & 3) + 2) % 4); // ters kontrol (main.js ile aynı)
+
+async function testSpec(spec) {
+  const row = { n: spec.label, mech: spec.mech, sol: '', undo: '-', restart: '-', win: '-', back: '-', errs: [] };
+  const stars = Object.fromEntries(Array.from({ length: 599 }, (_, i) => [i + 1, 3]));
+  const save = {
+    profile: { name: 'Test', method: 'guest', createdAt: Date.now() }, level: 600, coins: 500, hints: 3, flakes: 0, stars, goalsSeen: Object.keys(GOALS),
+    villageName: 'Test', unlocksSeen: null, storySeen: null, dailyRewardDay: dateKey(), lastSeen: Date.now(),
+  };
+  const { w, d } = await boot(save);
+  const hook = w.__pofiTest;
+  if (!hook) throw new Error('test kancası yok');
+  const E = await w.eval(`import("${new URL('../js/engine.js', location.href).href}")`); // oyunun kendi motoru (tam adresle)
+  hook.start(...spec.args);
+  await wait(900);
+  await closeOverlays(d);
+  const r0 = hook.run();
+  if (!r0 || hook.screen() !== 'game') { row.win = 'oyun açılmadı'; return row; }
+  const L = r0.L, S = r0.st, rev = !!r0.reverse;
+  const sol = E.solve(L, S, 400000);
+  row.sol = sol ? `${sol.length} hamle${r0.limit ? ` (sınır ${r0.limit})` : ''}${rev ? ' · ters' : ''}` : 'çözüm yok';
+  if (!sol) return row;
+  if (r0.limit && sol.length > r0.limit) row.errs.push('çözüm hamle sınırını aşıyor');
+  let sel = 0;
+  const step = async (dir, expect) => {
+    const who = dir >= 4 ? 1 : 0;
+    if (S.q >= 0 && who !== sel) { await press(w, d, 'KeyQ'); sel = who; }
+    const key = rev ? flip(dir) : dir; // oyun tuşu çevirir; çevrilmiş tuşa basılır ki istenen yöne gitsin
+    return press(w, d, KEYS[key % 4], expect);
+  };
+  const alt = [0, 1, 2, 3].find(x => x !== sol[0] && E.simulate(L, S, x) && !E.won(L, E.simulate(L, S, x).state));
+  const probe = sol.length >= 2 ? sol.slice(0, Math.min(2, sol.length - 1)) : alt === undefined ? [] : [alt];
+  for (let i = 0; i < probe.length; i++) await step(probe[i], i + 1);
+  const before = moves(d);
+  if (!probe.length) row.undo = row.restart = 'denenmedi';
+  else {
+    await press(w, d, 'KeyZ', before - 1);
+    row.undo = moves(d) === before - 1 ? 'ok' : `hamle ${before}→${moves(d)}`;
+    await press(w, d, 'KeyR', 0);
+    await closeOverlays(d);
+    row.restart = moves(d) === 0 ? 'ok' : `hamle ${moves(d)}`;
+    sel = 0;
+  }
+  for (let i = 0; i < sol.length; i++) {
+    const last = i === sol.length - 1;
+    if (!(await step(sol[i], last ? undefined : i + 1)) && !last) { row.win = `${i + 1}. hamle işlemedi`; break; }
+  }
+  if (row.win === '-') {
+    let ok = false;
+    for (let i = 0; i < 40 && !ok; i++) { await wait(200); ok = overlayOpen(d) && hook.run()?.finished && E.won(L, hook.run().st); }
+    const tag = overlayOpen(d) ? (d.querySelector('#overlayCard .new-tag, #overlayCard h2')?.textContent || '').trim().slice(0, 24) : '';
+    row.win = ok ? `ok · ${tag || 'sonuç'}` : 'sonuç ekranı çıkmadı';
+    if (ok) {
+      // sonuç ekranını kapat: oyunun kendisi bir yere götürmezse geri düğmesi
+      for (let i = 0; i < 4 && overlayOpen(d); i++) {
+        const btns = [...d.getElementById('overlayCard').querySelectorAll('button')].filter(b => b.offsetParent && !b.disabled && !b.classList.contains('ad') && !b.classList.contains('invisible'));
+        (btns.find(b => /Devam|Tamam|Al|Harita|Kapat|Geri/.test(b.textContent)) || btns[0])?.click();
+        await wait(700);
+      }
+      if (hook.screen() === 'game') { d.getElementById('btnBack').click(); await wait(700); await closeOverlays(d); }
+      row.back = hook.screen() === spec.back ? `ok · ${spec.back}` : `${hook.screen()} (beklenen ${spec.back})`;
+    }
+  }
+  const log = JSON.parse(localStorage.getItem('pofi.err.v1') || '[]').map(e => e.m);
+  row.errs.push(...new Set([...w.__errs, ...log]));
+  return row;
+}
+
 const cls = v => (v === 'ok' || String(v).startsWith('ok') ? 'ok' : v === '-' ? '' : 'bad');
 function render(rows) {
   $('rows').innerHTML = rows.map(r => `<tr><td>${r.n}</td><td>${r.mech}</td><td>${r.sol}</td>
-    <td class="${cls(r.undo)}">${r.undo}</td><td class="${cls(r.restart)}">${r.restart}</td><td class="${r.running ? 'run' : cls(r.win)}">${r.running ? 'oynanıyor…' : r.win}</td>
+    <td class="${cls(r.undo)}">${r.undo}</td><td class="${cls(r.restart)}">${r.restart}</td><td class="${r.running ? 'run' : cls(r.win)}">${r.running ? 'oynanıyor…' : r.win}</td><td class="${cls(r.back ?? '-')}">${r.back ?? '-'}</td>
     <td class="${r.errs.length ? 'bad' : ''}">${r.errs.join('<br>') || ''}</td></tr>`).join('');
 }
 
@@ -181,9 +265,10 @@ async function run(list) {
     LEVELS = LEVELS || await (await fetch('../data/levels.json', { cache: 'no-cache' })).json();
     slowRaf = !(await rafWorks());
     for (const n of list) {
-      const r = { n, mech: INTRO[n]?.title || '', sol: '', undo: '', restart: '', win: '', errs: [], running: true };
-      rows.push(r); render(rows); $('status').textContent = `Level ${n} oynanıyor (${rows.length}/${list.length})`;
-      try { Object.assign(r, await testLevel(n)); } catch (e) { r.win = `hata: ${e.message}`; }
+      const spec = typeof n === 'string' ? specOf(n) : null;
+      const r = { n: spec ? spec.label : n, mech: spec ? spec.mech : INTRO[n]?.title || '', sol: '', undo: '', restart: '', win: '', back: '-', errs: [], running: true };
+      rows.push(r); render(rows); $('status').textContent = `${r.n} oynanıyor (${rows.length}/${list.length})`;
+      try { Object.assign(r, spec ? await testSpec(spec) : await testLevel(n)); } catch (e) { r.win = `hata: ${e.message}`; }
       r.running = false; render(rows);
     }
   } finally {
@@ -195,16 +280,18 @@ async function run(list) {
     if (keep.bak === null) localStorage.removeItem('pofi.v1.bak'); else localStorage.setItem('pofi.v1.bak', keep.bak); // test kaydı yedeğe geçmesin
     $('go').disabled = false;
   }
-  const bad = rows.filter(r => [r.undo, r.restart].some(v => v !== 'ok' && v !== 'denenmedi') || !String(r.win).startsWith('ok') || r.errs.length);
+  const bad = rows.filter(r => [r.undo, r.restart].some(v => v !== 'ok' && v !== 'denenmedi') || !String(r.win).startsWith('ok') || (r.back !== '-' && !String(r.back).startsWith('ok')) || r.errs.length);
   $('sum').innerHTML = bad.length ? `<span class="bad">${bad.length}/${rows.length} levelde sorun var.</span>` : `<span class="ok">${rows.length}/${rows.length} level geçti.</span>`;
   $('status').textContent = 'Bitti. Oyun kaydı geri yüklendi.';
   window.__result = rows;
   return rows;
 }
 
+const MECH = Object.keys(INTRO).map(Number).sort((a, b) => a - b);
+$('goExtra').onclick = () => run(EXTRA);
 $('go').onclick = () => {
-  const typed = $('levels').value.split(/[\s,]+/).map(Number).filter(n => n >= 1 && n <= 1000);
-  run(typed.length ? typed : Object.keys(INTRO).map(Number).sort((a, b) => a - b));
+  const typed = $('levels').value.split(/[\s,]+/).filter(Boolean).map(t => (/^\d+$/.test(t) ? +t : t.toLowerCase())).filter(t => (typeof t === 'number' ? t >= 1 && t <= 1000 : specOf(t)));
+  run(typed.length ? typed : [...MECH, ...EXTRA]);
 };
 window.__run = run;
 </script>

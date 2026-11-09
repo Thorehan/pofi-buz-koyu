@@ -4178,6 +4178,9 @@ window.addEventListener('hashchange', () => {
 // ---------- bağlantılar ----------
 // Denge testi: ?oyna=250 ile "Oyna" düğmesi doğrudan o leveli açar (ilerleme kaydı değişmez, yalnız kazanınca ileri gider).
 const testLevel = Math.max(0, Math.min(1000, Math.floor(+new URLSearchParams(location.search).get('oyna') || 0)));
+// tools/oyun-testi.html için kanca: yalnızca ?test= adresinde açılır (yan yol, usta, günlük ve etkinlik levelini başlatır,
+// tahtanın durumunu okur). Normal oyuncu adresinde yoktur.
+if (new URLSearchParams(location.search).has('test')) window.__pofiTest = { start: (...a) => startLevel(...a), run: () => run, screen: () => screen };
 $('btnPlay').onclick = () => startLevel(testLevel || P.level);
 $('nextCard').onclick = () => showScreen('village');
 $('homeSceneWrap').onclick = () => showScreen('village');
